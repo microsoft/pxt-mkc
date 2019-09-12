@@ -1,0 +1,58 @@
+{
+	"name": "makecode-vscode",
+	"version": "0.0.1",
+	"description": "A VSCode extension for MaekCode",
+	"engines": {
+		"vscode": "^1.30.0"
+	},
+	"keywords": [
+		"pxt",
+		"MakeCode"
+	],
+	"publisher": "MakeCode",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/microsoft/pxt-mkc"
+	},	
+	"dependencies": {
+		"makecode": "../makecode"
+	},
+	"activationEvents": [
+		"onCommand:extension.create",
+		"workspaceContains:./pxt.json"
+	],
+	"main": "./built/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.build",
+				"title": "Build MakeCode modules"
+			},
+			{
+				"command": "extension.simulate",
+				"title": "Simulate MakeCode project"
+			},
+			{
+				"command": "extension.create",
+				"title": "Create an empty MakeCode Arcade project"
+			}
+		],
+		"breakpoints": [
+			{
+				"language": "typescript"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install"
+	},
+	"devDependencies": {
+		"@types/node": "^10.12.0",
+		"typescript": "^3.6.3",
+		"vscode": "^1.1.22"
+	}
+}
