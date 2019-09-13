@@ -28,7 +28,7 @@ rm -rf built
 ln -s ../../../makecode/built .
 ```
 
-Once you have it all set up, open VScode in `vscode` folder and in the debugger pane say "Launch extension".
+Once you have it all set up, start VSCode (in the root directory of this repo) and in the debugger pane click "Launch extension".
 
 ### Building vsix
 
