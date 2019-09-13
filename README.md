@@ -1,15 +1,41 @@
 # MKC - command line tool for MakeCode editors
 
-Give a short description for your sample here. What does it do and why is it important?
+This repo contains a command line tool that uses published MakeCode editors, that normally
+run in the browser.
+
+It also includes a VSCode extension that uses the said tool.
 
 ## Prerequisites
 
-npm.
+npm and vscode
 
 ## Setup
 
+```bash
+cd makecode
+npm install
+npm run compile
+cd ../vscode
+npm install
+npm run compile
 ```
-npm i -g makecode
+
+Optionally, you can symlink makecode built folder like this:
+
+```bash
+cd vscode/node_modules/makecode
+rm -rf built
+ln -s ../../../makecode/built .
+```
+
+Once you have it all set up, open VScode in `vscode` folder and in the debugger pane say "Launch extension".
+
+### Building vsix
+
+```bash
+npm install -g vsce
+cd vscode
+vsce package
 ```
 
 ## Contributing

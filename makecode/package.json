@@ -20,6 +20,7 @@
   "files": [
     "README.md",
     "built/*",
+    "external/*",
     "makecode"
   ],
   "preferGlobal": true,
@@ -31,8 +32,8 @@
     "node": ">= 8.0.0"
   },
   "scripts": {
-    "compile": "tsc -p src",
-    "watch": "tsc -watch -p src"
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
   },
   "main": "built/mkc.js",
   "devDependencies": {
