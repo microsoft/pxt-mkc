@@ -202,6 +202,7 @@ export interface DownloadInfo {
     manifest?: string;
     manifestEtag?: string;
     cdnUrl?: string;
+    simKey?: string;
 }
 
 function log(msg: string) {
@@ -230,22 +231,27 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string) {
         await saveFileAsync(fn)
     }
 
-    let simTxt = await httpGetTextAsync(cfg.simUrl)
-    let simurls: string[] = []
-    simTxt = simTxt.replace(/https:\/\/[\w\/\.\-]+/g, f => {
-        if (f.startsWith(info.cdnUrl)) {
-            simurls.push(f)
-            return f.replace(/.*\//, "")
-        }
-        return f
-    })
-    simTxt = simTxt.replace(/ manifest=/, "x-manifest=")
+    if (cache.rootPath) {
+        let simTxt = await httpGetTextAsync(cfg.simUrl)
+        let simurls: string[] = []
+        simTxt = simTxt.replace(/https:\/\/[\w\/\.\-]+/g, f => {
+            if (f.startsWith(info.cdnUrl)) {
+                simurls.push(f)
+                const base = f.replace(/.*\//, "")
+                return cache.expandKey(base)
+            }
+            return f
+        })
+        simTxt = simTxt.replace(/ manifest=/, " x-manifest=")
 
-    await cache.setAsync(webAppUrl + "-sim.html", Buffer.from(simTxt, "utf8"))
-    for (let url of simurls) {
-        const resp = await requestAsync({ url })
-        const base = url.replace(/.*\//, "")
-        await cache.setAsync(webAppUrl + "-" + base, resp.buffer)
+        info.simKey = webAppUrl + "-sim.html"
+
+        await cache.setAsync(info.simKey, Buffer.from(simTxt, "utf8"))
+        for (let url of simurls) {
+            const resp = await requestAsync({ url })
+            const base = url.replace(/.*\//, "")
+            await cache.setAsync(webAppUrl + "-" + base, resp.buffer)
+        }
     }
 
     return loadFromCacheAsync()

@@ -8,7 +8,8 @@
         "lib": ["es6"],
         "sourceMap": true,
         "types": ["node"],
-        "rootDir": "src"
+        "rootDir": "src",
+        "declaration": true
     },
     "exclude": ["node_modules", ".vscode-test"],
     "include": [

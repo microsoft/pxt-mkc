@@ -6,9 +6,12 @@ import * as sim from './simulator';
 // import { SimDebugAdapterDescriptorFactory } from './debug/debugAdapterDescriptorFactory';
 
 const EMBED_DEBUG_ADAPTER = true;
+let globalContext: vscode.ExtensionContext
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('MKCD is active');
+
+    globalContext = context
 
     let buildCMD = vscode.commands.registerCommand('extension.build', buildCommand);
     let simulateCMD = vscode.commands.registerCommand('extension.simulate', simulateCommand);
@@ -46,7 +49,7 @@ let project: mkc.Project;
 
 function syncProject() {
     if (!project || project.directory != vscode.workspace.rootPath) {
-        project = new mkc.Project(vscode.workspace.rootPath)
+        project = new mkc.Project(vscode.workspace.rootPath, mkc.files.mkHomeCache(globalContext.globalStoragePath))
     }
 }
 

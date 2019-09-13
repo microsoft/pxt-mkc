@@ -40,18 +40,19 @@ function homePxtDir() {
     return path.join(process.env["HOME"] || process.env["UserProfile"], ".pxt")
 }
 
-export function mkHomeCache(): mkc.Cache {
-    if (!fs.existsSync(homePxtDir()))
-        fs.mkdirSync(homePxtDir())
-    const mkcDir = path.join(homePxtDir(), "mkc-cache")
-    if (!fs.existsSync(mkcDir))
-        fs.mkdirSync(mkcDir)
+export function mkHomeCache(dir?: string): mkc.Cache {
+    if (!dir) dir = homePxtDir()
+    mkdirp(dir)
+    const mkcDir = path.join(dir, "mkc-cache")
+    mkdirp(mkcDir)
 
     function expandKey(key: string) {
         return path.join(mkcDir, key.replace(/[^\.a-z0-9\-]/g, c => "_" + c.charCodeAt(0) + "_"))
     }
 
     return {
+        rootPath: mkcDir,
+        expandKey,
         getAsync: key => readAsync(expandKey(key)).then(buf => buf, err => null),
         setAsync: (key, val) => writeAsync(expandKey(key), val)
     }

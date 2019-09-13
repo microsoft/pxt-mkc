@@ -13,6 +13,8 @@ export interface MkcJson {
 export interface Cache {
     getAsync(key: string): Promise<Buffer>;
     setAsync(key: string, val: Buffer): Promise<void>;
+    expandKey?(key: string): string;
+    rootPath?: string;
 }
 
 export interface DownloadedEditor {
