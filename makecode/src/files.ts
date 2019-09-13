@@ -43,18 +43,22 @@ function homePxtDir() {
 export function mkHomeCache(dir?: string): mkc.Cache {
     if (!dir) dir = homePxtDir()
     mkdirp(dir)
-    const mkcDir = path.join(dir, "mkc-cache")
-    mkdirp(mkcDir)
+    const rootPath = path.join(dir, "mkc-cache")
+    mkdirp(rootPath)
 
     function expandKey(key: string) {
-        return path.join(mkcDir, key.replace(/[^\.a-z0-9\-]/g, c => "_" + c.charCodeAt(0) + "_"))
+        return key.replace(/[^\.a-z0-9\-]/g, c => "_" + c.charCodeAt(0) + "_")
+    }
+
+    function keyPath(key: string) {
+        return path.join(rootPath, expandKey(key))
     }
 
     return {
-        rootPath: mkcDir,
+        rootPath,
         expandKey,
-        getAsync: key => readAsync(expandKey(key)).then(buf => buf, err => null),
-        setAsync: (key, val) => writeAsync(expandKey(key), val)
+        getAsync: key => readAsync(keyPath(key)).then(buf => buf, err => null),
+        setAsync: (key, val) => writeAsync(keyPath(key), val)
     }
 }
 

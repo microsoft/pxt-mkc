@@ -1,6 +1,6 @@
 
 import * as vscode from 'vscode';
-import * as mkc from 'makecode';
+import * as mkc from '../../makecode/src/mkc';
 import * as sim from './simulator';
 
 // import { SimDebugAdapterDescriptorFactory } from './debug/debugAdapterDescriptorFactory';
@@ -81,8 +81,8 @@ async function simulateCommand() {
         });
     }
 
-    sim.Simulator.createOrShow();
-    sim.Simulator.currentSimulator.simulate(binJs);
+    sim.Simulator.createOrShow(project.editor);
+    sim.Simulator.currentSimulator.simulate(binJs, project.editor);
     if (watcher) sim.Simulator.currentSimulator.addDisposable(watcher);
 }
 

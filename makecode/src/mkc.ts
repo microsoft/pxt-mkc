@@ -20,6 +20,7 @@ export interface Cache {
 export interface DownloadedEditor {
     cache: Cache;
     cdnUrl: string;
+    simUrl: string;
     website: string;
     pxtWorkerJs: string;
     targetJson: any;

@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as mkc from '../../makecode/src/mkc';
 
 interface SimulatorRunMessage {
     type: "run";
@@ -10,7 +11,7 @@ export class Simulator {
     public static currentSimulator: Simulator;
     public messageHandler: (msg: any) => void;
 
-    public static createOrShow() {
+    public static createOrShow(editor: mkc.DownloadedEditor) {
         let column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : vscode.ViewColumn.One;
         column = column < 9 ? column + 1 : column;
 
@@ -21,11 +22,12 @@ export class Simulator {
 
         const panel = vscode.window.createWebviewPanel(Simulator.viewType, "MakeCode Arcade Simulator", {
             viewColumn: vscode.ViewColumn.Beside,
-            preserveFocus: true
+            preserveFocus: true,
         }, {
             // Enable javascript in the webview
             enableScripts: true,
-            retainContextWhenHidden: true
+            retainContextWhenHidden: true,
+            localResourceRoots: [vscode.Uri.file(editor.cache.rootPath)]
         });
 
         Simulator.currentSimulator = new Simulator(panel)
@@ -57,10 +59,11 @@ export class Simulator {
         this.disposables = [];
     }
 
-    simulate(binaryJS: string) {
+    simulate(binaryJS: string, editor: mkc.DownloadedEditor) {
         this.binaryJS = binaryJS;
         this.panel.webview.html = ""
-        this.panel.webview.html = simulatorHTML();
+        this.panel.webview.html = simulatorHTML().replace("@SIMURL@",
+            "vscode-resource:" + editor.simUrl)
     }
 
     handleSimulatorMessage(message: any) {
@@ -113,9 +116,9 @@ function simulatorHTML() {
                         console.log("Registering handlers...")
                         frame = document.getElementById("sim-frame");
                         window.addEventListener("message", function(m) {
-                            console.log("Got Message")
+                            console.log("Got Message", m.origin)
 
-                            if (m.origin === "https://trg-arcade.userpxt.io") {
+                            if (m.origin === "vscode-resource://") {
                                 console.log("Forward to vscode");
                                 vscode.postMessage(m.data);
                             }
@@ -129,7 +132,7 @@ function simulatorHTML() {
 
                 </script>
                 <div style="height:100%; width:100%; padding:50px">
-                    <iframe id="sim-frame" style="position:absolute;top:0;left:0;width:100%;height:100%;" src="https://trg-arcade.userpxt.io/---simulator" allowfullscreen="allowfullscreen" sandbox="allow-popups allow-forms allow-scripts allow-same-origin" frameborder="0">
+                    <iframe id="sim-frame" style="position:absolute;top:0;left:0;width:100%;height:100%;" src="@SIMURL@" allowfullscreen="allowfullscreen" sandbox="allow-popups allow-forms allow-scripts allow-same-origin" frameborder="0">
                     </iframe>
                 </div>
                 </body>

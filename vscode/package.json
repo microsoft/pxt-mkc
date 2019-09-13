@@ -16,13 +16,12 @@
     "url": "https://github.com/microsoft/pxt-mkc"
   },
   "dependencies": {
-    "makecode": "../makecode"
   },
   "activationEvents": [
     "onCommand:extension.create",
     "workspaceContains:./pxt.json"
   ],
-  "main": "./built/extension.js",
+  "main": "./built/vscode/src/extension.js",
   "contributes": {
     "commands": [
       {

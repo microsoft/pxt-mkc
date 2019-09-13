@@ -233,12 +233,14 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string) {
 
     if (cache.rootPath) {
         let simTxt = await httpGetTextAsync(cfg.simUrl)
-        let simurls: string[] = []
+        const simurls: string[] = []
+        const simkey: pxt.Map<string> = {}
         simTxt = simTxt.replace(/https:\/\/[\w\/\.\-]+/g, f => {
             if (f.startsWith(info.cdnUrl)) {
                 simurls.push(f)
                 const base = f.replace(/.*\//, "")
-                return cache.expandKey(base)
+                simkey[f] = webAppUrl + "-" + base
+                return cache.expandKey(simkey[f])
             }
             return f
         })
@@ -249,8 +251,7 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string) {
         await cache.setAsync(info.simKey, Buffer.from(simTxt, "utf8"))
         for (let url of simurls) {
             const resp = await requestAsync({ url })
-            const base = url.replace(/.*\//, "")
-            await cache.setAsync(webAppUrl + "-" + base, resp.buffer)
+            await cache.setAsync(simkey[url], resp.buffer)
         }
     }
 
@@ -262,6 +263,7 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string) {
             cache,
             cdnUrl: info.cdnUrl,
             website: webAppUrl,
+            simUrl: info.simKey ? cache.rootPath + "/" + cache.expandKey(info.simKey) : null,
             pxtWorkerJs: (await cache.getAsync(webAppUrl + "-pxtworker.js")).toString("utf8"),
             targetJson: JSON.parse((await cache.getAsync(webAppUrl + "-target.json")).toString("utf8")),
         }
