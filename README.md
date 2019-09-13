@@ -19,6 +19,12 @@ npm run compile
 
 Once you have it all set up, start VSCode (in the root directory of this repo) and in the debugger pane click "Launch extension".
 
+Now clone a sample project, eg this one https://github.com/mmoskal/pxt-mkc-sample
+
+In the VSCode window that lunched with extension, open the folder with that project.
+Then open `main.ts` in the text editor, right click and select "Simulate MakeCode project".
+Alternatively, open command palette and run the "Simulate MakeCode project" command.
+
 ### Building vsix
 
 ```bash
