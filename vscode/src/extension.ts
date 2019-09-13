@@ -83,6 +83,8 @@ async function simulateCommand() {
         progress.report({ increment: 10, message: "Loading editor..." })
         await syncProjectAsync()
 
+        await vscode.commands.executeCommand("workbench.action.files.saveAll");
+
         // show the sim window first, before we start compiling to show progress
         let watcher: vscode.FileSystemWatcher;
         if (!sim.Simulator.currentSimulator) {
