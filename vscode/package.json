@@ -1,7 +1,7 @@
 {
   "name": "makecode-vscode",
   "version": "0.0.1",
-  "description": "A VSCode extension for MaekCode",
+  "description": "A VSCode extension for MakeCode",
   "engines": {
     "vscode": "^1.30.0"
   },
@@ -15,8 +15,7 @@
     "type": "git",
     "url": "https://github.com/microsoft/pxt-mkc"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "activationEvents": [
     "onCommand:extension.create",
     "workspaceContains:./pxt.json"
@@ -41,7 +40,16 @@
       {
         "language": "typescript"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == typescript",
+          "command": "extension.simulate",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

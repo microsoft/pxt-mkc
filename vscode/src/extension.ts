@@ -50,6 +50,7 @@ let project: mkc.Project;
 function syncProject() {
     if (!project || project.directory != vscode.workspace.rootPath) {
         project = new mkc.Project(vscode.workspace.rootPath, mkc.files.mkHomeCache(globalContext.globalStoragePath))
+        console.log("cache: " + project.cache.rootPath)
     }
 }
 
