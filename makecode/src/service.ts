@@ -29,9 +29,35 @@ export interface CompileOptions {
     embedBlob?: string; // base64
 }
 
+export enum DiagnosticCategory {
+    Warning = 0,
+    Error = 1,
+    Message = 2,
+}
+export interface LocationInfo {
+    fileName: string;
+    start: number;
+    length: number;
+    line: number;
+    column: number;
+    endLine?: number;
+    endColumn?: number;
+}
+export interface DiagnosticMessageChain {
+    messageText: string;
+    category: DiagnosticCategory;
+    code: number;
+    next?: DiagnosticMessageChain;
+}
+export interface KsDiagnostic extends LocationInfo {
+    code: number;
+    category: DiagnosticCategory;
+    messageText: string; // | DiagnosticMessageChain;
+}
+
 export interface CompileResult {
     outfiles: pxt.Map<string>;
-    // diagnostics: KsDiagnostic[];
+    diagnostics: KsDiagnostic[];
     success: boolean;
     times: pxt.Map<number>;
     // breakpoints?: Breakpoint[];

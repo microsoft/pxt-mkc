@@ -7,6 +7,11 @@ import * as sim from './simulator';
 
 const EMBED_DEBUG_ADAPTER = true;
 let globalContext: vscode.ExtensionContext
+let project: Project;
+
+class Project extends mkc.Project {
+    diagnostics: vscode.DiagnosticCollection;
+}
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('MKCD is active');
@@ -45,11 +50,10 @@ export function deactivate() {
 
 }
 
-let project: mkc.Project;
 
 async function syncProjectAsync() {
     if (!project || project.directory != vscode.workspace.rootPath) {
-        project = new mkc.Project(vscode.workspace.rootPath, mkc.files.mkHomeCache(globalContext.globalStoragePath))
+        project = new Project(vscode.workspace.rootPath, mkc.files.mkHomeCache(globalContext.globalStoragePath))
         console.log("cache: " + project.cache.rootPath)
         await project.loadEditorAsync()
         project.updateEditorAsync()
@@ -78,6 +82,35 @@ async function buildCommand() {
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, doBuild);
 }
 
+function setDiags(ds: mkc.service.KsDiagnostic[]) {
+    if (!ds) ds = []
+    const byFile: pxt.Map<vscode.Diagnostic[]> = {}
+
+    for (let d of ds) {
+        if (d.endLine == null)
+            d.endLine = d.line
+        if (d.endColumn == null)
+            d.endColumn = d.column + d.length
+        const range = new vscode.Range(d.line, d.column, d.endLine, d.endColumn);
+        const diagnostic = new vscode.Diagnostic(range, d.messageText,
+            d.category == mkc.service.DiagnosticCategory.Message ?
+                vscode.DiagnosticSeverity.Information :
+                d.category == mkc.service.DiagnosticCategory.Warning ?
+                    vscode.DiagnosticSeverity.Warning :
+                    vscode.DiagnosticSeverity.Error);
+        diagnostic.code = d.code;
+        if (!byFile[d.fileName]) byFile[d.fileName] = []
+        byFile[d.fileName].push(diagnostic)
+    }
+
+    if (!project.diagnostics)
+        project.diagnostics = vscode.languages.createDiagnosticCollection("mkcd")
+
+    project.diagnostics.clear()
+    project.diagnostics.set(
+        Object.keys(byFile).map(fn => [vscode.Uri.file(project.directory + "/" + fn), byFile[fn]]))
+}
+
 async function simulateCommand() {
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, async (progress, token) => {
         progress.report({ increment: 10, message: "Loading editor..." })
@@ -99,6 +132,7 @@ async function simulateCommand() {
         progress.report({ increment: 10, message: "Compiling..." })
 
         const res = await project.buildAsync()
+        setDiags(res.diagnostics)
         const binJs = res.outfiles["binary.js"]
         if (binJs) {
             sim.Simulator.currentSimulator.simulate(binJs, project.editor);
