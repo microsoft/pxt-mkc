@@ -203,15 +203,19 @@ export interface DownloadInfo {
     manifestEtag?: string;
     cdnUrl?: string;
     simKey?: string;
+    versionNumber?: number;
 }
 
 function log(msg: string) {
     console.log(msg)
 }
 
-export async function downloadAsync(cache: mkc.Cache, webAppUrl: string) {
+export async function downloadAsync(cache: mkc.Cache, webAppUrl: string, useCached = false) {
     const infoBuf = await cache.getAsync(webAppUrl + "-info")
     const info: DownloadInfo = infoBuf ? JSON.parse(infoBuf.toString("utf8")) : {}
+
+    if (useCached && info.manifest)
+        return loadFromCacheAsync()
 
     if (!await hasNewManifestAsync())
         return loadFromCacheAsync()
@@ -226,6 +230,7 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string) {
         info.cdnUrl = cfg.cdnUrl
         await hasNewManifestAsync()
     }
+    info.versionNumber = (info.versionNumber || 0) + 1
 
     for (let fn of ["pxtworker.js", "target.json"]) {
         await saveFileAsync(fn)
@@ -261,6 +266,7 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string) {
         await cache.setAsync(webAppUrl + "-info", Buffer.from(JSON.stringify(info), "utf8"))
         const res: mkc.DownloadedEditor = {
             cache,
+            versionNumber: info.versionNumber || 0,
             cdnUrl: info.cdnUrl,
             website: webAppUrl,
             simUrl: info.simKey ? cache.rootPath + "/" + cache.expandKey(info.simKey) : null,

@@ -19,6 +19,7 @@ export interface Cache {
 
 export interface DownloadedEditor {
     cache: Cache;
+    versionNumber: number;
     cdnUrl: string;
     simUrl: string;
     website: string;
@@ -64,15 +65,27 @@ export class Project {
         this.mainPkg = prj
     }
 
-    async loadEditorAsync() {
-        if (this.editor)
+    updateEditorAsync() {
+        return this.loadEditorAsync(true)
+    }
+
+    async loadEditorAsync(forceUpdate = false) {
+        if (this.editor && !forceUpdate)
             return
 
         await this.loadPkgAsync()
 
-        this.editor = await downloader.downloadAsync(this.cache, this.mainPkg.mkcConfig.targetWebsite)
+        const newEditor = await downloader.downloadAsync(
+            this.cache, this.mainPkg.mkcConfig.targetWebsite, !forceUpdate)
         // this.editor.hwVariant = "samd51"
-        this.service = new service.Ctx(this.editor)
+
+        if (!this.editor || newEditor.versionNumber != this.editor.versionNumber) {
+            this.editor = newEditor
+            this.service = new service.Ctx(this.editor)
+            return true
+        } else {
+            return false
+        }
     }
 
     async writePxtModulesAsync() {

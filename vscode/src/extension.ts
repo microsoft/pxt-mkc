@@ -47,16 +47,27 @@ export function deactivate() {
 
 let project: mkc.Project;
 
-function syncProject() {
+async function syncProjectAsync() {
     if (!project || project.directory != vscode.workspace.rootPath) {
         project = new mkc.Project(vscode.workspace.rootPath, mkc.files.mkHomeCache(globalContext.globalStoragePath))
         console.log("cache: " + project.cache.rootPath)
+        await project.loadEditorAsync()
+        project.updateEditorAsync()
+            .then(isUpdated => {
+                if (isUpdated) {
+                    console.log("Updated editor!")
+                    // TODO do something?
+                }
+            }, err => {
+                // generally, ignore errors
+                console.log("Error updating", err)
+            })
     }
 }
 
 async function doBuild(progress: vscode.Progress<{ increment: number, message: string }>, token: vscode.CancellationToken) {
     progress.report({ increment: 10, message: "Compiling..." })
-    syncProject()
+    await syncProjectAsync()
     await project.buildAsync()
     progress.report({ increment: 90, message: "Installation complete" })
 }
@@ -67,8 +78,8 @@ async function buildCommand() {
 
 async function simulateCommand() {
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, async (progress, token) => {
-        syncProject()
         progress.report({ increment: 10, message: "Loading editor..." })
+        await syncProjectAsync()
 
         // show the sim window first, before we start compiling to show progress
         let watcher: vscode.FileSystemWatcher;
