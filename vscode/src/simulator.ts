@@ -11,7 +11,7 @@ export class Simulator {
     public static currentSimulator: Simulator;
     public messageHandler: (msg: any) => void;
 
-    public static createOrShow(editor: mkc.DownloadedEditor) {
+    public static createOrShow(cache: mkc.Cache) {
         let column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : vscode.ViewColumn.One;
         column = column < 9 ? column + 1 : column;
 
@@ -27,7 +27,7 @@ export class Simulator {
             // Enable javascript in the webview
             enableScripts: true,
             retainContextWhenHidden: true,
-            localResourceRoots: [vscode.Uri.file(editor.cache.rootPath)]
+            localResourceRoots: [vscode.Uri.file(cache.rootPath)]
         });
 
         Simulator.currentSimulator = new Simulator(panel)

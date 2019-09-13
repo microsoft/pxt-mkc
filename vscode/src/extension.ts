@@ -54,37 +54,43 @@ function syncProject() {
     }
 }
 
-async function doInstall(progress: vscode.Progress<{ increment: number, message: string }>, token: vscode.CancellationToken) {
+async function doBuild(progress: vscode.Progress<{ increment: number, message: string }>, token: vscode.CancellationToken) {
+    progress.report({ increment: 10, message: "Compiling..." })
     syncProject()
     await project.buildAsync()
-    progress.report({ increment: 100, message: "Installation complete" })
+    progress.report({ increment: 90, message: "Installation complete" })
 }
 
 async function buildCommand() {
-    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, doInstall);
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, doBuild);
 }
 
 async function simulateCommand() {
-    syncProject()
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, async (progress, token) => {
+        syncProject()
+        progress.report({ increment: 10, message: "Loading editor..." })
 
-    const res = await project.buildAsync()
+        // show the sim window first, before we start compiling to show progress
+        let watcher: vscode.FileSystemWatcher;
+        if (!sim.Simulator.currentSimulator) {
+            watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.rootPath, "*.{ts,json}"), true, false, true);
+            watcher.onDidChange(() => {
+                vscode.commands.executeCommand("extension.simulate");
+            });
+        }
 
-    const binJs = res.outfiles["binary.js"]
+        sim.Simulator.createOrShow(project.cache);
 
-    if (!binJs)
-        return
+        progress.report({ increment: 10, message: "Compiling..." })
 
-    let watcher: vscode.FileSystemWatcher;
-    if (!sim.Simulator.currentSimulator) {
-        watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.rootPath, "*.{ts,json}"), true, false, true);
-        watcher.onDidChange(() => {
-            vscode.commands.executeCommand("extension.simulate");
-        });
-    }
-
-    sim.Simulator.createOrShow(project.editor);
-    sim.Simulator.currentSimulator.simulate(binJs, project.editor);
-    if (watcher) sim.Simulator.currentSimulator.addDisposable(watcher);
+        const res = await project.buildAsync()
+        const binJs = res.outfiles["binary.js"]
+        if (binJs) {
+            sim.Simulator.currentSimulator.simulate(binJs, project.editor);
+            if (watcher) sim.Simulator.currentSimulator.addDisposable(watcher);
+            progress.report({ increment: 100, message: "Simulation starting" })
+        }
+    });
 }
 
 /*
