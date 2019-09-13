@@ -55,11 +55,13 @@ async function syncProjectAsync() {
         project.updateEditorAsync()
             .then(isUpdated => {
                 if (isUpdated) {
+                    vscode.window.showInformationMessage("MakeCode editor updated")
                     console.log("Updated editor!")
                     // TODO do something?
                 }
             }, err => {
                 // generally, ignore errors
+                vscode.window.showWarningMessage("Failed to check for MakeCode editor updates")
                 console.log("Error updating", err)
             })
     }
