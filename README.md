@@ -9,23 +9,12 @@ It also includes a VSCode extension that uses the said tool.
 
 npm and vscode
 
-## Setup
+## VSCode extension setup
 
 ```bash
-cd makecode
+cd vscode
 npm install
 npm run compile
-cd ../vscode
-npm install
-npm run compile
-```
-
-Optionally, you can symlink makecode built folder like this:
-
-```bash
-cd vscode/node_modules/makecode
-rm -rf built
-ln -s ../../../makecode/built .
 ```
 
 Once you have it all set up, start VSCode (in the root directory of this repo) and in the debugger pane click "Launch extension".
