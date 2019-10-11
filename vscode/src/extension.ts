@@ -11,7 +11,7 @@ let project: Project;
 class Project extends mkc.Project {
     diagnostics: vscode.DiagnosticCollection;
 
-    protected fileUri(filename: string) {
+    fileUri(filename: string) {
         const duri = vscode.Uri.parse(this.directory)
         return duri.with({ path: duri.path + "/" + filename })
     }
@@ -155,15 +155,15 @@ function setDiags(ds: mkc.service.KsDiagnostic[]) {
 
     project.diagnostics.clear()
     project.diagnostics.set(
-        Object.keys(byFile).map(fn => [vscode.Uri.file(project.directory + "/" + fn), byFile[fn]]))
+        Object.keys(byFile).map(fn => [project.fileUri(fn), byFile[fn]]))
 }
 
 async function justBuild() {
     try {
         await syncProjectAsync()
-        console.log("building...")
+        console.time("build-inner")
         const res = await project.buildAsync()
-        console.log("done building")
+        console.timeEnd("build-inner")
         return res
     } catch (e) {
         vscode.window.showWarningMessage("Failed to compile!")
@@ -202,6 +202,8 @@ async function simulateCommand() {
         progress.report({ increment: 10, message: "Compiling..." })
 
         const res = await justBuild()
+        if (res.diagnostics.length)
+            vscode.window.showInformationMessage("Programs has errors")
         setDiags(res.diagnostics)
         const binJs = res.outfiles["binary.js"]
         if (binJs) {
