@@ -66,6 +66,7 @@ export interface CompileResult {
 
 export class Ctx {
     sandbox: any;
+    lastUser: unknown;
 
     constructor(public editor: mkc.DownloadedEditor) {
         this.sandbox = {
@@ -136,6 +137,14 @@ export class Ctx {
         return normRes
     }
 
+    async setUserAsync(user: unknown) {
+        if (this.lastUser !== user) {
+            this.lastUser = user
+            if (user)
+                this.serviceOp("reset", {})
+        }
+    }
+
     async simpleCompileAsync(prj: mkc.Package): Promise<CompileResult> {
         const native = !!this.editor.hwVariant
         const opts = await this.getOptions(prj, { native })
@@ -153,7 +162,6 @@ export class Ctx {
         }
 
         // opts.breakpoints = true
-        this.serviceOp("reset", {})
         return this.serviceOp("compile", { options: opts })
     }
 
