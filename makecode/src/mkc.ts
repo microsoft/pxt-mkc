@@ -96,7 +96,8 @@ export class Project {
 
         if (pxtJson != this.lastPxtJson) {
             this.lastPxtJson = pxtJson
-            await this.service.setUserAsync(null)
+            if (this.service)
+                await this.service.setUserAsync(null)
         }
     }
 

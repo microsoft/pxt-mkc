@@ -97,7 +97,13 @@ async function syncProjectAsync() {
     if (!project || project.directory != currWsFolderName) {
         project = new Project(currWsFolderName, mkc.files.mkHomeCache(globalContext.globalStoragePath))
         console.log("cache: " + project.cache.rootPath)
-        await project.loadEditorAsync()
+        try {
+            await project.loadEditorAsync()
+        } catch (e) {
+            console.error("error loading editor", e)
+            vscode.window.showWarningMessage("Failed to load MakeCode editor")
+            throw e
+        }
         project.updateEditorAsync()
             .then(isUpdated => {
                 if (isUpdated) {
@@ -188,6 +194,8 @@ async function simulateCommand() {
                 vscode.commands.executeCommand("makecode.simulate");
             });
         }
+
+        console.log("create sim")
 
         sim.Simulator.createOrShow(project.cache);
 
