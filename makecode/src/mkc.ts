@@ -45,24 +45,59 @@ export class Project {
     editor: DownloadedEditor
     service: service.Ctx
     mainPkg: Package
+    lastPxtJson: string;
 
     constructor(public directory: string, public cache: Cache = null) {
         if (!this.cache)
             this.cache = files.mkHomeCache()
     }
 
+    protected readFileAsync(filename: string) {
+        return files.readPrjFileAsync(this.directory, filename)
+    }
+
+    protected saveBuiltFilesAsync(res: service.CompileResult) {
+        return files.saveBuiltFilesAsync(this.directory, res)
+    }
+
+    protected savePxtModulesAsync(ws: Workspace) {
+        return files.savePxtModulesAsync(this.directory, ws)
+    }
+
+    protected async readPackageAsync() {
+        const pxtJson = await this.readFileAsync("pxt.json")
+        const res: Package = {
+            config: JSON.parse(pxtJson),
+            mkcConfig: JSON.parse(await this.readFileAsync("mkc.json").then(s => s, err => "{}")),
+            files: {
+                "pxt.json": pxtJson
+            }
+        }
+        for (let f of res.config.files.concat(res.config.testFiles || [])) {
+            if (f.indexOf("/") >= 0)
+                continue
+            res.files[f] = await this.readFileAsync(f)
+        }
+        return res
+    }
+
     async loadPkgAsync() {
         if (this.mainPkg)
             return
 
-        const prj = await files.readProjectAsync(this.directory)
+        const prj = await this.readPackageAsync()
         loader.guessMkcJson(prj)
 
         // TODO handle require("lzma") in worker
         prj.config.binaryonly = true
-        prj.files["pxt.json"] = JSON.stringify(prj.config, null, 4)
+        const pxtJson = prj.files["pxt.json"] = JSON.stringify(prj.config, null, 4)
 
         this.mainPkg = prj
+
+        if (pxtJson != this.lastPxtJson) {
+            this.lastPxtJson = pxtJson
+            await this.service.setUserAsync(null)
+        }
     }
 
     updateEditorAsync() {
@@ -88,23 +123,24 @@ export class Project {
         }
     }
 
-    async writePxtModulesAsync() {
+    async maybeWritePxtModulesAsync() {
         await this.loadEditorAsync()
         await this.loadPkgAsync()
         const ws = await loader.loadDeps(this.editor, this.mainPkg)
-        await files.savePxtModulesAsync(this.directory, ws)
+        if (this.service.lastUser !== this)
+            await this.savePxtModulesAsync(ws)
     }
 
     async buildAsync() {
         const t0 = Date.now()
         this.mainPkg = null // force reload
-        await this.writePxtModulesAsync()
-        //await this.loadEditorAsync()
-        //await loader.loadDeps(this.editor, this.mainPkg)
 
+        await this.maybeWritePxtModulesAsync()
+
+        await this.service.setUserAsync(this)
         const res = await this.service.simpleCompileAsync(this.mainPkg)
 
-        await files.saveBuiltFilesAsync(this.directory, res)
+        await this.saveBuiltFilesAsync(res)
 
         console.log("build " + (Date.now() - t0) + "ms")
         //delete res.outfiles

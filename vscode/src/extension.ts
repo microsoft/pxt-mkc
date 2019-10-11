@@ -5,12 +5,60 @@ import * as sim from './simulator';
 
 // import { SimDebugAdapterDescriptorFactory } from './debug/debugAdapterDescriptorFactory';
 
-const EMBED_DEBUG_ADAPTER = true;
 let globalContext: vscode.ExtensionContext
 let project: Project;
 
+
+
+export async function saveBuiltFilesAsync(dir: string, res: mkc.service.CompileResult) {
+}
+
+export async function savePxtModulesAsync(dir: string, ws: mkc.Workspace) {
+
+}
+
+
 class Project extends mkc.Project {
     diagnostics: vscode.DiagnosticCollection;
+
+    protected fileUri(filename: string) {
+        const duri = vscode.Uri.parse(this.directory)
+        return duri.with({ path: duri.path + "/" + filename })
+    }
+
+    protected async readFileAsync(filename: string) {
+        const data = await vscode.workspace.fs.readFile(this.fileUri(filename))
+        return new Buffer(data).toString("utf8")
+    }
+
+    protected async writeFilesAsync(folder: string, outfiles: pxt.Map<string>) {
+        await vscode.workspace.fs.createDirectory(this.fileUri(folder))
+        for (let fn of Object.keys(outfiles)) {
+            if (fn.indexOf("/") >= 0)
+                continue
+            const data = Buffer.from(outfiles[fn], "utf8")
+            const uri = this.fileUri(folder + "/" + fn)
+            const curr = await vscode.workspace.fs.readFile(uri).then(v => v, err => null as Uint8Array)
+            // without this check, writing pxt_modules takes a few seconds
+            // with it, it still takes 0.3s
+            if (curr && data.equals(curr))
+                continue
+            await vscode.workspace.fs.writeFile(uri, data)
+        }
+    }
+
+    protected saveBuiltFilesAsync(res: mkc.service.CompileResult) {
+        return this.writeFilesAsync("built", res.outfiles || {})
+    }
+
+    protected async savePxtModulesAsync(ws: mkc.Workspace) {
+        await vscode.workspace.fs.createDirectory(this.fileUri("pxt_modules"))
+        for (let k of Object.keys(ws.packages)) {
+            if (k == "this")
+                continue
+            await this.writeFilesAsync("pxt_modules/" + k, ws.packages[k].files)
+        }
+    }
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -50,10 +98,14 @@ export function deactivate() {
 
 }
 
+function currentWsFolder() {
+    return vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor.document.uri)
+}
 
 async function syncProjectAsync() {
-    if (!project || project.directory != vscode.workspace.rootPath) {
-        project = new Project(vscode.workspace.rootPath, mkc.files.mkHomeCache(globalContext.globalStoragePath))
+    const currWsFolderName = currentWsFolder().uri.toString()
+    if (!project || project.directory != currWsFolderName) {
+        project = new Project(currWsFolderName, mkc.files.mkHomeCache(globalContext.globalStoragePath))
         console.log("cache: " + project.cache.rootPath)
         await project.loadEditorAsync()
         project.updateEditorAsync()
@@ -73,9 +125,8 @@ async function syncProjectAsync() {
 
 async function doBuild(progress: vscode.Progress<{ increment: number, message: string }>, token: vscode.CancellationToken) {
     progress.report({ increment: 10, message: "Compiling..." })
-    await syncProjectAsync()
-    await project.buildAsync()
-    progress.report({ increment: 90, message: "Installation complete" })
+    await justBuild()
+    progress.report({ increment: 90, message: "Compilation complete" })
 }
 
 async function buildCommand() {
@@ -111,17 +162,38 @@ function setDiags(ds: mkc.service.KsDiagnostic[]) {
         Object.keys(byFile).map(fn => [vscode.Uri.file(project.directory + "/" + fn), byFile[fn]]))
 }
 
+async function justBuild() {
+    try {
+        await syncProjectAsync()
+        console.log("building...")
+        const res = await project.buildAsync()
+        console.log("done building")
+        return res
+    } catch (e) {
+        vscode.window.showWarningMessage("Failed to compile!")
+        console.error("compilation error", e)
+        const r: mkc.service.CompileResult = {
+            outfiles: {},
+            diagnostics: [],
+            success: false,
+            times: {},
+        }
+        return r
+    }
+}
+
 async function simulateCommand() {
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, async (progress, token) => {
         progress.report({ increment: 10, message: "Loading editor..." })
-        await syncProjectAsync()
 
+        await syncProjectAsync()
         await vscode.commands.executeCommand("workbench.action.files.saveAll");
 
         // show the sim window first, before we start compiling to show progress
         let watcher: vscode.FileSystemWatcher;
         if (!sim.Simulator.currentSimulator) {
-            watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.rootPath, "*.{ts,json}"), true, false, true);
+            watcher = vscode.workspace.createFileSystemWatcher(
+                new vscode.RelativePattern(currentWsFolder(), "*.{ts,json}"), true, false, true);
             watcher.onDidChange(() => {
                 vscode.commands.executeCommand("makecode.simulate");
             });
@@ -131,7 +203,7 @@ async function simulateCommand() {
 
         progress.report({ increment: 10, message: "Compiling..." })
 
-        const res = await project.buildAsync()
+        const res = await justBuild()
         setDiags(res.diagnostics)
         const binJs = res.outfiles["binary.js"]
         if (binJs) {

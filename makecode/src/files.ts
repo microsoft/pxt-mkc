@@ -19,6 +19,12 @@ export function findProjectDir() {
 const readAsync = util.promisify(fs.readFile)
 const writeAsync = util.promisify(fs.writeFile)
 
+export function readPrjFileAsync(dir: string, filename: string) {
+    if (filename.indexOf("/") >= 0)
+        return Promise.reject(new Error("Invalid file name"))
+    return readAsync(path.join(dir, filename), "utf8")
+}
+
 export async function readProjectAsync(dir: string) {
     const pxtJson = await readAsync(path.join(dir, "pxt.json"), "utf8")
     const res: mkc.Package = {
@@ -78,7 +84,7 @@ async function writeFilesAsync(built: string, outfiles: pxt.Map<string>, log = f
     }
 }
 
-export async function saveBuiltFilesAsync(dir: string, res: any) {
+export async function saveBuiltFilesAsync(dir: string, res: mkc.service.CompileResult) {
     await writeFilesAsync(path.join(dir, "built"), res.outfiles || {}, true)
 }
 
