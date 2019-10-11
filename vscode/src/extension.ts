@@ -8,16 +8,6 @@ import * as sim from './simulator';
 let globalContext: vscode.ExtensionContext
 let project: Project;
 
-
-
-export async function saveBuiltFilesAsync(dir: string, res: mkc.service.CompileResult) {
-}
-
-export async function savePxtModulesAsync(dir: string, ws: mkc.Workspace) {
-
-}
-
-
 class Project extends mkc.Project {
     diagnostics: vscode.DiagnosticCollection;
 
