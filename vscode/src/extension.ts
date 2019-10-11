@@ -18,9 +18,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     globalContext = context
 
-    let buildCMD = vscode.commands.registerCommand('extension.build', buildCommand);
-    let simulateCMD = vscode.commands.registerCommand('extension.simulate', simulateCommand);
-    //let createCMD = vscode.commands.registerCommand('extension.create', createCommand);
+    let buildCMD = vscode.commands.registerCommand('makecode.build', buildCommand);
+    let simulateCMD = vscode.commands.registerCommand('makecode.simulate', simulateCommand);
+    //let createCMD = vscode.commands.registerCommand('makecode.create', createCommand);
 
     context.subscriptions.push(buildCMD);
     context.subscriptions.push(simulateCMD);
@@ -123,7 +123,7 @@ async function simulateCommand() {
         if (!sim.Simulator.currentSimulator) {
             watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.workspace.rootPath, "*.{ts,json}"), true, false, true);
             watcher.onDidChange(() => {
-                vscode.commands.executeCommand("extension.simulate");
+                vscode.commands.executeCommand("makecode.simulate");
             });
         }
 

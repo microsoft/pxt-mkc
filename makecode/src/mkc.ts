@@ -71,7 +71,7 @@ export class Project {
 
     async loadEditorAsync(forceUpdate = false) {
         if (this.editor && !forceUpdate)
-            return
+            return false
 
         await this.loadPkgAsync()
 

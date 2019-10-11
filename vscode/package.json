@@ -17,22 +17,22 @@
   },
   "dependencies": {},
   "activationEvents": [
-    "onCommand:extension.create",
+    "onCommand:makecode.create",
     "workspaceContains:./pxt.json"
   ],
   "main": "./built/vscode/src/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "extension.build",
+        "command": "makecode.build",
         "title": "Build MakeCode modules"
       },
       {
-        "command": "extension.simulate",
+        "command": "makecode.simulate",
         "title": "Simulate MakeCode project"
       },
       {
-        "command": "extension.create",
+        "command": "makecode.create",
         "title": "Create an empty MakeCode Arcade project"
       }
     ],
@@ -45,7 +45,7 @@
       "editor/context": [
         {
           "when": "resourceLangId == typescript",
-          "command": "extension.simulate",
+          "command": "makecode.simulate",
           "group": "navigation"
         }
       ]
