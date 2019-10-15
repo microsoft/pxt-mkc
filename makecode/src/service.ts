@@ -100,9 +100,9 @@ export class Ctx {
         this.sandbox.pxtTargetBundle = ed.targetJson
         this.runScript(ed.pxtWorkerJs, ed.website + "/pxtworker.js")
         this.runScript(prep, "prep")
-        this.runSync("pxt.setupSimpleCompile()")
+        this.runFunctionSync("pxt.setupSimpleCompile", [])
         if (ed.hwVariant)
-            this.runSync(`pxt.setHwVariant(${JSON.stringify(ed.hwVariant)})`)
+            this.runFunctionSync("pxt.setHwVariant", [ed.hwVariant])
     }
 
     runScript(content: string, filename: string) {
@@ -170,9 +170,19 @@ export class Ctx {
         return this.runAsync("pxt.simpleGetCompileOptionsAsync(_scriptText, _opts)")
     }
 
+    runFunctionSync(name: string, args: any[]) {
+        let argString = ""
+        for (let i = 0; i < args.length; ++i) {
+            const arg = "_arg" + i
+            this.sandbox[arg] = args[i]
+            if (argString)
+                argString += ", "
+            argString += arg
+        }
+        return this.runSync(`${name}(${argString})`)
+    }
+
     serviceOp(op: string, data: any) {
-        this.sandbox._data = data
-        this.sandbox._op = op
-        return this.runSync("pxtc.service.performOperation(_op, _data)")
+        return this.runFunctionSync("pxtc.service.performOperation", [op, data])
     }
 }
