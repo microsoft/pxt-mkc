@@ -1,24 +1,32 @@
 import * as mkc from "./mkc"
 import * as downloader from "./downloader"
 
-interface TargetDescriptor {
+export interface TargetDescriptor {
     id: string;
+    name: string;
+    description: string;
     website: string;
     corepkg: string;
     label?: string;
 }
 
-const descriptors: TargetDescriptor[] = [{
+export const descriptors: TargetDescriptor[] = [{
     id: "arcade",
-    website: "https://arcade.makecode.com/app/e6954b6585dc3caa6877cbe67b2d832826739ba7-f89f9bc2ac",
+    name: "MakeCode Arcade",
+    description: "Old school games",
+    website: "https://arcade.makecode.com/beta",
     corepkg: "device",
 }, {
     id: "microbit",
-    website: "https://makecode.microbit.org",
+    name: "micro:bit",
+    description: "Get creative, get connected, get coding",
+    website: "https://makecode.microbit.org/beta",
     corepkg: "core",
 }, {
     id: "adafruit",
-    website: "https://makecode.adafruit.com",
+    name: "Circuit Playground Express",
+    description: "An educational board from Adafruit",
+    website: "https://makecode.adafruit.com/beta",
     corepkg: "circuit-playground",
 }]
 

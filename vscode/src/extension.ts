@@ -19,7 +19,7 @@ class Project extends mkc.Project {
 
     protected async readFileAsync(filename: string) {
         const data = await vscode.workspace.fs.readFile(this.fileUri(filename))
-        return new Buffer(data).toString("utf8")
+        return Buffer.from(data).toString("utf8")
     }
 
     protected async writeFilesAsync(folder: string, outfiles: pxt.Map<string>) {
@@ -58,13 +58,17 @@ export function activate(context: vscode.ExtensionContext) {
     globalContext = context
 
     const addCmd = (id: string, fn: () => Promise<void>) => {
-        const cmd = vscode.commands.registerCommand(id, fn);
+        const cmd = vscode.commands.registerCommand(id, () => fn()
+            .then(() => { }, err => {
+                console.error("MakeCode Ext Exception", err)
+            }));
         context.subscriptions.push(cmd);
     }
 
     addCmd('makecode.build', buildCommand)
     addCmd('makecode.simulate', simulateCommand)
     addCmd('makecode.choosehw', choosehwCommand)
+    addCmd('makecode.create', createCommand)
 
     vscode.workspace.onDidChangeWorkspaceFolders(chg => {
         currFolder = null
@@ -109,7 +113,7 @@ async function currentWsFolderAsync() {
 
 async function syncProjectAsync() {
     const currWsFolderName = (await currentWsFolderAsync()).uri.toString()
-    const currhw: string = await globalContext.workspaceState.get("hw") || null
+    const currhw: string = await globalContext.workspaceState.get("hw") || ""
     if (!project || project.directory != currWsFolderName || project.hwVariant != currhw) {
         project = new Project(currWsFolderName, mkc.files.mkHomeCache(globalContext.globalStoragePath))
         project.hwVariant = currhw.replace(/hw---/, "")
@@ -267,17 +271,51 @@ async function simulateCommand() {
     });
 }
 
-/*
 async function createCommand() {
-    if ((await util.existsAsync(path.join(vscode.workspace.rootPath, "pxt.json"))) || (await util.existsAsync(path.join(vscode.workspace.rootPath, "mkcd.json")))) {
+    const folderURI = (await currentWsFolderAsync()).uri
+    const fileURI = (filename: string) =>
+        folderURI.with({ path: folderURI.path + "/" + filename })
+
+    const pxtJSON: Uint8Array = await vscode.workspace.fs.readFile(fileURI("pxt.json"))
+        .then(r => r, err => null)
+
+    if (pxtJSON && pxtJSON.length > 5) {
         vscode.window.showErrorMessage("Project already created")
         return;
     }
 
+    const target = await vscode.window.showQuickPick(mkc.loader.descriptors.map(d => ({
+        id: d.id,
+        label: d.name,
+        description: d.description
+    })))
+
+    if (!target)
+        return
+
+    const targetDesc = mkc.loader.descriptors.find(d => d.id == target.id)
+    const cache = mkc.files.mkHomeCache()
+    const newEditor = await mkc.downloader.downloadAsync(cache, targetDesc.website, true)
+    const service = new mkc.service.Ctx(newEditor)
+    const files = service.runFunctionSync("pxt.packageFiles", ["no name"])
+    service.runFunctionSync("pxt.packageFilesFixup", [files])
+
+    for (let fn of Object.keys(files)) {
+        if (fn == ".vscode/tasks.json")
+            continue // this uses legacy CLI
+        const dir = fn.split("/")
+        dir.pop()
+        for (let i = 0; i < dir.length; ++i) {
+            await vscode.workspace.fs.createDirectory(fileURI(dir.slice(0, i + 1).join("/"))).then(() => { }, () => { })
+        }
+        await vscode.workspace.fs.writeFile(fileURI(fn), Buffer.from(files[fn], "utf8"))
+    }
+
+    /*
     for (const file of Object.keys(projectFiles.files)) {
         if (!await util.existsAsync(path.join(vscode.workspace.rootPath, file))) {
             await util.writefileAsync(path.join(vscode.workspace.rootPath, file), projectFiles.files[file].trim() + "\n");
         }
     }
+    */
 }
-*/

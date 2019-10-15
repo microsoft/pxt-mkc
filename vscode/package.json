@@ -33,7 +33,7 @@
       },
       {
         "command": "makecode.create",
-        "title": "Create an empty MakeCode Arcade project"
+        "title": "Create an empty MakeCode project"
       },
       {
         "command": "makecode.choosehw",
