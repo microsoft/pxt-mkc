@@ -9,7 +9,31 @@ It also includes a VSCode extension that uses the said tool.
 
 npm and vscode
 
-## VSCode extension setup
+## Basic setup
+
+While the extension isn't yet published in the VSCode gallery, you can install `.vsix` package by hand.
+Once you have it, run the following from command line:
+
+```bash
+code --install-extension path/to/makecode-vscode-0.0.1.vsix
+```
+
+Now, you can run vscode in the project folder.
+Alternatively, create an empty folder, go to the command palette (`Ctrl-Shift-P` or `Cmd-Shift-P`), search for
+`makecode` and select `Create an empty MakeCode project`.
+
+Once in a MakeCode project, right click somewhere in the code and select `Simulate MakeCode project`.
+Simulator is restarted on save (which is often automatic).
+Simulating will check for MakeCode-specific errors in the program.
+
+The simulator has some buttons at the bottom.
+* the `Build` button will create a `built/binary.uf2` but it doesn't communicate that well yet
+* the `Console` button will bring up output of `console.log()` in your MakeCode program
+
+
+## Building extension
+
+If you want to build extension yourself, follow these steps.
 
 ```bash
 cd vscode
