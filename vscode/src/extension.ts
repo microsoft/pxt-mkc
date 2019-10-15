@@ -56,13 +56,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     globalContext = context
 
-    let buildCMD = vscode.commands.registerCommand('makecode.build', buildCommand);
-    let simulateCMD = vscode.commands.registerCommand('makecode.simulate', simulateCommand);
-    //let createCMD = vscode.commands.registerCommand('makecode.create', createCommand);
+    const addCmd = (id: string, fn: () => Promise<void>) => {
+        const cmd = vscode.commands.registerCommand(id, fn);
+        context.subscriptions.push(cmd);
+    }
 
-    context.subscriptions.push(buildCMD);
-    context.subscriptions.push(simulateCMD);
-    //context.subscriptions.push(createCMD);
+    addCmd('makecode.build', buildCommand)
+    addCmd('makecode.simulate', simulateCommand)
+    addCmd('makecode.choosehw', choosehwCommand)
 
     if (vscode.window.registerWebviewPanelSerializer) {
         // Make sure we register a serilizer in activation event
@@ -94,8 +95,10 @@ function currentWsFolder() {
 
 async function syncProjectAsync() {
     const currWsFolderName = currentWsFolder().uri.toString()
-    if (!project || project.directory != currWsFolderName) {
+    const currhw: string = await globalContext.workspaceState.get("hw") || null
+    if (!project || project.directory != currWsFolderName || project.hwVariant != currhw) {
         project = new Project(currWsFolderName, mkc.files.mkHomeCache(globalContext.globalStoragePath))
+        project.hwVariant = currhw.replace(/hw---/, "")
         console.log("cache: " + project.cache.rootPath)
         try {
             await project.loadEditorAsync()
@@ -120,8 +123,15 @@ async function syncProjectAsync() {
 }
 
 async function doBuild(progress: vscode.Progress<{ increment: number, message: string }>, token: vscode.CancellationToken) {
+    let hw = await globalContext.workspaceState.get("hw")
+    if (!hw) {
+        await choosehwCommand()
+        hw = await globalContext.workspaceState.get("hw")
+        if (!hw)
+            return
+    }
     progress.report({ increment: 10, message: "Compiling..." })
-    await justBuild()
+    await justBuild(true)
     progress.report({ increment: 90, message: "Compilation complete" })
 }
 
@@ -158,11 +168,11 @@ function setDiags(ds: mkc.service.KsDiagnostic[]) {
         Object.keys(byFile).map(fn => [project.fileUri(fn), byFile[fn]]))
 }
 
-async function justBuild() {
+async function justBuild(native = false) {
     try {
         await syncProjectAsync()
         console.time("build-inner")
-        const res = await project.buildAsync()
+        const res = await project.buildAsync({ native })
         console.timeEnd("build-inner")
         return res
     } catch (e) {
@@ -195,6 +205,18 @@ export function throttle(func: (...args: any[]) => any, wait: number, immediate?
         if (!timeout) timeout = setTimeout(later, wait);
         if (callNow) func.apply(context, args);
     };
+}
+
+async function choosehwCommand() {
+    await syncProjectAsync()
+    const cfgs: pxt.PackageConfig[] = project.service.runSync("pxt.getHwVariants()")
+    console.log(cfgs)
+    const items = cfgs.map(cfg => ({ label: cfg.card.name, description: cfg.card.description, id: cfg.name }))
+    const chosen = await vscode.window.showQuickPick(items)
+    if (chosen) {
+        await globalContext.workspaceState.update("hw", chosen.id)
+        await syncProjectAsync()
+    }
 }
 
 async function simulateCommand() {

@@ -46,6 +46,7 @@ export class Project {
     service: service.Ctx
     mainPkg: Package
     lastPxtJson: string;
+    hwVariant: string;
 
     constructor(public directory: string, public cache: Cache = null) {
         if (!this.cache)
@@ -113,7 +114,7 @@ export class Project {
 
         const newEditor = await downloader.downloadAsync(
             this.cache, this.mainPkg.mkcConfig.targetWebsite, !forceUpdate)
-        // this.editor.hwVariant = "samd51"
+        newEditor.hwVariant = this.hwVariant
 
         if (!this.editor || newEditor.versionNumber != this.editor.versionNumber) {
             this.editor = newEditor
@@ -132,14 +133,14 @@ export class Project {
             await this.savePxtModulesAsync(ws)
     }
 
-    async buildAsync() {
+    async buildAsync(simpleOpts = {}) {
         const t0 = Date.now()
         this.mainPkg = null // force reload
 
         await this.maybeWritePxtModulesAsync()
 
         await this.service.setUserAsync(this)
-        const res = await this.service.simpleCompileAsync(this.mainPkg)
+        const res = await this.service.simpleCompileAsync(this.mainPkg, simpleOpts)
 
         await this.saveBuiltFilesAsync(res)
 

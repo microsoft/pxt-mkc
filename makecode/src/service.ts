@@ -145,12 +145,11 @@ export class Ctx {
         }
     }
 
-    async simpleCompileAsync(prj: mkc.Package): Promise<CompileResult> {
-        const native = !!this.editor.hwVariant
-        const opts = await this.getOptions(prj, { native })
+    async simpleCompileAsync(prj: mkc.Package, simpleOpts: any = {}): Promise<CompileResult> {
+        const opts = await this.getOptions(prj, simpleOpts)
 
         const cppsha: string = (opts as any).extinfo ? (opts as any).extinfo.sha : null
-        if (native && cppsha) {
+        if (simpleOpts.native && cppsha) {
             let existing = await this.editor.cache.getAsync("cpp-" + cppsha)
             if (!existing) {
                 const url = this.editor.cdnUrl + "/compile/" + (opts as any).extinfo.sha + ".hex"

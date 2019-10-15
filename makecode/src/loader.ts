@@ -45,9 +45,9 @@ async function recLoadAsync(ed: mkc.DownloadedEditor, ws: mkc.Workspace, myid = 
     const pcfg = ws.packages[myid].config
     const pending: string[] = []
     for (let pkgid of Object.keys(pcfg.dependencies)) {
+        const ver = pcfg.dependencies[pkgid]
         if (pkgid == "hw" && ed.hwVariant)
             pkgid = "hw---" + ed.hwVariant
-        const ver = pcfg.dependencies[pkgid]
         if (ws.packages[pkgid] !== undefined)
             continue // already loaded
         let text: pxt.Map<string>

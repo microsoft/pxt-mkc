@@ -34,6 +34,10 @@
       {
         "command": "makecode.create",
         "title": "Create an empty MakeCode Arcade project"
+      },
+      {
+        "command": "makecode.choosehw",
+        "title": "Choose MakeCode hardware board"
       }
     ],
     "breakpoints": [
