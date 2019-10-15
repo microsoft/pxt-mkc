@@ -12,8 +12,12 @@ interface SimulatorRunMessage {
 
 let extensionContext: vscode.ExtensionContext;
 
+function resPath(fn: string) {
+    return path.join(extensionContext.extensionPath, "resources", fn)
+}
+
 function readResource(fn: string) {
-    return fs.readFileSync(path.join(extensionContext.extensionPath, "resources", fn), "utf8")
+    return fs.readFileSync(resPath(fn), "utf8")
 }
 
 export class Simulator {
@@ -43,7 +47,10 @@ export class Simulator {
             // Enable javascript in the webview
             enableScripts: true,
             retainContextWhenHidden: true,
-            localResourceRoots: [vscode.Uri.file(cache.rootPath)]
+            localResourceRoots: [
+                vscode.Uri.file(cache.rootPath),
+                vscode.Uri.file(resPath(""))
+            ]
         });
 
         Simulator.currentSimulator = new Simulator(panel)
@@ -84,8 +91,12 @@ export class Simulator {
         if (this.simState == null) {
             this.simState = await extensionContext.workspaceState.get("simstate", {})
         }
-        this.panel.webview.html = simulatorHTML.replace("@SIMURL@",
-            "vscode-resource:" + editor.simUrl)
+        const pathURL = (s: string) =>
+            this.panel.webview.asWebviewUri(vscode.Uri.file(s)).toString()
+        this.panel.webview.html = simulatorHTML
+            .replace("@SIMURL@", pathURL(editor.simUrl))
+            .replace(/@RES@\/([\w\-\.]+)/g, (f, fn) => pathURL(resPath(fn)))
+            .replace(/@CSP@/g, this.panel.webview.cspSource)
     }
 
     handleSimulatorMessage(message: any) {

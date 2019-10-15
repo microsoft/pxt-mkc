@@ -7,6 +7,7 @@ import * as sim from './simulator';
 
 let globalContext: vscode.ExtensionContext
 let project: Project;
+let currFolder: vscode.WorkspaceFolder
 
 class Project extends mkc.Project {
     diagnostics: vscode.DiagnosticCollection;
@@ -65,6 +66,10 @@ export function activate(context: vscode.ExtensionContext) {
     addCmd('makecode.simulate', simulateCommand)
     addCmd('makecode.choosehw', choosehwCommand)
 
+    vscode.workspace.onDidChangeWorkspaceFolders(chg => {
+        currFolder = null
+    })
+
     if (vscode.window.registerWebviewPanelSerializer) {
         // Make sure we register a serilizer in activation event
         vscode.window.registerWebviewPanelSerializer(sim.Simulator.viewType, {
@@ -89,12 +94,21 @@ export function deactivate() {
 
 }
 
-function currentWsFolder() {
-    return vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor.document.uri)
+async function currentWsFolderAsync() {
+    if (currFolder)
+        return currFolder
+    const folds = vscode.workspace.workspaceFolders
+    if (folds && folds.length == 1) {
+        currFolder = folds[0]
+    } else {
+        currFolder = await vscode.window.showWorkspaceFolderPick()
+    }
+    // vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor.document.uri)
+    return currFolder
 }
 
 async function syncProjectAsync() {
-    const currWsFolderName = currentWsFolder().uri.toString()
+    const currWsFolderName = (await currentWsFolderAsync()).uri.toString()
     const currhw: string = await globalContext.workspaceState.get("hw") || null
     if (!project || project.directory != currWsFolderName || project.hwVariant != currhw) {
         project = new Project(currWsFolderName, mkc.files.mkHomeCache(globalContext.globalStoragePath))
@@ -230,7 +244,7 @@ async function simulateCommand() {
         let watcher: vscode.FileSystemWatcher;
         if (!sim.Simulator.currentSimulator) {
             watcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(currentWsFolder(), "*.{ts,json}"), true, false, true);
+                new vscode.RelativePattern(await currentWsFolderAsync(), "*.{ts,json}"), true, false, true);
             watcher.onDidChange(throttle(() => {
                 vscode.commands.executeCommand("makecode.simulate");
             }, 1000, true));
