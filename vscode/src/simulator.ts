@@ -22,6 +22,7 @@ export class Simulator {
     public messageHandler: (msg: any) => void;
     public simState: any;
     public simStateTimer: NodeJS.Timeout;
+    private simconsole: vscode.OutputChannel;
 
     public static createOrShow(extCtx: vscode.ExtensionContext, cache: mkc.Cache) {
         let column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : vscode.ViewColumn.One;
@@ -72,6 +73,8 @@ export class Simulator {
         });
 
         this.disposables = [];
+
+        this.simconsole = vscode.window.createOutputChannel("MakeCode")
     }
 
     async simulateAsync(binaryJS: string, editor: mkc.DownloadedEditor) {
@@ -103,6 +106,22 @@ export class Simulator {
                 console.log("Simulator ready")
                 runit()
                 break;
+            case "bulkserial":
+                message.data.forEach((d: { data: string }) => this.simconsole.append(d.data))
+                break
+            case "button":
+                switch (message.btnid) {
+                    case "console":
+                        this.simconsole.show()
+                        break
+                    case "build":
+                        vscode.commands.executeCommand("makecode.build");
+                        break
+                    default:
+                        console.log("unhandled button", JSON.stringify(message))
+                        break
+                }
+                break
             case "simulator":
                 switch (message.command) {
                     case "restart":

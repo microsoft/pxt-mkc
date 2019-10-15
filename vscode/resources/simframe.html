@@ -60,6 +60,11 @@
                         frame.contentWindow.postMessage(m.data, "*");
                     }
                 });
+                ["build", "console"].forEach(id => {
+                    document.getElementById("btn-" + id).addEventListener("click", () => {
+                        vscode.postMessage({ type: "button", btnid: id });
+                    })
+                })
             });
         }())
     </script>
@@ -69,7 +74,8 @@
         </iframe>
     </div>
     <div id="sim-controls">
-        <button id="build">Build</button>
+        <button id="btn-build">Build</button>
+        <button id="btn-console">Console</button>
     </div>
 </body>
 
