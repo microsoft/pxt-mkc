@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MakeCode Arcade Simulator</title>
+    <style>
+        #sim-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 100px;
+        }
+
+        #sim-controls {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 80px;
+            padding: 10px;
+        }
+
+        button {
+            font-size: 1.5em;
+            padding: 0.3em;
+        }
+
+        #sim-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        (function () {
+            console.log("Init");
+            var frame;
+            var vscode = acquireVsCodeApi();
+            document.addEventListener("DOMContentLoaded", function (event) {
+                console.log("Registering handlers...")
+                frame = document.getElementById("sim-frame");
+                window.addEventListener("message", function (m) {
+                    console.log("Got Message", m.origin)
+
+                    if (m.origin === "vscode-resource://") {
+                        console.log("Forward to vscode");
+                        vscode.postMessage(m.data);
+                    } else if (m.origin === "null") {
+                        console.log("Forward to sim-frame");
+                        frame.contentWindow.postMessage(m.data, "*");
+                    }
+                });
+            });
+        }())
+    </script>
+    <div id="sim-container">
+        <iframe id="sim-frame" src="@SIMURL@" allowfullscreen="allowfullscreen"
+            sandbox="allow-popups allow-forms allow-scripts allow-same-origin" frameborder="0">
+        </iframe>
+    </div>
+    <div id="sim-controls">
+        <button id="build">Build</button>
+    </div>
+</body>
+
+</html>

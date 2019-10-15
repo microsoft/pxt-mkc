@@ -214,7 +214,7 @@ async function simulateCommand() {
             }, 1000, true));
         }
 
-        sim.Simulator.createOrShow(project.cache);
+        sim.Simulator.createOrShow(globalContext, project.cache);
         if (watcher) sim.Simulator.currentSimulator.addDisposable(watcher);
 
         progress.report({ increment: 10, message: "Compiling..." })
@@ -225,7 +225,7 @@ async function simulateCommand() {
         setDiags(res.diagnostics)
         const binJs = res.outfiles["binary.js"]
         if (res.success && binJs) {
-            sim.Simulator.currentSimulator.simulate(binJs, project.editor);
+            await sim.Simulator.currentSimulator.simulateAsync(binJs, project.editor);
             progress.report({ increment: 100, message: "Simulation starting" })
         }
     });

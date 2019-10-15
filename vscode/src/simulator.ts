@@ -1,21 +1,36 @@
 import * as vscode from "vscode";
 import * as mkc from '../../makecode/src/mkc';
 
+import * as fs from "fs";
+import * as path from "path";
+
 interface SimulatorRunMessage {
     type: "run";
     code: string;
+    storedState: any;
+}
+
+let extensionContext: vscode.ExtensionContext;
+
+function readResource(fn: string) {
+    return fs.readFileSync(path.join(extensionContext.extensionPath, "resources", fn), "utf8")
 }
 
 export class Simulator {
     public static readonly viewType = "mkcdsim";
     public static currentSimulator: Simulator;
     public messageHandler: (msg: any) => void;
+    public simState: any;
+    public simStateTimer: NodeJS.Timeout;
 
-    public static createOrShow(cache: mkc.Cache) {
+    public static createOrShow(extCtx: vscode.ExtensionContext, cache: mkc.Cache) {
         let column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : vscode.ViewColumn.One;
         column = column < 9 ? column + 1 : column;
 
+        extensionContext = extCtx
+
         if (Simulator.currentSimulator) {
+            Simulator.currentSimulator.simState = null;
             Simulator.currentSimulator.panel.reveal(vscode.ViewColumn.Beside, true);
             return;
         }
@@ -59,25 +74,53 @@ export class Simulator {
         this.disposables = [];
     }
 
-    simulate(binaryJS: string, editor: mkc.DownloadedEditor) {
+    async simulateAsync(binaryJS: string, editor: mkc.DownloadedEditor) {
         this.binaryJS = binaryJS;
         this.panel.webview.html = ""
-        this.panel.webview.html = simulatorHTML().replace("@SIMURL@",
+        const simulatorHTML = readResource("simframe.html")
+        if (this.simState == null) {
+            this.simState = await extensionContext.workspaceState.get("simstate", {})
+        }
+        this.panel.webview.html = simulatorHTML.replace("@SIMURL@",
             "vscode-resource:" + editor.simUrl)
     }
 
     handleSimulatorMessage(message: any) {
         if (this.messageHandler) this.messageHandler(message);
 
+        const runit = () => {
+            const msg: SimulatorRunMessage = {
+                type: "run",
+                code: this.binaryJS,
+                storedState: this.simState
+                // breakOnStart: true
+            }
+            this.panel.webview.postMessage(msg);
+        }
+
         switch (message.type as string) {
             case "ready":
                 console.log("Simulator ready")
-                this.panel.webview.postMessage({
-                    type: "run",
-                    code: this.binaryJS,
-                    // breakOnStart: true
-                } as SimulatorRunMessage);
+                runit()
                 break;
+            case "simulator":
+                switch (message.command) {
+                    case "restart":
+                        runit()
+                        break
+                    case "setstate":
+                        this.simState[message.stateKey] = message.stateValue
+                        if (this.simStateTimer == null) {
+                            this.simStateTimer = setTimeout(() => {
+                                this.simStateTimer = null
+                                extensionContext.workspaceState.update("simstate", this.simState)
+                            }, 500)
+                        }
+                        break
+                    default:
+                        console.log(JSON.stringify(message))
+                }
+                break
             default:
                 console.log(JSON.stringify(message))
         }
@@ -95,46 +138,4 @@ export class Simulator {
     addDisposable(d: vscode.Disposable) {
         this.disposables.push(d);
     }
-}
-
-function simulatorHTML() {
-    return `<!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>MakeCode Arcade Simulator</title>
-                </head>
-                <body>
-
-                <script>
-                (function() {
-                    console.log("Init");
-                    var frame;
-                    var vscode = acquireVsCodeApi();
-                    document.addEventListener("DOMContentLoaded", function(event) {
-                        console.log("Registering handlers...")
-                        frame = document.getElementById("sim-frame");
-                        window.addEventListener("message", function(m) {
-                            console.log("Got Message", m.origin)
-
-                            if (m.origin === "vscode-resource://") {
-                                console.log("Forward to vscode");
-                                vscode.postMessage(m.data);
-                            }
-                            else if (m.origin === "null") {
-                                console.log("Forward to sim-frame");
-                                frame.contentWindow.postMessage(m.data, "*");
-                            }
-                        });
-                    });
-                }())
-
-                </script>
-                <div style="height:100%; width:100%; padding:50px">
-                    <iframe id="sim-frame" style="position:absolute;top:0;left:0;width:100%;height:100%;" src="@SIMURL@" allowfullscreen="allowfullscreen" sandbox="allow-popups allow-forms allow-scripts allow-same-origin" frameborder="0">
-                    </iframe>
-                </div>
-                </body>
-    </html>`;
 }
