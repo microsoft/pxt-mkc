@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "A VSCode extension for MakeCode",
   "engines": {
-    "vscode": "^1.30.0"
+    "vscode": "^1.38.0"
   },
   "keywords": [
     "pxt",
