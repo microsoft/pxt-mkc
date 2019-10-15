@@ -178,6 +178,25 @@ async function justBuild() {
     }
 }
 
+
+// Returns a function, that, as long as it continues to be invoked, will only
+// trigger every N milliseconds. If `immediate` is passed, trigger the
+// function on the leading edge, instead of the trailing.
+export function throttle(func: (...args: any[]) => any, wait: number, immediate?: boolean): any {
+    let timeout: any;
+    return function (this: any) {
+        let context = this;
+        let args = arguments;
+        let later = function () {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        let callNow = immediate && !timeout;
+        if (!timeout) timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
+}
+
 async function simulateCommand() {
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, async (progress, token) => {
         progress.report({ increment: 10, message: "Loading editor..." })
@@ -190,25 +209,23 @@ async function simulateCommand() {
         if (!sim.Simulator.currentSimulator) {
             watcher = vscode.workspace.createFileSystemWatcher(
                 new vscode.RelativePattern(currentWsFolder(), "*.{ts,json}"), true, false, true);
-            watcher.onDidChange(() => {
+            watcher.onDidChange(throttle(() => {
                 vscode.commands.executeCommand("makecode.simulate");
-            });
+            }, 1000, true));
         }
 
-        console.log("create sim")
-
         sim.Simulator.createOrShow(project.cache);
+        if (watcher) sim.Simulator.currentSimulator.addDisposable(watcher);
 
         progress.report({ increment: 10, message: "Compiling..." })
 
         const res = await justBuild()
-        if (res.diagnostics.length)
-            vscode.window.showInformationMessage("Programs has errors")
+        //if (res.diagnostics.length)
+        //    vscode.window.setStatusBarMessage("Programs has errors")
         setDiags(res.diagnostics)
         const binJs = res.outfiles["binary.js"]
-        if (binJs) {
+        if (res.success && binJs) {
             sim.Simulator.currentSimulator.simulate(binJs, project.editor);
-            if (watcher) sim.Simulator.currentSimulator.addDisposable(watcher);
             progress.report({ increment: 100, message: "Simulation starting" })
         }
     });
