@@ -257,7 +257,7 @@ async function simulateCommand() {
         sim.Simulator.createOrShow(globalContext, project.cache);
         if (watcher) sim.Simulator.currentSimulator.addDisposable(watcher);
 
-        progress.report({ increment: 10, message: "Compiling..." })
+        progress.report({ increment: 20, message: "Compiling..." })
 
         const res = await justBuild()
         //if (res.diagnostics.length)

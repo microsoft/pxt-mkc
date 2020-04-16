@@ -8,12 +8,12 @@
         window.addEventListener("message", function (m) {
             console.log("Got Message", m.origin)
 
-            if (m.origin === "vscode-resource://") {
-                console.log("Forward to vscode");
-                vscode.postMessage(m.data);
-            } else if (m.origin === "null") {
+            if (m.data._fromVscode) {
                 console.log("Forward to sim-frame");
                 frame.contentWindow.postMessage(m.data, "*");
+            } else {
+                console.log("Forward to vscode");
+                vscode.postMessage(m.data);
             }
         });
         ["build", "console"].forEach(id => {

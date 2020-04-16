@@ -8,6 +8,7 @@ interface SimulatorRunMessage {
     type: "run";
     code: string;
     storedState: any;
+    _fromVscode?: boolean;
 }
 
 let extensionContext: vscode.ExtensionContext;
@@ -106,7 +107,8 @@ export class Simulator {
             const msg: SimulatorRunMessage = {
                 type: "run",
                 code: this.binaryJS,
-                storedState: this.simState
+                storedState: this.simState,
+                _fromVscode: true
                 // breakOnStart: true
             }
             this.panel.webview.postMessage(msg);
@@ -162,6 +164,7 @@ export class Simulator {
 
     postMessaage(msg: any) {
         this.panel.webview.postMessage(msg);
+        msg._fromVscode = true;
         console.log("sending", msg)
     }
 
