@@ -154,13 +154,13 @@ export class Ctx {
                 const url = this.editor.cdnUrl + "/compile/" + (opts as any).extinfo.sha + ".hex"
                 const resp = await downloader.requestAsync({ url }).then(r => r, err => null)
                 if (resp == null) {
+                    console.log(`compling C++; this can take a while`);
                     const cdata = (opts as any).extinfo.compileData
                     const cresp = await downloader.requestAsync({
                         url: "https://www.makecode.com/api/compile/extension",
                         data: { data: cdata },
                         allowGzipPost: true
                     })
-                    console.log(cresp)
                     const hexurl = cresp.json.hex
                     const jsonUrl = hexurl.replace(/\.hex/, ".json")
                     for (let i = 0; i < 100; ++i) {
