@@ -144,6 +144,10 @@ export class Project {
         await this.service.setUserAsync(this)
         const res = await this.service.simpleCompileAsync(this.mainPkg, simpleOpts)
 
+        const err = (res as any).errorMessage
+        if (err)
+            throw new Error(err)
+
         await this.saveBuiltFilesAsync(res)
 
         console.log("build " + (Date.now() - t0) + "ms")
