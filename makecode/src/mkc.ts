@@ -137,6 +137,8 @@ export class Project {
         const t0 = Date.now()
         this.mainPkg = null // force reload
 
+        console.log("build started")
+
         await this.maybeWritePxtModulesAsync()
 
         await this.service.setUserAsync(this)

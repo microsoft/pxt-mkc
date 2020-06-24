@@ -1,5 +1,4 @@
 import vm = require("vm");
-import fs = require("fs");
 import mkc = require("./mkc");
 import downloader = require("./downloader");
 
@@ -153,8 +152,38 @@ export class Ctx {
             let existing = await this.editor.cache.getAsync("cpp-" + cppsha)
             if (!existing) {
                 const url = this.editor.cdnUrl + "/compile/" + (opts as any).extinfo.sha + ".hex"
-                const resp = await downloader.requestAsync({ url })
-                existing = resp.buffer
+                const resp = await downloader.requestAsync({ url }).then(r => r, err => null)
+                if (resp == null) {
+                    const cdata = (opts as any).extinfo.compileData
+                    const cresp = await downloader.requestAsync({
+                        url: "https://www.makecode.com/api/compile/extension",
+                        data: { data: cdata },
+                        allowGzipPost: true
+                    })
+                    console.log(cresp)
+                    const hexurl = cresp.json.hex
+                    const jsonUrl = hexurl.replace(/\.hex/, ".json")
+                    for (let i = 0; i < 100; ++i) {
+                        const jresp = await downloader.requestAsync({ url: jsonUrl }).then(r => r, e => null)
+                        if (jresp) {
+                            const json = jresp.json
+                            console.log(`build log ${jsonUrl.replace(/\.json$/, ".log")}`);
+                            if (!json.success) {
+                                console.log(`C++ build failed`);
+                                if (json.mbedresponse && json.mbedresponse.result && json.mbedresponse.result.exception)
+                                    console.log(json.mbedresponse.result.exception);
+                                throw new Error("C++ build failed")
+                            }
+                            else {
+                                const hexresp = await downloader.requestAsync({ url: hexurl })
+                                existing = hexresp.buffer
+                                break
+                            }
+                        }
+                    }
+                } else {
+                    existing = resp.buffer
+                }
                 await this.editor.cache.setAsync("cpp-" + cppsha, existing)
             }
             (opts as any).hexinfo = { hex: existing.toString("utf8").split(/\r?\n/) }
