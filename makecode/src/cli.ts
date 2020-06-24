@@ -12,6 +12,7 @@ interface CmdOptions {
     native?: boolean;
     javaScript?: boolean;
     download?: string;
+    pxtModules?: boolean;
 }
 
 async function downloadProjectAsync(id: string) {
@@ -34,6 +35,7 @@ async function mainCli() {
         .option("-h, --hw <id>", "set hardware for which to compile (implies -n)")
         .option("-j, --java-script", "compile to JavaScript")
         .option("-d, --download <URL>", "download project from share URL")
+        .option("-m, --pxt-modules", "write pxt_modules/*")
         .parse(process.argv)
 
     const opts = commander as CmdOptions
@@ -66,6 +68,8 @@ async function mainCli() {
             return cfg.name.replace(/hw---/, "")
         }
     }
+
+    prj.writePxtModules = !!opts.pxtModules
 
     if (!opts.javaScript || opts.hw)
         opts.native = true

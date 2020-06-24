@@ -47,6 +47,7 @@ export class Project {
     mainPkg: Package
     lastPxtJson: string;
     hwVariant: string;
+    writePxtModules = true
 
     constructor(public directory: string, public cache: Cache = null) {
         if (!this.cache)
@@ -129,8 +130,10 @@ export class Project {
         await this.loadEditorAsync()
         await this.loadPkgAsync()
         const ws = await loader.loadDeps(this.editor, this.mainPkg)
-        if (this.service.lastUser !== this)
+        if (this.writePxtModules && this.service.lastUser !== this) {
+            console.log("writing pxt_modules/*")
             await this.savePxtModulesAsync(ws)
+        }
     }
 
     async buildAsync(simpleOpts = {}) {
