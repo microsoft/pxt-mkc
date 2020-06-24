@@ -186,7 +186,7 @@ export class Ctx {
                 }
                 await this.editor.cache.setAsync("cpp-" + cppsha, existing)
             }
-            (opts as any).hexinfo = { hex: existing.toString("utf8").split(/\r?\n/) }
+            (opts as any).extinfo.hexinfo = { hex: existing.toString("utf8").split(/\r?\n/) }
         }
 
         // opts.breakpoints = true
