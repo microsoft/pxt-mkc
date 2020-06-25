@@ -50,12 +50,13 @@ export function guessMkcJson(prj: mkc.Package) {
 }
 
 async function recLoadAsync(ed: mkc.DownloadedEditor, ws: mkc.Workspace, myid = "this") {
+    const mkcJson = ws.packages["this"].mkcConfig
     const pcfg = ws.packages[myid].config
     const pending: string[] = []
     for (let pkgid of Object.keys(pcfg.dependencies)) {
         const ver = pcfg.dependencies[pkgid]
-        if (pkgid == "hw" && ed.hwVariant)
-            pkgid = "hw---" + ed.hwVariant
+        if (pkgid == "hw" && mkcJson.hwVariant)
+            pkgid = "hw---" + mkcJson.hwVariant
         if (ws.packages[pkgid] !== undefined)
             continue // already loaded
         let text: pxt.Map<string>

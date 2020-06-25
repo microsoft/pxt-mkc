@@ -13,6 +13,7 @@ interface CmdOptions {
     javaScript?: boolean;
     download?: string;
     pxtModules?: boolean;
+    initMkc?: boolean;
 }
 
 async function downloadProjectAsync(id: string) {
@@ -36,6 +37,7 @@ async function mainCli() {
         .option("-j, --java-script", "compile to JavaScript")
         .option("-d, --download <URL>", "download project from share URL")
         .option("-m, --pxt-modules", "write pxt_modules/*")
+        .option("-i, --init-mkc", "initialize mkc.json")
         .parse(process.argv)
 
     const opts = commander as CmdOptions
@@ -43,31 +45,33 @@ async function mainCli() {
     if (opts.download)
         return downloadProjectAsync(opts.download)
 
-    let prj = new mkc.Project(files.findProjectDir())
+    const prj = new mkc.Project(files.findProjectDir())
+
+    await prj.loadEditorAsync()
+
+    prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
+    const hwVariants: pxt.PackageConfig[] = prj.service.runSync("pxt.getHwVariants()")
 
     if (opts.hw) {
-        await prj.loadEditorAsync()
-        prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
-        const cfgs: pxt.PackageConfig[] = prj.service.runSync("pxt.getHwVariants()")
         const hw = opts.hw.toLowerCase()
-        const selected = cfgs.filter(cfg => {
+        const selected = hwVariants.filter(cfg => {
             return cfg.name.toLowerCase() == hw ||
                 hwid(cfg).toLowerCase() == hw ||
                 cfg.card.name.toLowerCase() == hw
         })
         if (!selected.length) {
             console.error(`No such HW id: ${opts.hw}. Available hw:`)
-            for (let cfg of cfgs) {
+            for (let cfg of hwVariants) {
                 console.error(`${hwid(cfg)}, ${cfg.card.name} - ${cfg.card.description}`)
             }
             process.exit(1)
         }
-        prj = new mkc.Project(files.findProjectDir())
         prj.hwVariant = hwid(selected[0])
+    }
 
-        function hwid(cfg: pxt.PackageConfig) {
-            return cfg.name.replace(/hw---/, "")
-        }
+    if (opts.initMkc) {
+        console.log("saving mkc.json")
+        fs.writeFileSync("mkc.json", JSON.stringify(prj.mainPkg.mkcConfig, null, 4))
     }
 
     prj.writePxtModules = !!opts.pxtModules
@@ -77,6 +81,11 @@ async function mainCli() {
     else
         opts.native = false
 
+    if (opts.native && hwVariants.length && !prj.mainPkg.mkcConfig.hwVariant) {
+        console.log("selecting first hw-variant: " + hwid(hwVariants[0]))
+        prj.hwVariant = hwid(hwVariants[0])
+    }
+
     const simpleOpts = {
         native: opts.native
     }
@@ -84,6 +93,11 @@ async function mainCli() {
     await prj.buildAsync(simpleOpts)
 
     console.log("all done")
+
+
+    function hwid(cfg: pxt.PackageConfig) {
+        return cfg.name.replace(/hw---/, "")
+    }
 }
 
 mainCli()

@@ -1,6 +1,7 @@
 import vm = require("vm");
 import mkc = require("./mkc");
 import downloader = require("./downloader");
+import { writeFileSync } from "fs";
 
 const prep = `
 
@@ -100,8 +101,6 @@ export class Ctx {
         this.runScript(ed.pxtWorkerJs, ed.website + "/pxtworker.js")
         this.runScript(prep, "prep")
         this.runFunctionSync("pxt.setupSimpleCompile", [])
-        if (ed.hwVariant)
-            this.runFunctionSync("pxt.setHwVariant", [ed.hwVariant])
     }
 
     runScript(content: string, filename: string) {
@@ -156,6 +155,7 @@ export class Ctx {
                 if (resp == null) {
                     console.log(`compling C++; this can take a while`);
                     const cdata = (opts as any).extinfo.compileData
+                    // writeFileSync("compilereq.json", JSON.stringify(JSON.parse(new Buffer(cdata, "base64").toString()), null, 4))
                     const cresp = await downloader.requestAsync({
                         url: "https://www.makecode.com/api/compile/extension",
                         data: { data: cdata },
@@ -196,6 +196,7 @@ export class Ctx {
     getOptions(prj: mkc.Package, simpleOpts: any = {}): Promise<CompileOptions> {
         this.sandbox._opts = simpleOpts
         this.sandbox._scriptText = prj.files
+        this.runFunctionSync("pxt.setHwVariant", [prj.mkcConfig.hwVariant || null])
         return this.runAsync("pxt.simpleGetCompileOptionsAsync(_scriptText, _opts)")
     }
 

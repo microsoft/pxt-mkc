@@ -8,6 +8,7 @@ export import simserver = require("./simserver")
 
 export interface MkcJson {
     targetWebsite: string;
+    hwVariant?: string;
 }
 
 export interface Cache {
@@ -25,7 +26,6 @@ export interface DownloadedEditor {
     website: string;
     pxtWorkerJs: string;
     targetJson: any;
-    hwVariant?: string;
 }
 
 export interface Package {
@@ -46,12 +46,21 @@ export class Project {
     service: service.Ctx
     mainPkg: Package
     lastPxtJson: string;
-    hwVariant: string;
+    private _hwVariant: string;
     writePxtModules = true
 
     constructor(public directory: string, public cache: Cache = null) {
         if (!this.cache)
             this.cache = files.mkHomeCache()
+    }
+
+    get hwVariant() {
+        return this._hwVariant
+    }
+    set hwVariant(value: string) {
+        this._hwVariant = value
+        if (this.mainPkg)
+            this.mainPkg.mkcConfig.hwVariant = value
     }
 
     protected readFileAsync(filename: string) {
@@ -90,6 +99,9 @@ export class Project {
         const prj = await this.readPackageAsync()
         loader.guessMkcJson(prj)
 
+        if (this.hwVariant)
+            prj.mkcConfig.hwVariant = this.hwVariant
+
         // TODO handle require("lzma") in worker
         prj.config.binaryonly = true
         const pxtJson = prj.files["pxt.json"] = JSON.stringify(prj.config, null, 4)
@@ -115,7 +127,6 @@ export class Project {
 
         const newEditor = await downloader.downloadAsync(
             this.cache, this.mainPkg.mkcConfig.targetWebsite, !forceUpdate)
-        newEditor.hwVariant = this.hwVariant
 
         if (!this.editor || newEditor.versionNumber != this.editor.versionNumber) {
             this.editor = newEditor
