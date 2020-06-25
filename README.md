@@ -15,6 +15,27 @@ In a folder with `pxt.json` file, run:
 ```
 
 You can also pass `--hw f4`, `--hw d5` etc. Try `--hw help` to get a list.
+Use `makecode -j` to build JavaScript (it defaults to native).
+
+The tool is configured with optional `mkc.json` file. Example:
+
+```json
+{
+    "targetWebsite": "https://arcade.makecode.com/beta",
+    "hwVariant": "samd51",
+    "links": {
+        "jacdac-services": "../../pxt-jacdac-services"
+    }
+}
+```
+
+All fields are optional.
+
+* **targetWebsite** says where to take the compiler from; if you omit it, it will be guessed based on packages used by `pxt.json`;
+  you can point this to a live or beta version of the editor, as well as to a specific version (including SHA-indexed uploads
+  generated during PXT target builds)
+* **hwVariant** specifies default hardware variant (currently only used in Arcade); try `--hw help` command line option to list variants
+* **links** overrides specific packages; these can be github packages or built-in packages
 
 ## Contributing
 
