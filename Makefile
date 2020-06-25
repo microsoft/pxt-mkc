@@ -1,8 +1,8 @@
 all:
 	npm run compile
 
-bump:
+bump: all
 	npm version patch
 
-pub: all
+pub: bump
 	npm publish
