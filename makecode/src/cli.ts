@@ -81,9 +81,12 @@ async function mainCli() {
     else
         opts.native = false
 
-    if (opts.native && hwVariants.length && !prj.mainPkg.mkcConfig.hwVariant) {
-        console.log("selecting first hw-variant: " + hwid(hwVariants[0]))
-        prj.hwVariant = hwid(hwVariants[0])
+    if (opts.native && hwVariants.length) {
+        if (!prj.mainPkg.mkcConfig.hwVariant) {
+            console.log("selecting first hw-variant: " + hwid(hwVariants[0]))
+            prj.hwVariant = hwid(hwVariants[0])
+        }
+        console.log(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant}`)
     }
 
     const simpleOpts = {
