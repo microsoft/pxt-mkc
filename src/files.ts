@@ -68,9 +68,12 @@ export function mkHomeCache(dir?: string): mkc.Cache {
     }
 }
 
-function mkdirp(dirname: string) {
-    if (!fs.existsSync(dirname))
+function mkdirp(dirname: string, lev = 5) {
+    if (!fs.existsSync(dirname)) {
+        if (lev > 0)
+            mkdirp(path.resolve(dirname, ".."), lev - 1)
         fs.mkdirSync(dirname)
+    }
 }
 
 async function writeFilesAsync(built: string, outfiles: pxt.Map<string>, log = false) {
@@ -84,8 +87,8 @@ async function writeFilesAsync(built: string, outfiles: pxt.Map<string>, log = f
     }
 }
 
-export async function saveBuiltFilesAsync(dir: string, res: mkc.service.CompileResult) {
-    await writeFilesAsync(path.join(dir, "built"), res.outfiles || {}, true)
+export async function saveBuiltFilesAsync(dir: string, res: mkc.service.CompileResult, folder = "built") {
+    await writeFilesAsync(path.join(dir, folder), res.outfiles || {}, true)
 }
 
 export async function savePxtModulesAsync(dir: string, ws: mkc.Workspace) {

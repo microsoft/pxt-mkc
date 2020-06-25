@@ -49,6 +49,7 @@ export class Project {
     lastPxtJson: string;
     private _hwVariant: string;
     writePxtModules = true
+    outputPrefix = "built"
 
     constructor(public directory: string, public cache: Cache = null) {
         if (!this.cache)
@@ -69,7 +70,7 @@ export class Project {
     }
 
     protected saveBuiltFilesAsync(res: service.CompileResult) {
-        return files.saveBuiltFilesAsync(this.directory, res)
+        return files.saveBuiltFilesAsync(this.directory, res, this.outputPrefix)
     }
 
     protected savePxtModulesAsync(ws: Workspace) {

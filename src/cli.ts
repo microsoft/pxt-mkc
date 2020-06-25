@@ -14,6 +14,7 @@ interface CmdOptions {
     download?: string;
     pxtModules?: boolean;
     initMkc?: boolean;
+    alwaysBuilt?: boolean;
 }
 
 async function downloadProjectAsync(id: string) {
@@ -38,6 +39,7 @@ async function mainCli() {
         .option("-d, --download <URL>", "download project from share URL")
         .option("-m, --pxt-modules", "write pxt_modules/*")
         .option("-i, --init-mkc", "initialize mkc.json")
+        .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .parse(process.argv)
 
     const opts = commander as CmdOptions
@@ -87,6 +89,8 @@ async function mainCli() {
             prj.hwVariant = hwid(hwVariants[0])
         }
         console.log(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant}`)
+        if (!opts.alwaysBuilt)
+            prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
     }
 
     const simpleOpts = {
