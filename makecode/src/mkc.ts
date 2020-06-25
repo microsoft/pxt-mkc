@@ -9,6 +9,7 @@ export import simserver = require("./simserver")
 export interface MkcJson {
     targetWebsite: string;
     hwVariant?: string;
+    links?: pxt.Map<string>;
 }
 
 export interface Cache {
@@ -165,9 +166,11 @@ export class Project {
         await this.saveBuiltFilesAsync(res)
 
         console.log("build " + (Date.now() - t0) + "ms")
+
         //delete res.outfiles
         //delete (res as any).procDebugInfo
         //console.log(res)
+
         return res
     }
 }

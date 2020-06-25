@@ -62,7 +62,9 @@ async function recLoadAsync(ed: mkc.DownloadedEditor, ws: mkc.Workspace, myid = 
         let text: pxt.Map<string>
         let fromTargetJson = false
         pending.push(pkgid)
-        if (ver == "*" || /^file:/.test(ver)) {
+        if (mkcJson.links && mkcJson.links[pkgid]) {
+            text = (await mkc.files.readProjectAsync(mkcJson.links[pkgid])).files
+        } else if (ver == "*" || /^file:/.test(ver)) {
             text = ed.targetJson.bundledpkgs[pkgid]
             if (!text)
                 throw new Error(`Package ${pkgid} not found in target.json`)
