@@ -47,6 +47,7 @@ async function mainCli() {
 
     if (opts.hw) {
         await prj.loadEditorAsync()
+        prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
         const cfgs: pxt.PackageConfig[] = prj.service.runSync("pxt.getHwVariants()")
         const hw = opts.hw.toLowerCase()
         const selected = cfgs.filter(cfg => {
