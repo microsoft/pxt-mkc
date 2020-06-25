@@ -15,6 +15,7 @@ interface CmdOptions {
     pxtModules?: boolean;
     initMkc?: boolean;
     alwaysBuilt?: boolean;
+    update?: boolean;
 }
 
 async function downloadProjectAsync(id: string) {
@@ -39,6 +40,7 @@ async function mainCli() {
         .option("-d, --download <URL>", "download project from share URL")
         .option("-m, --pxt-modules", "write pxt_modules/*")
         .option("-i, --init-mkc", "initialize mkc.json")
+        .option("-u, --update", "check for web-app updates")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .parse(process.argv)
 
@@ -49,7 +51,7 @@ async function mainCli() {
 
     const prj = new mkc.Project(files.findProjectDir())
 
-    await prj.loadEditorAsync()
+    await prj.loadEditorAsync(!!opts.update)
 
     prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
     const hwVariants: pxt.PackageConfig[] = prj.service.runSync("pxt.getHwVariants()")
