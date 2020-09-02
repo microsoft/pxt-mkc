@@ -36,7 +36,7 @@ export function guessMkcJson(prj: mkc.Package) {
 
     const theTarget = descriptors.filter(d => d.id == ver.targetId)[0]
         || descriptors.filter(d => d.website == ver.targetWebsite)[0]
-        || descriptors.filter(d => !!prj.config.dependencies[d.corepkg])[0]
+        || descriptors.filter(d => !!prj.config?.testDependencies?.[d.corepkg] || !!prj.config.dependencies[d.corepkg])[0]
 
     if (!mkc.targetWebsite) {
         if (ver.targetWebsite) {
@@ -47,6 +47,8 @@ export function guessMkcJson(prj: mkc.Package) {
             throw new Error("Cannot determine target; please use mkc.json to specify")
         }
     }
+
+    console.log(`Using ${mkc.targetWebsite}`)
 }
 
 async function recLoadAsync(ed: mkc.DownloadedEditor, ws: mkc.Workspace, myid = "this") {
