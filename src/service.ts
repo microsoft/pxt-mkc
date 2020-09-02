@@ -83,7 +83,9 @@ export class Ctx {
             scriptText: {},
             global: null,
             console: {
-                log: (s: string) => console.log(s)
+                log: (s: string) => console.log(s),
+                debug: (s: string) => console.log(s),
+                warn: (s: string) => console.log(s),
             }
         };
 
@@ -153,8 +155,11 @@ export class Ctx {
                 const url = this.editor.cdnUrl + "/compile/" + (opts as any).extinfo.sha + ".hex"
                 const resp = await downloader.requestAsync({ url }).then(r => r, err => null)
                 if (resp == null) {
-                    console.log(`compling C++; this can take a while`);
+                    console.log(`compiling C++; this can take a while`);
                     const cdata = (opts as any).extinfo.compileData
+                    const cdataObj:any = JSON.parse(new Buffer(cdata, "base64").toString())
+                    if (!cdataObj.config)
+                        throw new Error(`Compile config missing in C++; compile variant likely misconfigured`)
                     // writeFileSync("compilereq.json", JSON.stringify(JSON.parse(new Buffer(cdata, "base64").toString()), null, 4))
                     const cresp = await downloader.requestAsync({
                         url: "https://www.makecode.com/api/compile/extension",
