@@ -51,12 +51,23 @@ export function guessMkcJson(prj: mkc.Package) {
     console.log(`Using ${mkc.targetWebsite}`)
 }
 
+function merge(trg: any, src: any) {
+    for (const k of Object.keys(src))
+        trg[k] = src[k]
+}
+
 async function recLoadAsync(ed: mkc.DownloadedEditor, ws: mkc.Workspace, myid = "this") {
     const mkcJson = ws.packages["this"].mkcConfig
     const pcfg = ws.packages[myid].config
     const pending: string[] = []
-    for (let pkgid of Object.keys(pcfg.dependencies)) {
-        const ver = pcfg.dependencies[pkgid]
+    let deps = pcfg.dependencies
+    if (myid == "this" && pcfg.testDependencies) {
+        deps = {}
+        merge(deps, pcfg.dependencies)
+        merge(deps, pcfg.testDependencies)
+    }
+    for (let pkgid of Object.keys(deps)) {
+        const ver = deps[pkgid]
         if (pkgid == "hw" && mkcJson.hwVariant)
             pkgid = "hw---" + mkcJson.hwVariant
         if (ws.packages[pkgid] !== undefined)
