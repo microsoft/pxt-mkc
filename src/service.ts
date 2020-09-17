@@ -67,6 +67,7 @@ export interface CompileResult {
 export class Ctx {
     sandbox: any;
     lastUser: unknown;
+    private makerHw = false;
 
     constructor(public editor: mkc.DownloadedEditor) {
         this.sandbox = {
@@ -157,10 +158,10 @@ export class Ctx {
                 if (resp == null) {
                     console.log(`compiling C++; this can take a while`);
                     const cdata = (opts as any).extinfo.compileData
-                    const cdataObj:any = JSON.parse(new Buffer(cdata, "base64").toString())
+                    const cdataObj: any = JSON.parse(Buffer.from(cdata, "base64").toString())
                     if (!cdataObj.config)
                         throw new Error(`Compile config missing in C++; compile variant likely misconfigured`)
-                    // writeFileSync("compilereq.json", JSON.stringify(JSON.parse(new Buffer(cdata, "base64").toString()), null, 4))
+                    // writeFileSync("compilereq.json", JSON.stringify(JSON.parse(Buffer.from(cdata, "base64").toString()), null, 4))
                     const cresp = await downloader.requestAsync({
                         url: "https://www.makecode.com/api/compile/extension",
                         data: { data: cdata },
@@ -200,8 +201,17 @@ export class Ctx {
 
     getOptions(prj: mkc.Package, simpleOpts: any = {}): Promise<CompileOptions> {
         this.sandbox._opts = simpleOpts
-        this.sandbox._scriptText = prj.files
-        this.runFunctionSync("pxt.setHwVariant", [prj.mkcConfig.hwVariant || ""])
+        if (this.makerHw) {
+            const tmp = Object.assign({}, prj.files)
+            const cfg: pxt.PackageConfig = JSON.parse(tmp["pxt.json"])
+            if (prj.mkcConfig.hwVariant)
+                cfg.dependencies[prj.mkcConfig.hwVariant] = "*"
+            tmp["pxt.json"] = JSON.stringify(cfg, null, 4)
+            this.sandbox._scriptText = tmp
+        } else {
+            this.sandbox._scriptText = prj.files
+            this.runFunctionSync("pxt.setHwVariant", [prj.mkcConfig.hwVariant || ""])
+        }
         return this.runAsync("pxt.simpleGetCompileOptionsAsync(_scriptText, _opts)")
     }
 
@@ -219,5 +229,26 @@ export class Ctx {
 
     serviceOp(op: string, data: any) {
         return this.runFunctionSync("pxtc.service.performOperation", [op, data])
+    }
+
+    get hwVariants() {
+        let hwVariants: pxt.PackageConfig[] = this.runSync("pxt.getHwVariants()")
+
+        if (hwVariants.length == 0) {
+            hwVariants = this.runSync("Object.values(pxt.appTarget.bundledpkgs).map(pkg => JSON.parse(pkg['pxt.json']))")
+            hwVariants = hwVariants.filter(pkg => !/prj/.test(pkg.name) && !!pkg.core)
+            for (const pkg of hwVariants) {
+                pkg.card = {
+                    name: "",
+                    description: pkg.description
+                }
+            }
+            if (hwVariants.length > 1)
+                this.makerHw = true
+            else
+                hwVariants = []
+        }
+
+        return hwVariants
     }
 }

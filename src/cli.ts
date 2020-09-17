@@ -59,7 +59,7 @@ async function mainCli() {
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
 
     prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
-    const hwVariants: pxt.PackageConfig[] = prj.service.runSync("pxt.getHwVariants()")
+    const hwVariants = prj.service.hwVariants
 
     if (opts.hw) {
         const hw = opts.hw.toLowerCase()
