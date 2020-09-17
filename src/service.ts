@@ -201,7 +201,7 @@ export class Ctx {
     getOptions(prj: mkc.Package, simpleOpts: any = {}): Promise<CompileOptions> {
         this.sandbox._opts = simpleOpts
         this.sandbox._scriptText = prj.files
-        this.runFunctionSync("pxt.setHwVariant", [prj.mkcConfig.hwVariant || null])
+        this.runFunctionSync("pxt.setHwVariant", [prj.mkcConfig.hwVariant || ""])
         return this.runAsync("pxt.simpleGetCompileOptionsAsync(_scriptText, _opts)")
     }
 
