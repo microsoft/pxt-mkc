@@ -3,6 +3,7 @@ import * as fs from "fs"
 import * as mkc from "./mkc"
 import * as loader from "./loader"
 import * as files from "./files"
+import * as bump from "./bump"
 import * as downloader from "./downloader"
 import * as service from "./service"
 import { program as commander } from "commander"
@@ -17,6 +18,7 @@ interface CmdOptions {
     alwaysBuilt?: boolean;
     update?: boolean;
     debug?: boolean;
+    bump?: boolean;
 }
 
 async function downloadProjectAsync(id: string) {
@@ -42,6 +44,7 @@ async function mainCli() {
         .option("-m, --pxt-modules", "write pxt_modules/*")
         .option("-i, --init-mkc", "initialize mkc.json")
         .option("-u, --update", "check for web-app updates")
+        .option("-b, --bump", "bump version in pxt.json and git")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .option("--debug", "enable debug output from PXT")
         .parse(process.argv)
@@ -57,6 +60,11 @@ async function mainCli() {
 
     if (opts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
+
+    if (opts.bump) {
+        await bump.bumpAsync(prj)
+        process.exit(0)
+    }
 
     prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
     const hwVariants = prj.service.hwVariants

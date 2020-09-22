@@ -1,7 +1,6 @@
 import vm = require("vm");
 import mkc = require("./mkc");
 import downloader = require("./downloader");
-import { writeFileSync } from "fs";
 
 const prep = `
 

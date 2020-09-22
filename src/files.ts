@@ -76,7 +76,7 @@ function mkdirp(dirname: string, lev = 5) {
     }
 }
 
-async function writeFilesAsync(built: string, outfiles: pxt.Map<string>, log = false) {
+export async function writeFilesAsync(built: string, outfiles: pxt.Map<string>, log = false) {
     mkdirp(built)
     for (let fn of Object.keys(outfiles)) {
         if (fn.indexOf("/") >= 0)

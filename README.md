@@ -37,6 +37,11 @@ All fields are optional.
 * **hwVariant** specifies default hardware variant (currently only used in Arcade); try `--hw help` command line option to list variants
 * **links** overrides specific packages; these can be github packages or built-in packages
 
+## TODO
+
+* [ ] allow updating `shims.d.ts`/`enums.d.ts`
+* [x] add `makecode --bump`
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
