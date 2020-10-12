@@ -99,10 +99,7 @@ async function mainCli() {
         opts.native = false
 
     if (opts.native && hwVariants.length) {
-        if (!prj.mainPkg.mkcConfig.hwVariant) {
-            console.log("selecting first hw-variant: " + hwid(hwVariants[0]))
-            prj.hwVariant = hwid(hwVariants[0])
-        }
+        prj.guessHwVariant()
         console.log(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant}`)
         if (!opts.alwaysBuilt)
             prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant

@@ -65,6 +65,28 @@ export class Project {
             this.mainPkg.mkcConfig.hwVariant = value
     }
 
+    guessHwVariant() {
+        if (this.mainPkg.mkcConfig.hwVariant)
+            return
+
+        const variants = this.service.hwVariants
+        const cfg = this.mainPkg.config
+        for (const v of variants) {
+            if (cfg.dependencies[v.name] || cfg.testDependencies?.[v.name]) {
+                console.log("guessing hw-variant: " + hwid(v))
+                this.hwVariant = hwid(v)
+                return
+            }
+        }
+
+        console.log("selecting first hw-variant: " + hwid(variants[0]))
+        this.hwVariant = hwid(variants[0])
+
+        function hwid(cfg: pxt.PackageConfig) {
+            return cfg.name.replace(/hw---/, "")
+        }
+    }
+
     protected readFileAsync(filename: string) {
         return files.readPrjFileAsync(this.directory, filename)
     }
