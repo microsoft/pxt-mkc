@@ -2,6 +2,7 @@ import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as mkc from "./mkc"
 import * as files from "./files"
+import { httpGetJsonAsync } from './downloader';
 
 export interface SpawnOptions {
     cmd: string;
@@ -105,4 +106,23 @@ export async function bumpAsync(prj: mkc.Project) {
     await runGitAsync("tag", "v" + newV)
     await runGitAsync("push")
     await runGitAsync("push", "--tags")
+
+    const urlinfo = await spawnWithPipeAsync({
+        cmd: "git",
+        args: ["remote", "get-url", "origin"],
+        pipe: true
+    }).then(v => v, err => {
+        console.log(err)
+        return null as Buffer
+    })
+    const url = urlinfo?.toString("utf8")?.trim()
+    if (url) {
+        const slug = url.replace(/.*github\.com\//i, "")
+        if (slug != url) {
+            console.log(`Github slug ${slug}; refreshing makecode.com cache`)
+            const res = await httpGetJsonAsync("https://makecode.com/api/gh/" + slug + "/refs?nocache=1")
+            const sha = res?.refs?.["refs/tags/v" + newV]
+            console.log(`refreshed ${newV} -> ${sha}`)
+        }
+    }
 }
