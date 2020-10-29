@@ -76,7 +76,7 @@ async function recLoadAsync(ed: mkc.DownloadedEditor, ws: mkc.Workspace, myid = 
         let fromTargetJson = false
         pending.push(pkgid)
         if (mkcJson.links && mkcJson.links[pkgid]) {
-            text = (await mkc.files.readProjectAsync(mkcJson.links[pkgid])).files
+            text = await mkc.files.readProjectAsync(mkcJson.links[pkgid])
         } else if (ver == "*" || /^file:/.test(ver)) {
             text = ed.targetJson.bundledpkgs[pkgid]
             if (!text)

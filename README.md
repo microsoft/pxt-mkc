@@ -37,6 +37,8 @@ All fields are optional.
 * **hwVariant** specifies default hardware variant (currently only used in Arcade); try `--hw help` command line option to list variants
 * **links** overrides specific packages; these can be github packages or built-in packages
 
+You can use `--config-path` to build for a different configuration, eg. `makecode --config-path mkc-arcade.json`.
+
 ## TODO
 
 * [ ] allow updating `shims.d.ts`/`enums.d.ts`

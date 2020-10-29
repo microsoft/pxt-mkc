@@ -19,6 +19,7 @@ interface CmdOptions {
     update?: boolean;
     debug?: boolean;
     bump?: boolean;
+    configPath?: string;
 }
 
 async function downloadProjectAsync(id: string) {
@@ -41,10 +42,11 @@ async function mainCli() {
         .option("-h, --hw <id>", "set hardware for which to compile (implies -n)")
         .option("-j, --java-script", "compile to JavaScript")
         .option("-d, --download <URL>", "download project from share URL")
-        .option("-m, --pxt-modules", "write pxt_modules/*")
         .option("-i, --init-mkc", "initialize mkc.json")
         .option("-u, --update", "check for web-app updates")
         .option("-b, --bump", "bump version in pxt.json and git")
+        .option("--config-path <file>", "set configuration file path", "mkc.json")
+        .option("--pxt-modules", "write pxt_modules/*")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .option("--debug", "enable debug output from PXT")
         .parse(process.argv)
@@ -55,6 +57,7 @@ async function mainCli() {
         return downloadProjectAsync(opts.download)
 
     const prj = new mkc.Project(files.findProjectDir())
+    prj.mkcConfigPath = opts.configPath
 
     await prj.loadEditorAsync(!!opts.update)
 

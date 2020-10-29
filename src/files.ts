@@ -29,7 +29,7 @@ export async function readProjectAsync(dir: string) {
     const pxtJson = await readAsync(path.join(dir, "pxt.json"), "utf8")
     const res: mkc.Package = {
         config: JSON.parse(pxtJson),
-        mkcConfig: JSON.parse(await readAsync(path.join(dir, "mkc.json"), "utf8").then(s => s, err => "{}")),
+        mkcConfig: null, // JSON.parse(await readAsync(path.join(dir, "mkc.json"), "utf8").then(s => s, err => "{}")),
         files: {
             "pxt.json": pxtJson
         }
@@ -39,7 +39,7 @@ export async function readProjectAsync(dir: string) {
             continue
         res.files[f] = await readAsync(path.join(dir, f), "utf8")
     }
-    return res
+    return res.files
 }
 
 function homePxtDir() {
