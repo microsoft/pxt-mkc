@@ -10,6 +10,7 @@ export interface MkcJson {
     targetWebsite: string;
     hwVariant?: string;
     links?: pxt.Map<string>;
+    overrides?: Partial<pxt.PackageConfig>;
 }
 
 export interface Cache {
@@ -41,6 +42,15 @@ export interface Workspace {
 }
 
 export let cloudRoot = "https://makecode.com/api/"
+
+
+function jsonCopyFrom<T>(trg: T, src: T) {
+    let v = JSON.parse(JSON.stringify(src))
+    for (let k of Object.keys(src)) {
+        (trg as any)[k] = (v as any)[k]
+    }
+}
+
 
 export class Project {
     editor: DownloadedEditor
@@ -108,6 +118,10 @@ export class Project {
             files: {
                 "pxt.json": pxtJson
             }
+        }
+        if (res.mkcConfig.overrides) {
+            jsonCopyFrom(res.config, res.mkcConfig.overrides)
+            res.files["pxt.json"] = JSON.stringify(res.config, null, 4)
         }
         for (let f of res.config.files.concat(res.config.testFiles || [])) {
             if (f.indexOf("/") >= 0)
