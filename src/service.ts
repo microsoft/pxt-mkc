@@ -6,6 +6,23 @@ const prep = `
 
 `
 
+export interface HexInfo {
+    hex: string[];
+}
+
+export interface ExtensionInfo {
+    sha: string;
+    compileData: string;
+    skipCloudBuild?: boolean;
+    hexinfo?: HexInfo;
+    appVariant?: string;
+}
+
+export interface ExtensionTarget {
+    extinfo: ExtensionInfo
+    // target: CompileTarget
+}
+
 export interface CompileOptions {
     fileSystem: pxt.Map<string>;
     testMode?: boolean;
@@ -26,6 +43,10 @@ export interface CompileOptions {
     skipPxtModulesEmit?: boolean; // skip re-emit of pxt_modules/*
     embedMeta?: string;
     embedBlob?: string; // base64
+
+    extinfo?: ExtensionInfo;
+    otherMultiVariants?: ExtensionTarget[];
+
 }
 
 export enum DiagnosticCategory {
@@ -64,13 +85,15 @@ export interface CompileResult {
 }
 
 export class Ctx {
-    sandbox: any;
+    sandbox: vm.Context;
     lastUser: unknown;
     private makerHw = false;
 
     constructor(public editor: mkc.DownloadedEditor) {
         this.sandbox = {
-            eval: undefined,
+            eval: (str: string) => vm.runInContext(str, this.sandbox, {
+                filename: "eval"
+            }),
             Function: undefined,
             setTimeout: setTimeout,
             clearInterval: clearInterval,
@@ -90,7 +113,7 @@ export class Ctx {
         };
 
         this.sandbox.global = this.sandbox;
-        (vm as any).createContext(this.sandbox, {
+        vm.createContext(this.sandbox, {
             codeGeneration: {
                 strings: false,
                 wasm: false
@@ -145,53 +168,59 @@ export class Ctx {
         }
     }
 
+
+    private async compileExtInfo(extinfo: ExtensionInfo) {
+        let existing = await this.editor.cache.getAsync("cpp-" + extinfo.sha)
+        if (!existing) {
+            const url = this.editor.cdnUrl + "/compile/" + extinfo.sha + ".hex"
+            const resp = await downloader.requestAsync({ url }).then(r => r, err => null)
+            if (resp == null) {
+                console.log(`compiling C++; this can take a while`);
+                const cdata = extinfo.compileData
+                const cdataObj: any = JSON.parse(Buffer.from(cdata, "base64").toString())
+                if (!cdataObj.config)
+                    throw new Error(`Compile config missing in C++; compile variant likely misconfigured`)
+                // writeFileSync("compilereq.json", JSON.stringify(JSON.parse(Buffer.from(cdata, "base64").toString()), null, 4))
+                const cresp = await downloader.requestAsync({
+                    url: "https://www.makecode.com/api/compile/extension",
+                    data: { data: cdata },
+                    allowGzipPost: true
+                })
+                const hexurl = cresp.json.hex
+                const jsonUrl = hexurl.replace(/\.hex/, ".json")
+                for (let i = 0; i < 100; ++i) {
+                    const jresp = await downloader.requestAsync({ url: jsonUrl }).then(r => r, e => null)
+                    if (jresp) {
+                        const json = jresp.json
+                        console.log(`build log ${jsonUrl.replace(/\.json$/, ".log")}`);
+                        if (!json.success) {
+                            console.log(`C++ build failed`);
+                            if (json.mbedresponse && json.mbedresponse.result && json.mbedresponse.result.exception)
+                                console.log(json.mbedresponse.result.exception);
+                            throw new Error("C++ build failed")
+                        }
+                        else {
+                            const hexresp = await downloader.requestAsync({ url: hexurl })
+                            existing = hexresp.buffer
+                            break
+                        }
+                    }
+                }
+            } else {
+                existing = resp.buffer
+            }
+            await this.editor.cache.setAsync("cpp-" + extinfo.sha, existing)
+        }
+        extinfo.hexinfo = { hex: existing.toString("utf8").split(/\r?\n/) }
+    }
+
     async simpleCompileAsync(prj: mkc.Package, simpleOpts: any = {}): Promise<CompileResult> {
         const opts = await this.getOptions(prj, simpleOpts)
 
-        const cppsha: string = (opts as any).extinfo ? (opts as any).extinfo.sha : null
-        if (simpleOpts.native && cppsha) {
-            let existing = await this.editor.cache.getAsync("cpp-" + cppsha)
-            if (!existing) {
-                const url = this.editor.cdnUrl + "/compile/" + (opts as any).extinfo.sha + ".hex"
-                const resp = await downloader.requestAsync({ url }).then(r => r, err => null)
-                if (resp == null) {
-                    console.log(`compiling C++; this can take a while`);
-                    const cdata = (opts as any).extinfo.compileData
-                    const cdataObj: any = JSON.parse(Buffer.from(cdata, "base64").toString())
-                    if (!cdataObj.config)
-                        throw new Error(`Compile config missing in C++; compile variant likely misconfigured`)
-                    // writeFileSync("compilereq.json", JSON.stringify(JSON.parse(Buffer.from(cdata, "base64").toString()), null, 4))
-                    const cresp = await downloader.requestAsync({
-                        url: "https://www.makecode.com/api/compile/extension",
-                        data: { data: cdata },
-                        allowGzipPost: true
-                    })
-                    const hexurl = cresp.json.hex
-                    const jsonUrl = hexurl.replace(/\.hex/, ".json")
-                    for (let i = 0; i < 100; ++i) {
-                        const jresp = await downloader.requestAsync({ url: jsonUrl }).then(r => r, e => null)
-                        if (jresp) {
-                            const json = jresp.json
-                            console.log(`build log ${jsonUrl.replace(/\.json$/, ".log")}`);
-                            if (!json.success) {
-                                console.log(`C++ build failed`);
-                                if (json.mbedresponse && json.mbedresponse.result && json.mbedresponse.result.exception)
-                                    console.log(json.mbedresponse.result.exception);
-                                throw new Error("C++ build failed")
-                            }
-                            else {
-                                const hexresp = await downloader.requestAsync({ url: hexurl })
-                                existing = hexresp.buffer
-                                break
-                            }
-                        }
-                    }
-                } else {
-                    existing = resp.buffer
-                }
-                await this.editor.cache.setAsync("cpp-" + cppsha, existing)
-            }
-            (opts as any).extinfo.hexinfo = { hex: existing.toString("utf8").split(/\r?\n/) }
+        if (simpleOpts.native && opts?.extinfo?.sha) {
+            const infos = [opts.extinfo].concat((opts.otherMultiVariants || []).map(x => x.extinfo))
+            for (const info of infos)
+                await this.compileExtInfo(info)
         }
 
         // opts.breakpoints = true
