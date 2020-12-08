@@ -47,8 +47,6 @@ export function guessMkcJson(prj: mkc.Package) {
             throw new Error("Cannot determine target; please use mkc.json to specify")
         }
     }
-
-    console.log(`Using ${mkc.targetWebsite}`)
 }
 
 function merge(trg: any, src: any) {

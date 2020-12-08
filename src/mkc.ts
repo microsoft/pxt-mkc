@@ -130,6 +130,8 @@ export class Project {
                 continue
             res.files[f] = await this.readFileAsync(f)
         }
+        if (res.files["main.ts"] === undefined)
+            res.files["main.ts"] = "" // avoid bogus warning from PXT
         return res
     }
 
@@ -212,5 +214,17 @@ export class Project {
         //console.log(res)
 
         return res
+    }
+
+    mkChildProject(folder: string) {
+        const prj = new Project(folder, this.cache)
+        prj.service = this.service
+        prj.mkcConfig = this.mkcConfig
+        if (this._hwVariant)
+            prj.hwVariant = this._hwVariant
+        prj.outputPrefix = this.outputPrefix
+        prj.writePxtModules = this.writePxtModules
+        prj.editor = this.editor
+        return prj
     }
 }

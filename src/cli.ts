@@ -1,4 +1,5 @@
 import * as fs from "fs"
+import * as path from "path"
 
 import * as mkc from "./mkc"
 import * as loader from "./loader"
@@ -7,6 +8,7 @@ import * as bump from "./bump"
 import * as downloader from "./downloader"
 import * as service from "./service"
 import { program as commander } from "commander"
+import { brotliCompressSync } from "zlib"
 
 interface CmdOptions {
     hw?: string;
@@ -20,6 +22,7 @@ interface CmdOptions {
     debug?: boolean;
     bump?: boolean;
     configPath?: string;
+    monoRepo?: boolean;
 }
 
 async function downloadProjectAsync(id: string) {
@@ -67,6 +70,7 @@ async function mainCli() {
         .option("-u, --update", "check for web-app updates")
         .option("-b, --bump", "bump version in pxt.json and git")
         .option("-c, --config-path <file>", "set configuration file path", "mkc.json")
+        .option("-m, --mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("--pxt-modules", "write pxt_modules/*")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .option("--debug", "enable debug output from PXT")
@@ -82,6 +86,8 @@ async function mainCli() {
         prj.mkcConfig = JSON.parse(fs.readFileSync(opts.configPath, "utf8"))
 
     await prj.loadEditorAsync(!!opts.update)
+    console.log(`Using ${prj.mkcConfig.targetWebsite}`)
+
 
     if (opts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
@@ -130,7 +136,21 @@ async function mainCli() {
             prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
     }
 
-    const success = await buildOnePrj(opts, prj)
+    let success = await buildOnePrj(opts, prj)
+
+    if (success && opts.monoRepo) {
+        for (const dir of fs.readdirSync(prj.directory)) {
+            const fulldir = path.join(prj.directory, dir)
+            if (fs.existsSync(path.join(fulldir, "pxt.json"))) {
+                console.log("build subfolder: " + fulldir)
+                const prj0 = prj.mkChildProject(fulldir)
+                const ok = await buildOnePrj(opts, prj0)
+                if (!ok)
+                    success = false
+            }
+        }
+    }
+
     if (success) {
         console.log("Build OK")
         process.exit(0)
