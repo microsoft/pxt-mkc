@@ -70,7 +70,7 @@ async function mainCli() {
         .option("-u, --update", "check for web-app updates")
         .option("-b, --bump", "bump version in pxt.json and git")
         .option("-c, --config-path <file>", "set configuration file path", "mkc.json")
-        .option("-m, --mono-repo", "also build all subfolders with 'pxt.json' in them")
+        .option("--mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("--pxt-modules", "write pxt_modules/*")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .option("--debug", "enable debug output from PXT")
@@ -144,9 +144,14 @@ async function mainCli() {
             if (fs.existsSync(path.join(fulldir, "pxt.json"))) {
                 console.log("build subfolder: " + fulldir)
                 const prj0 = prj.mkChildProject(fulldir)
-                const ok = await buildOnePrj(opts, prj0)
-                if (!ok)
+                try {
+                    const ok = await buildOnePrj(opts, prj0)
+                    if (!ok)
+                        success = false
+                } catch (e) {
+                    console.error("Exception: " + e.message)
                     success = false
+                }
             }
         }
     }

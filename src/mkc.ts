@@ -126,8 +126,6 @@ export class Project {
             res.files["pxt.json"] = JSON.stringify(res.config, null, 4)
         }
         for (let f of res.config.files.concat(res.config.testFiles || [])) {
-            if (f.indexOf("/") >= 0)
-                continue
             res.files[f] = await this.readFileAsync(f)
         }
         if (res.files["main.ts"] === undefined)
@@ -191,10 +189,7 @@ export class Project {
     }
 
     async buildAsync(simpleOpts = {}) {
-        const t0 = Date.now()
         this.mainPkg = null // force reload
-
-        console.log("build started")
 
         await this.maybeWritePxtModulesAsync()
 
@@ -206,8 +201,6 @@ export class Project {
             throw new Error(err)
 
         await this.saveBuiltFilesAsync(res)
-
-        console.log("build " + (Date.now() - t0) + "ms")
 
         //delete res.outfiles
         //delete (res as any).procDebugInfo

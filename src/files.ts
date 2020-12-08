@@ -19,10 +19,15 @@ export function findProjectDir() {
 const readAsync = util.promisify(fs.readFile)
 const writeAsync = util.promisify(fs.writeFile)
 
+function resolveFilename(dir: string, filename: string) {
+    const resolved = path.resolve(dir, filename)
+    if (resolved.startsWith(path.resolve(".", dir)))
+        return resolved
+    throw new Error(`Invalid file name: ${filename} (in ${dir})`)
+}
+
 export function readPrjFileAsync(dir: string, filename: string) {
-    if (filename.indexOf("/") >= 0)
-        return Promise.reject(new Error("Invalid file name"))
-    return readAsync(path.join(dir, filename), "utf8")
+    return readAsync(resolveFilename(dir, filename), "utf8")
 }
 
 export async function readProjectAsync(dir: string) {
@@ -34,10 +39,8 @@ export async function readProjectAsync(dir: string) {
             "pxt.json": pxtJson
         }
     }
-    for (let f of res.config.files.concat(res.config.testFiles || [])) {
-        if (f.indexOf("/") >= 0)
-            continue
-        res.files[f] = await readAsync(path.join(dir, f), "utf8")
+    for (const fn of res.config.files.concat(res.config.testFiles || [])) {
+        res.files[fn] = await readAsync(resolveFilename(dir, fn), "utf8")
     }
     return res.files
 }
