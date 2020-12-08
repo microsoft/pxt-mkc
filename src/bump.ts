@@ -1,5 +1,6 @@
 import * as child_process from 'child_process';
 import * as fs from 'fs';
+import * as path from 'path';
 import * as mkc from "./mkc"
 import * as files from "./files"
 import { httpGetJsonAsync } from './downloader';
@@ -94,13 +95,32 @@ export function runGitAsync(...args: string[]) {
     })
 }
 
+function monoRepoConfigs(prj: mkc.Project) {
+    return fs.readdirSync(prj.directory)
+        .map(fn => path.join(prj.directory, fn, "pxt.json"))
+        .filter(fs.existsSync)
+}
+
 export async function bumpAsync(prj: mkc.Project) {
     await needsGitCleanAsync()
+    await runGitAsync("pull")
     const cfg = prj.mainPkg.config
     const m = /^(\d+\.\d+)\.(\d+)(.*)/.exec(cfg.version)
     let newV = m ? m[1] + "." + (parseInt(m[2]) + 1) + m[3] : ""
     newV = await queryAsync("New version", newV)
     cfg.version = newV
+
+    const configs = monoRepoConfigs(prj)
+    if (configs.length > 0) {
+        if (await queryAsync(`Also update sub-packages (${configs.length}) in this repo?`, "y") == "y") {
+            for (const fn of configs) {
+                const cfg0 = JSON.parse(fs.readFileSync(fn, "utf8"))
+                cfg0.version = newV
+                fs.writeFileSync(fn, JSON.stringify(cfg0, null, 4))
+            }
+        }
+    }
+
     await files.writeFilesAsync(prj.directory, { "pxt.json": JSON.stringify(cfg, null, 4) }, true)
     await runGitAsync("commit", "-a", "-m", newV)
     await runGitAsync("tag", "v" + newV)
