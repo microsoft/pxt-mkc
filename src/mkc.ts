@@ -60,7 +60,7 @@ export class Project {
     private _hwVariant: string;
     writePxtModules = true
     outputPrefix = "built"
-    mkcConfigPath = "mkc.json"
+    mkcConfig: MkcJson
 
     constructor(public directory: string, public cache: Cache = null) {
         if (!this.cache)
@@ -111,10 +111,12 @@ export class Project {
     }
 
     protected async readPackageAsync() {
+        if (!this.mkcConfig)
+            this.mkcConfig = JSON.parse(await this.readFileAsync("mkc.json").then(s => s, _err => "{}"))
         const pxtJson = await this.readFileAsync("pxt.json")
         const res: Package = {
             config: JSON.parse(pxtJson),
-            mkcConfig: JSON.parse(await this.readFileAsync(this.mkcConfigPath).then(s => s, err => "{}")),
+            mkcConfig: this.mkcConfig,
             files: {
                 "pxt.json": pxtJson
             }

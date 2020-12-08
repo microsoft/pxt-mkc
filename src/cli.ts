@@ -34,6 +34,27 @@ async function downloadProjectAsync(id: string) {
     console.log("downloaded.")
 }
 
+async function buildOnePrj(opts: CmdOptions, prj: mkc.Project) {
+    const simpleOpts = {
+        native: opts.native
+    }
+
+    const res = await prj.buildAsync(simpleOpts)
+
+    let output = ""
+    for (let diagnostic of res.diagnostics) {
+        const category = diagnostic.category == 1 ? "error" : diagnostic.category == 2 ? "warning" : "message"
+        if (diagnostic.fileName)
+            output += `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1}): `;
+        output += `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`;
+    }
+
+    if (output)
+        console.log(output.replace(/\n$/, ""))
+
+    return res.success
+}
+
 
 async function mainCli() {
     commander
@@ -57,7 +78,8 @@ async function mainCli() {
         return downloadProjectAsync(opts.download)
 
     const prj = new mkc.Project(files.findProjectDir())
-    prj.mkcConfigPath = opts.configPath
+    if (opts.configPath)
+        prj.mkcConfig = JSON.parse(fs.readFileSync(opts.configPath, "utf8"))
 
     await prj.loadEditorAsync(!!opts.update)
 
@@ -108,23 +130,8 @@ async function mainCli() {
             prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
     }
 
-    const simpleOpts = {
-        native: opts.native
-    }
-
-    const res = await prj.buildAsync(simpleOpts)
-
-    let output = ""
-    for (let diagnostic of res.diagnostics) {
-        const category = diagnostic.category == 1 ? "error" : diagnostic.category == 2 ? "warning" : "message"
-        if (diagnostic.fileName)
-            output += `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1}): `;
-        output += `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`;
-    }
-
-    if (output)
-        console.log(output.replace(/\n$/, ""))
-    if (res.success) {
+    const success = await buildOnePrj(opts, prj)
+    if (success) {
         console.log("Build OK")
         process.exit(0)
     } else {
