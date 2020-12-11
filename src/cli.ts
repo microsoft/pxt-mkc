@@ -70,7 +70,7 @@ async function mainCli() {
         .option("-u, --update", "check for web-app updates")
         .option("-b, --bump", "bump version in pxt.json and git")
         .option("-c, --config-path <file>", "set configuration file path", "mkc.json")
-        .option("--mono-repo", "also build all subfolders with 'pxt.json' in them")
+        .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("--pxt-modules", "write pxt_modules/*")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .option("--debug", "enable debug output from PXT")
