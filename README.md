@@ -62,17 +62,14 @@ You can use `--config-path` to build for a different configuration, eg. `makecod
 This section describes how to build mkc itself.
 
 * install node.js
-* run
+* run `yarn install`
+* start the build: `yarn watch`
+* run `node path/to/pxt-mkc/makecode` in your project folder
 
-```
-npm install
-```
-
-* start the build
-
-```
-npm run watch
-```
+If you want to test out changes in pxt, first run the build as usual, and then replace
+`$HOME/.pxt/mkc-cache/https_58__47__47_<your-editor>-pxtworker.js` 
+with `pxt/built/web/pxtworker.js`.
+Make sure to run `makecode` tool without the `-u` option.
 
 ## Releases
 
