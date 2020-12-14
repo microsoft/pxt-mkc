@@ -77,7 +77,6 @@ style: Changes that do not affect the meaning of the code (white-space, formatti
 ## TODO
 
 * [ ] allow updating `shims.d.ts`/`enums.d.ts`
-* [x] add `makecode --bump`
 
 ## Contributing
 
