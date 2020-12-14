@@ -6,6 +6,20 @@ downloading parts of a released MakeCode web app and running them in node.js.
 This is different than `pxt` command line tool, which is used primarily during
 development of MakeCode editors.
 
+## Installation
+
+To install globally, run
+
+```
+npm install -g makecode
+```
+
+To update the client,
+
+```
+npm install -u -g makecode
+```
+
 ## Usage
 
 In a folder with `pxt.json` file, run:
