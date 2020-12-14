@@ -38,7 +38,7 @@ The tool is configured with optional `mkc.json` file. Example:
     "targetWebsite": "https://arcade.makecode.com/beta",
     "hwVariant": "samd51",
     "links": {
-        "jacdac-services": "../../pxt-jacdac-services"
+        "jacdac": "../../pxt-jacdac"
     },
     "overrides": {
       "testDependencies": {}
