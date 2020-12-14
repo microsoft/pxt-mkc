@@ -106,8 +106,8 @@ export class Project {
         return files.saveBuiltFilesAsync(this.directory, res, this.outputPrefix)
     }
 
-    protected savePxtModulesAsync(ws: Workspace) {
-        return files.savePxtModulesAsync(this.directory, ws)
+    protected savePxtModulesAsync(filesmap: pxt.Map<string>) {
+        return files.savePxtModulesAsync(this.directory, filesmap)
     }
 
     protected async readPackageAsync() {
@@ -181,11 +181,28 @@ export class Project {
     async maybeWritePxtModulesAsync() {
         await this.loadEditorAsync()
         await this.loadPkgAsync()
-        const ws = await loader.loadDeps(this.editor, this.mainPkg)
-        if (this.writePxtModules && this.service.lastUser !== this) {
-            console.log("writing pxt_modules/*")
-            await this.savePxtModulesAsync(ws)
+
+        const wasThis = this.service.lastUser == this
+
+        this.service.setUserAsync(this)
+
+        if (this.service.supportsGhPkgs) {
+            await this.service.installGhPackages(this.mainPkg)
+        } else {
+            await loader.loadDeps(this.editor, this.mainPkg)
         }
+
+        if (this.writePxtModules && !wasThis) {
+            console.log("writing pxt_modules/*")
+            await this.savePxtModulesAsync(this.mainPkg.files)
+        }
+    }
+
+    async linkedPackage(id: string) {
+        const folder = this.mainPkg?.mkcConfig?.links?.[id]
+        if (folder)
+            return files.readProjectAsync(folder)
+        return null
     }
 
     async buildAsync(simpleOpts = {}) {

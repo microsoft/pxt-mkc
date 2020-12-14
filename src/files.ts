@@ -97,12 +97,10 @@ export async function saveBuiltFilesAsync(dir: string, res: mkc.service.CompileR
     await writeFilesAsync(path.join(dir, folder), res.outfiles || {}, true)
 }
 
-export async function savePxtModulesAsync(dir: string, ws: mkc.Workspace) {
-    const pxtmod = path.join(dir, "pxt_modules")
-    mkdirp(pxtmod)
-    for (let k of Object.keys(ws.packages)) {
-        if (k == "this")
-            continue
-        await writeFilesAsync(path.join(pxtmod, k), ws.packages[k].files)
-    }
+export async function savePxtModulesAsync(dir: string, files: pxt.Map<string>) {
+    for (const k of Object.keys(files))
+        if (k.startsWith("pxt_modules/")) {
+            mkdirp(path.dirname(k))
+            await writeAsync(k, files[k])
+        }
 }

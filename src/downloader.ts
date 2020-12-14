@@ -45,7 +45,7 @@ export function readResAsync(g: events.EventEmitter) {
     })
 }
 
-function nodeHttpRequestAsync(options: HttpRequestOptions): Promise<HttpResponse> {
+export function nodeHttpRequestAsync(options: HttpRequestOptions, validate?: (u: http.RequestOptions) => void): Promise<HttpResponse> {
     let isHttps = false
 
     let u = <http.RequestOptions><any>url.parse(options.url)
@@ -59,6 +59,9 @@ function nodeHttpRequestAsync(options: HttpRequestOptions): Promise<HttpResponse
     u.headers = clone(options.headers) || {}
     let data = options.data
     u.method = options.method || (data == null ? "GET" : "POST");
+
+    if (validate)
+        validate(u)
 
     let buf: Buffer = null;
 

@@ -2,8 +2,9 @@ import vm = require("vm");
 import mkc = require("./mkc");
 import downloader = require("./downloader");
 
-const prep = `
+const cdnUrl = "https://pxt.azureedge.net"
 
+const prep = `
 `
 
 export interface HexInfo {
@@ -84,12 +85,25 @@ export interface CompileResult {
     usedArguments?: pxt.Map<string[]>;
 }
 
+export interface ServiceUser {
+    linkedPackage: (id: string) => Promise<pxt.Map<string>>
+}
+
+interface SimpleDriverCallbacks {
+    cacheGet: (key: string) => Promise<string>
+    cacheSet: (key: string, val: string) => Promise<void>
+    httpRequestAsync?: (options: downloader.HttpRequestOptions) => Promise<downloader.HttpResponse>
+    pkgOverrideAsync?: (id: string) => Promise<pxt.Map<string>>
+}
+
 export class Ctx {
     sandbox: vm.Context;
-    lastUser: unknown;
+    lastUser: ServiceUser;
     private makerHw = false;
+    supportsGhPkgs = false;
 
     constructor(public editor: mkc.DownloadedEditor) {
+        const cachePref = "c-" // TODO should this be editor-dependent?
         this.sandbox = {
             eval: (str: string) => vm.runInContext(str, this.sandbox, {
                 filename: "eval"
@@ -125,7 +139,35 @@ export class Ctx {
         this.sandbox.pxtTargetBundle = ed.targetJson
         this.runScript(ed.pxtWorkerJs, ed.website + "/pxtworker.js")
         this.runScript(prep, "prep")
-        this.runFunctionSync("pxt.setupSimpleCompile", [])
+        const callbacks: SimpleDriverCallbacks = {
+            cacheGet: (key: string) =>
+                editor.cache.getAsync(cachePref + key)
+                    .then(buf => buf ? buf.toString("utf8") : null),
+            cacheSet: (key: string, val: string) =>
+                editor.cache.setAsync(cachePref + key, Buffer.from(val, "utf8")),
+            httpRequestAsync: (options: downloader.HttpRequestOptions) =>
+                downloader.nodeHttpRequestAsync(options, u => {
+                    if (u.protocol != "https:")
+                        throw new Error("only https: supported")
+                    if (u.method != "GET")
+                        throw new Error("only GET supported")
+                    if (!options.url.startsWith(cdnUrl + "/"))
+                        throw new Error("only CDN URLs support: " + cdnUrl)
+                    console.log("GET " + options.url)
+                }),
+            pkgOverrideAsync: id => {
+                if (this.lastUser && this.lastUser.linkedPackage)
+                    return this.lastUser.linkedPackage(id)
+                else return Promise.resolve(null)
+            }
+        }
+        this.runFunctionSync("pxt.setupSimpleCompile", [callbacks])
+        // disable packages config for now; otherwise we do a HTTP request on every compile
+        this.runSync("pxt.packagesConfigAsync = () => Promise.resolve(undefined)")
+        this.runFunctionSync("pxt.setupWebConfig", [{
+            "cdnUrl": "https://pxt.azureedge.net"
+        }])
+        this.supportsGhPkgs = !!this.runSync("pxt.simpleInstallPackagesAsync")
     }
 
     runScript(content: string, filename: string) {
@@ -160,7 +202,7 @@ export class Ctx {
         return normRes
     }
 
-    async setUserAsync(user: unknown) {
+    async setUserAsync(user: ServiceUser) {
         if (this.lastUser !== user) {
             this.lastUser = user
             if (user)
@@ -227,8 +269,7 @@ export class Ctx {
         return this.serviceOp("compile", { options: opts })
     }
 
-    getOptions(prj: mkc.Package, simpleOpts: any = {}): Promise<CompileOptions> {
-        this.sandbox._opts = simpleOpts
+    private setHwVariant(prj: mkc.Package) {
         if (this.makerHw) {
             const tmp = Object.assign({}, prj.files)
             const cfg: pxt.PackageConfig = JSON.parse(tmp["pxt.json"])
@@ -240,10 +281,21 @@ export class Ctx {
             this.sandbox._scriptText = prj.files
             this.runFunctionSync("pxt.setHwVariant", [prj.mkcConfig.hwVariant || ""])
         }
-        return this.runAsync("pxt.simpleGetCompileOptionsAsync(_scriptText, _opts)")
     }
 
-    runFunctionSync(name: string, args: any[]) {
+    getOptions(prj: mkc.Package, simpleOpts: any = {}): Promise<CompileOptions> {
+        this.sandbox._opts = simpleOpts
+        this.setHwVariant(prj)
+        return this.runAsync("pxt.simpleGetCompileOptionsAsync(_scriptText, _opts)")
+
+    }
+
+    installGhPackages(prj: mkc.Package) {
+        this.setHwVariant(prj)
+        return this.runFunctionAsync("pxt.simpleInstallPackagesAsync", [prj.files])
+    }
+
+    private runFunctionCore(name: string, args: any[]) {
         let argString = ""
         for (let i = 0; i < args.length; ++i) {
             const arg = "_arg" + i
@@ -252,7 +304,15 @@ export class Ctx {
                 argString += ", "
             argString += arg
         }
-        return this.runSync(`${name}(${argString})`)
+        return `${name}(${argString})`
+    }
+
+    runFunctionSync(name: string, args: any[]) {
+        return this.runSync(this.runFunctionCore(name, args))
+    }
+
+    runFunctionAsync(name: string, args: any[]) {
+        return this.runAsync(this.runFunctionCore(name, args))
     }
 
     serviceOp(op: string, data: any) {

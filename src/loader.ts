@@ -124,13 +124,9 @@ export async function loadDeps(ed: mkc.DownloadedEditor, mainPrj: mkc.Package) {
         if (k == "this")
             continue
         const prj = ws.packages[k]
-        if (prj.fromTargetJson)
-            continue
         for (let fn of Object.keys(prj.files))
             mainPrj.files["pxt_modules/" + k + "/" + fn] = prj.files[fn]
     }
 
     // console.log(Object.keys(mainPrj.files))
-
-    return ws
 }
