@@ -43,6 +43,23 @@ All fields are optional.
 
 You can use `--config-path` to build for a different configuration, eg. `makecode -c mkc-arcade.json`.
 
+## Local development
+
+This section describes how to build mkc itself.
+
+* install node.js
+* run
+
+```
+npm install
+```
+
+* start the build
+
+```
+npm run watch
+```
+
 ## TODO
 
 * [ ] allow updating `shims.d.ts`/`enums.d.ts`
