@@ -69,7 +69,7 @@ async function mainCli() {
         .option("-i, --init-mkc", "initialize mkc.json")
         .option("-u, --update", "check for web-app updates")
         .option("-b, --bump", "bump version in pxt.json and git")
-        .option("-c, --config-path <file>", "set configuration file path", "mkc.json")
+        .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("--pxt-modules", "write pxt_modules/*")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
@@ -81,12 +81,35 @@ async function mainCli() {
     if (opts.download)
         return downloadProjectAsync(opts.download)
 
-    const prj = new mkc.Project(files.findProjectDir())
-    if (opts.configPath)
+    const prjdir = files.findProjectDir()
+    if (!prjdir) {
+        console.error(`could not find "pxt.json" file`)
+        process.exit(1)
+    }
+
+    if (!opts.configPath) {
+        const cfgFolder = files.findParentDirWith(prjdir, "mkc.json")
+        if (cfgFolder)
+            opts.configPath = path.join(cfgFolder, "mkc.json")
+    }
+
+    console.log(`Using project: ${prjdir}/pxt.json`)
+    const prj = new mkc.Project(prjdir)
+
+    if (opts.configPath) {
+        console.log(`Using config: ${opts.configPath}`)
         prj.mkcConfig = JSON.parse(fs.readFileSync(opts.configPath, "utf8"))
+        const lnk = prj.mkcConfig.links
+        if (lnk) {
+            const mkcFolder = path.resolve(".", path.dirname(opts.configPath))
+            for (const k of Object.keys(lnk)) {
+                lnk[k] = path.resolve(mkcFolder, lnk[k])
+            }
+        }
+    }
 
     await prj.loadEditorAsync(!!opts.update)
-    console.log(`Using ${prj.mkcConfig.targetWebsite}`)
+    console.log(`Using editor: ${prj.mkcConfig.targetWebsite}`)
 
 
     if (opts.debug)

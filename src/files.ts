@@ -3,10 +3,10 @@ import * as path from "path";
 import * as util from "util";
 import * as mkc from "./mkc"
 
-export function findProjectDir() {
-    let s = process.cwd()
+export function findParentDirWith(base: string, filename: string) {
+    let s = base
     while (true) {
-        if (fs.existsSync(path.join(s, "pxt.json")))
+        if (fs.existsSync(path.join(s, filename)))
             return s
 
         const s2 = path.resolve(path.join(s, ".."))
@@ -14,6 +14,10 @@ export function findProjectDir() {
             return null
         s = s2;
     }
+}
+
+export function findProjectDir() {
+    return findParentDirWith(process.cwd(), "pxt.json")
 }
 
 const readAsync = util.promisify(fs.readFile)
