@@ -120,9 +120,9 @@ export class Ctx {
             scriptText: {},
             global: null,
             console: {
-                log: (s: string) => console.log(s),
-                debug: (s: string) => console.log(s),
-                warn: (s: string) => console.log(s),
+                log: (s: string) => mkc.log(s),
+                debug: (s: string) => mkc.debug(s),
+                warn: (s: string) => mkc.error(s),
             }
         };
 
@@ -153,7 +153,7 @@ export class Ctx {
                         throw new Error("only GET supported")
                     if (!options.url.startsWith(cdnUrl + "/"))
                         throw new Error("only CDN URLs support: " + cdnUrl)
-                    console.log("GET " + options.url)
+                    mkc.log("GET " + options.url)
                 }),
             pkgOverrideAsync: id => {
                 if (this.lastUser && this.lastUser.linkedPackage)
@@ -217,7 +217,7 @@ export class Ctx {
             const url = this.editor.cdnUrl + "/compile/" + extinfo.sha + ".hex"
             const resp = await downloader.requestAsync({ url }).then(r => r, err => null)
             if (resp == null) {
-                console.log(`compiling C++; this can take a while`);
+                mkc.log(`compiling C++; this can take a while`);
                 const cdata = extinfo.compileData
                 const cdataObj: any = JSON.parse(Buffer.from(cdata, "base64").toString())
                 if (!cdataObj.config)
@@ -234,11 +234,11 @@ export class Ctx {
                     const jresp = await downloader.requestAsync({ url: jsonUrl }).then(r => r, e => null)
                     if (jresp) {
                         const json = jresp.json
-                        console.log(`build log ${jsonUrl.replace(/\.json$/, ".log")}`);
+                        mkc.log(`build log ${jsonUrl.replace(/\.json$/, ".log")}`);
                         if (!json.success) {
-                            console.log(`C++ build failed`);
+                            mkc.error(`C++ build failed`);
                             if (json.mbedresponse && json.mbedresponse.result && json.mbedresponse.result.exception)
-                                console.log(json.mbedresponse.result.exception);
+                                mkc.error(json.mbedresponse.result.exception);
                             throw new Error("C++ build failed")
                         }
                         else {

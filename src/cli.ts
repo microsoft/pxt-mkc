@@ -8,7 +8,7 @@ import * as bump from "./bump"
 import * as downloader from "./downloader"
 import * as service from "./service"
 import { program as commander } from "commander"
-import { brotliCompressSync } from "zlib"
+import * as chalk from "chalk"
 
 interface CmdOptions {
     hw?: string;
@@ -23,6 +23,8 @@ interface CmdOptions {
     bump?: boolean;
     configPath?: string;
     monoRepo?: boolean;
+    colors?: boolean;
+    noColors?: boolean;
 }
 
 async function downloadProjectAsync(id: string) {
@@ -34,7 +36,7 @@ async function downloadProjectAsync(id: string) {
             continue
         fs.writeFileSync(fn, files[fn])
     }
-    console.log("downloaded.")
+    msg("downloaded.")
 }
 
 async function buildOnePrj(opts: CmdOptions, prj: mkc.Project) {
@@ -46,7 +48,7 @@ async function buildOnePrj(opts: CmdOptions, prj: mkc.Project) {
 
     let output = ""
     for (let diagnostic of res.diagnostics) {
-        const category = diagnostic.category == 1 ? "error" : diagnostic.category == 2 ? "warning" : "message"
+        const category = diagnostic.category == 1 ? chalk.red("error") : diagnostic.category == 2 ? chalk.yellowBright("warning") : "message"
         if (diagnostic.fileName)
             output += `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1}): `;
         output += `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`;
@@ -58,6 +60,17 @@ async function buildOnePrj(opts: CmdOptions, prj: mkc.Project) {
     return res.success
 }
 
+function info(msg: string) {
+    console.log(chalk.blueBright(msg))
+}
+
+function msg(msg: string) {
+    console.log(chalk.green(msg))
+}
+
+function error(msg: string) {
+    console.error(chalk.red(msg))
+}
 
 async function mainCli() {
     commander
@@ -73,17 +86,30 @@ async function mainCli() {
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("--pxt-modules", "write pxt_modules/*")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
+        .option("--colors", "force color output")
+        .option("--no-colors", "disable color output")
         .option("--debug", "enable debug output from PXT")
         .parse(process.argv)
 
     const opts = commander as CmdOptions
+
+    if (opts.noColors)
+        (chalk as any).level = 0
+    if (opts.colors && !chalk.level)
+        (chalk as any).level = 1
+
+    mkc.setLogging({
+        log: info,
+        error: error,
+        debug: s => console.log(chalk.gray(s))
+    })
 
     if (opts.download)
         return downloadProjectAsync(opts.download)
 
     const prjdir = files.findProjectDir()
     if (!prjdir) {
-        console.error(`could not find "pxt.json" file`)
+        error(`could not find "pxt.json" file`)
         process.exit(1)
     }
 
@@ -93,11 +119,11 @@ async function mainCli() {
             opts.configPath = path.join(cfgFolder, "mkc.json")
     }
 
-    console.log(`Using project: ${prjdir}/pxt.json`)
+    info(`Using project: ${prjdir}/pxt.json`)
     const prj = new mkc.Project(prjdir)
 
     if (opts.configPath) {
-        console.log(`Using config: ${opts.configPath}`)
+        info(`Using config: ${opts.configPath}`)
         prj.mkcConfig = JSON.parse(fs.readFileSync(opts.configPath, "utf8"))
         const lnk = prj.mkcConfig.links
         if (lnk) {
@@ -109,7 +135,7 @@ async function mainCli() {
     }
 
     await prj.loadEditorAsync(!!opts.update)
-    console.log(`Using editor: ${prj.mkcConfig.targetWebsite}`)
+    info(`Using editor: ${prj.mkcConfig.targetWebsite}`)
 
 
     if (opts.debug)
@@ -131,9 +157,10 @@ async function mainCli() {
                 cfg.card.name.toLowerCase() == hw
         })
         if (!selected.length) {
-            console.error(`No such HW id: ${opts.hw}. Available hw:`)
+            error(`No such HW id: ${opts.hw}`)
+            msg(`Available hw:`)
             for (let cfg of hwVariants) {
-                console.error(`${hwid(cfg)}, ${cfg.card.name} - ${cfg.card.description}`)
+                msg(`${hwid(cfg)}, ${cfg.card.name} - ${cfg.card.description}`)
             }
             process.exit(1)
         }
@@ -141,7 +168,7 @@ async function mainCli() {
     }
 
     if (opts.initMkc) {
-        console.log("saving mkc.json")
+        msg("saving mkc.json")
         fs.writeFileSync("mkc.json", JSON.stringify(prj.mainPkg.mkcConfig, null, 4))
     }
 
@@ -154,7 +181,7 @@ async function mainCli() {
 
     if (opts.native && hwVariants.length) {
         prj.guessHwVariant()
-        console.log(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant}`)
+        info(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant}`)
         if (!opts.alwaysBuilt)
             prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
     }
@@ -165,7 +192,7 @@ async function mainCli() {
         for (const dir of fs.readdirSync(prj.directory)) {
             const fulldir = path.join(prj.directory, dir)
             if (fs.existsSync(path.join(fulldir, "pxt.json"))) {
-                console.log("build subfolder: " + fulldir)
+                info("build subfolder: " + fulldir)
                 const prj0 = prj.mkChildProject(fulldir)
                 try {
                     const ok = await buildOnePrj(opts, prj0)
@@ -180,10 +207,10 @@ async function mainCli() {
     }
 
     if (success) {
-        console.log("Build OK")
+        msg("Build OK")
         process.exit(0)
     } else {
-        console.log("Build failed")
+        error("Build failed")
         process.exit(1)
     }
 

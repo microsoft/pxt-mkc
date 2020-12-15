@@ -26,7 +26,7 @@ export function spawnWithPipeAsync(opts: SpawnOptions) {
     if (opts.pipe === undefined) opts.pipe = true
     let info = opts.cmd + " " + opts.args.join(" ")
     if (opts.cwd && opts.cwd != ".") info = "cd " + opts.cwd + "; " + info
-    console.log("[run] " + info)
+    mkc.log("[run] " + info)
     return new Promise<Buffer>((resolve, reject) => {
         let ch = child_process.spawn(opts.cmd, opts.args, {
             cwd: opts.cwd,
@@ -132,17 +132,17 @@ export async function bumpAsync(prj: mkc.Project) {
         args: ["remote", "get-url", "origin"],
         pipe: true
     }).then(v => v, err => {
-        console.log(err)
+        mkc.error(err)
         return null as Buffer
     })
     const url = urlinfo?.toString("utf8")?.trim()
     if (url) {
         const slug = url.replace(/.*github\.com\//i, "")
         if (slug != url) {
-            console.log(`Github slug ${slug}; refreshing makecode.com cache`)
+            mkc.log(`Github slug ${slug}; refreshing makecode.com cache`)
             const res = await httpGetJsonAsync("https://makecode.com/api/gh/" + slug + "/refs?nocache=1")
             const sha = res?.refs?.["refs/tags/v" + newV]
-            console.log(`refreshed ${newV} -> ${sha}`)
+            mkc.log(`refreshed ${newV} -> ${sha}`)
         }
     }
 }

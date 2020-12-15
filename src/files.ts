@@ -89,7 +89,7 @@ export async function writeFilesAsync(built: string, outfiles: pxt.Map<string>, 
         if (fn.indexOf("/") >= 0)
             continue
         if (log)
-            console.log(`write ${built}/${fn}`)
+            mkc.log(`write ${built}/${fn}`)
         if (/\.(uf2|pxt64|elf)$/.test(fn))
             await writeAsync(path.join(built, fn), outfiles[fn], "base64")
         else

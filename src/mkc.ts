@@ -51,7 +51,6 @@ function jsonCopyFrom<T>(trg: T, src: T) {
     }
 }
 
-
 export class Project {
     editor: DownloadedEditor
     service: service.Ctx
@@ -84,13 +83,13 @@ export class Project {
         const cfg = this.mainPkg.config
         for (const v of variants) {
             if (cfg.dependencies[v.name] || cfg.testDependencies?.[v.name]) {
-                console.log("guessing hw-variant: " + hwid(v))
+                log("guessing hw-variant: " + hwid(v))
                 this.hwVariant = hwid(v)
                 return
             }
         }
 
-        console.log("selecting first hw-variant: " + hwid(variants[0]))
+        log("selecting first hw-variant: " + hwid(variants[0]))
         this.hwVariant = hwid(variants[0])
 
         function hwid(cfg: pxt.PackageConfig) {
@@ -193,7 +192,7 @@ export class Project {
         }
 
         if (this.writePxtModules && !wasThis) {
-            console.log("writing pxt_modules/*")
+            log("writing pxt_modules/*")
             await this.savePxtModulesAsync(this.mainPkg.files)
         }
     }
@@ -237,4 +236,18 @@ export class Project {
         prj.editor = this.editor
         return prj
     }
+}
+
+export let log = (msg: string) => { console.log(msg) }
+export let error = (msg: string) => { console.error(msg) }
+export let debug = (msg: string) => { console.debug(msg) }
+
+export function setLogging(fns: {
+    log: (msg: string) => void,
+    error: (msg: string) => void,
+    debug: (msg: string) => void,
+}) {
+    log = fns.log
+    error = fns.error
+    debug = fns.debug
 }
