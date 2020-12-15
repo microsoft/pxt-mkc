@@ -205,7 +205,7 @@ async function mainCli() {
                     if (!ok)
                         success = false
                 } catch (e) {
-                    console.error("Exception: " + e.message)
+                    error("Exception: " + e.message)
                     success = false
                 }
 
