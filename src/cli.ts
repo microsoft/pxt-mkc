@@ -148,6 +148,7 @@ async function mainCli() {
 
     prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
     const hwVariants = prj.service.hwVariants
+    const targetId = prj.service.runSync("pxt.appTarget.id")
 
     if (opts.hw) {
         const hw = opts.hw.toLowerCase()
@@ -181,7 +182,7 @@ async function mainCli() {
 
     if (opts.native && hwVariants.length) {
         prj.guessHwVariant()
-        info(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant}`)
+        info(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant} (target ${targetId})`)
         if (!opts.alwaysBuilt)
             prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
     }
@@ -194,6 +195,11 @@ async function mainCli() {
             if (fs.existsSync(path.join(fulldir, "pxt.json"))) {
                 info("build subfolder: " + fulldir)
                 const prj0 = prj.mkChildProject(fulldir)
+                const cfg = await prj0.readPxtConfig()
+                if (cfg.supportedTargets && cfg.supportedTargets.indexOf(targetId) < 0) {
+                    info(`skipping due to supportedTargets`)
+                    continue
+                }
                 try {
                     const ok = await buildOnePrj(opts, prj0)
                     if (!ok)
@@ -202,6 +208,7 @@ async function mainCli() {
                     console.error("Exception: " + e.message)
                     success = false
                 }
+
             }
         }
     }

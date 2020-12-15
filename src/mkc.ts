@@ -109,21 +109,22 @@ export class Project {
         return files.savePxtModulesAsync(this.directory, filesmap)
     }
 
+    async readPxtConfig() {
+        const pxtJson = await this.readFileAsync("pxt.json")
+        return JSON.parse(pxtJson) as pxt.PackageConfig
+    }
+
     protected async readPackageAsync() {
         if (!this.mkcConfig)
             this.mkcConfig = JSON.parse(await this.readFileAsync("mkc.json").then(s => s, _err => "{}"))
-        const pxtJson = await this.readFileAsync("pxt.json")
         const res: Package = {
-            config: JSON.parse(pxtJson),
+            config: await this.readPxtConfig(),
             mkcConfig: this.mkcConfig,
-            files: {
-                "pxt.json": pxtJson
-            }
+            files: {}
         }
-        if (res.mkcConfig.overrides) {
+        if (res.mkcConfig.overrides)
             jsonCopyFrom(res.config, res.mkcConfig.overrides)
-            res.files["pxt.json"] = JSON.stringify(res.config, null, 4)
-        }
+        res.files["pxt.json"] = JSON.stringify(res.config, null, 4)
         for (let f of res.config.files.concat(res.config.testFiles || [])) {
             res.files[f] = await this.readFileAsync(f)
         }
