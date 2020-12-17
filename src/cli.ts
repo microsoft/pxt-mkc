@@ -21,6 +21,7 @@ interface CmdOptions {
     update?: boolean;
     debug?: boolean;
     bump?: boolean;
+    build?: boolean;
     configPath?: string;
     monoRepo?: boolean;
     colors?: boolean;
@@ -73,15 +74,14 @@ function error(msg: string) {
 }
 
 async function mainCli() {
+    const opts = commander as CmdOptions
     commander
         .version("0.0.0")
         .option("-n, --native", "compile native (default)")
         .option("-h, --hw <id>", "set hardware for which to compile (implies -n)")
         .option("-j, --java-script", "compile to JavaScript")
-        .option("-d, --download <URL>", "download project from share URL")
         .option("-i, --init-mkc", "initialize mkc.json")
         .option("-u, --update", "check for web-app updates")
-        .option("-b, --bump", "bump version in pxt.json and git")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("--pxt-modules", "write pxt_modules/*")
@@ -89,9 +89,22 @@ async function mainCli() {
         .option("--colors", "force color output")
         .option("--no-colors", "disable color output")
         .option("--debug", "enable debug output from PXT")
-        .parse(process.argv)
 
-    const opts = commander as CmdOptions
+    commander.command("build", { isDefault: true })
+        .description("build project")
+        .action(() => {
+            opts.build = true
+        })
+
+    commander.command("bump")
+        .description("bump version in pxt.json and git")
+        .action(() => { opts.bump = true })
+
+    commander.command("download <URL>")
+        .description("download project from share URL")
+        .action(url => { opts.download = url })
+
+    commander.parse(process.argv)
 
     if (opts.noColors)
         (chalk as any).level = 0
