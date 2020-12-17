@@ -124,7 +124,7 @@ export class Project {
         }
         if (res.mkcConfig.overrides)
             jsonCopyFrom(res.config, res.mkcConfig.overrides)
-        res.files["pxt.json"] = JSON.stringify(res.config, null, 4)
+        res.files["pxt.json"] = stringifyConfig(res.config)
         for (let f of res.config.files.concat(res.config.testFiles || [])) {
             res.files[f] = await this.readFileAsync(f)
         }
@@ -145,7 +145,7 @@ export class Project {
 
         // TODO handle require("lzma") in worker
         prj.config.binaryonly = true
-        const pxtJson = prj.files["pxt.json"] = JSON.stringify(prj.config, null, 4)
+        const pxtJson = prj.files["pxt.json"] = stringifyConfig(prj.config)
 
         this.mainPkg = prj
 
@@ -251,4 +251,8 @@ export function setLogging(fns: {
     log = fns.log
     error = fns.error
     debug = fns.debug
+}
+
+export function stringifyConfig(cfg: pxt.PackageConfig | MkcJson) {
+    return JSON.stringify(cfg, null, 4) + "\n"
 }

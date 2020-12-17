@@ -275,7 +275,7 @@ export class Ctx {
             const cfg: pxt.PackageConfig = JSON.parse(tmp["pxt.json"])
             if (prj.mkcConfig.hwVariant)
                 cfg.dependencies[prj.mkcConfig.hwVariant] = "*"
-            tmp["pxt.json"] = JSON.stringify(cfg, null, 4)
+            tmp["pxt.json"] = mkc.stringifyConfig(cfg)
             this.sandbox._scriptText = tmp
         } else {
             this.sandbox._scriptText = prj.files

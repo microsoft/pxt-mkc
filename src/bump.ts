@@ -116,12 +116,12 @@ export async function bumpAsync(prj: mkc.Project) {
             for (const fn of configs) {
                 const cfg0 = JSON.parse(fs.readFileSync(fn, "utf8"))
                 cfg0.version = newV
-                fs.writeFileSync(fn, JSON.stringify(cfg0, null, 4))
+                fs.writeFileSync(fn, mkc.stringifyConfig(cfg0))
             }
         }
     }
 
-    await files.writeFilesAsync(prj.directory, { "pxt.json": JSON.stringify(cfg, null, 4) }, true)
+    await files.writeFilesAsync(prj.directory, { "pxt.json": mkc.stringifyConfig(cfg) }, true)
     await runGitAsync("commit", "-a", "-m", newV)
     await runGitAsync("tag", "v" + newV)
     await runGitAsync("push")

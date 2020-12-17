@@ -170,7 +170,7 @@ async function mainCli() {
 
     if (opts.initMkc) {
         msg("saving mkc.json")
-        fs.writeFileSync("mkc.json", JSON.stringify(prj.mainPkg.mkcConfig, null, 4))
+        fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig))
     }
 
     prj.writePxtModules = !!opts.pxtModules
