@@ -40,24 +40,29 @@ async function downloadProjectAsync(id: string) {
 }
 
 async function buildOnePrj(opts: CmdOptions, prj: mkc.Project) {
-    const simpleOpts = {
-        native: opts.native
+    try {
+        const simpleOpts = {
+            native: opts.native
+        }
+
+        const res = await prj.buildAsync(simpleOpts)
+
+        let output = ""
+        for (let diagnostic of res.diagnostics) {
+            const category = diagnostic.category == 1 ? chalk.red("error") : diagnostic.category == 2 ? chalk.yellowBright("warning") : "message"
+            if (diagnostic.fileName)
+                output += `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1}): `;
+            output += `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`;
+        }
+
+        if (output)
+            console.log(output.replace(/\n$/, ""))
+
+        return res.success
+    } catch (e) {
+        error("Exception: " + e.stack)
+        return false
     }
-
-    const res = await prj.buildAsync(simpleOpts)
-
-    let output = ""
-    for (let diagnostic of res.diagnostics) {
-        const category = diagnostic.category == 1 ? chalk.red("error") : diagnostic.category == 2 ? chalk.yellowBright("warning") : "message"
-        if (diagnostic.fileName)
-            output += `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1}): `;
-        output += `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`;
-    }
-
-    if (output)
-        console.log(output.replace(/\n$/, ""))
-
-    return res.success
 }
 
 function info(msg: string) {
@@ -200,15 +205,9 @@ async function mainCli() {
                     info(`skipping due to supportedTargets`)
                     continue
                 }
-                try {
-                    const ok = await buildOnePrj(opts, prj0)
-                    if (!ok)
-                        success = false
-                } catch (e) {
-                    error("Exception: " + e.message)
+                const ok = await buildOnePrj(opts, prj0)
+                if (!ok)
                     success = false
-                }
-
             }
         }
     }
