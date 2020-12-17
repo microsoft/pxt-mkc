@@ -100,7 +100,9 @@ async function mainCli() {
 
     if (opts.noColors)
         (chalk as any).level = 0
-    if (opts.colors && !chalk.level)
+    else if (opts.colors && !chalk.level)
+        (chalk as any).level = 1
+    else if (process.env["GITHUB_WORKFLOW"])
         (chalk as any).level = 1
 
     mkc.setLogging({
