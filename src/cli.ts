@@ -96,7 +96,7 @@ async function mainCli() {
         .option("--debug", "enable debug output from PXT")
         .parse(process.argv)
 
-    const opts = commander as CmdOptions
+    const opts = commander.opts() as CmdOptions
 
     if (opts.noColors)
         (chalk as any).level = 0
@@ -198,8 +198,9 @@ async function mainCli() {
 
     if (success && opts.monoRepo) {
         const dirs = glob.sync("**/pxt.json")
-        info(`building ${dirs.length} projects`)
-        for(const fulldir of dirs) {
+        info(`mono-repo: building ${dirs.length} projects`)
+        for(const fullpxtjson of dirs) {
+            const fulldir = path.dirname(fullpxtjson)
             info(`build ${fulldir}`)
             const prj0 = prj.mkChildProject(fulldir)
             const cfg = await prj0.readPxtConfig()
