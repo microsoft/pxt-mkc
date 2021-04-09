@@ -9,7 +9,7 @@ import * as downloader from "./downloader"
 import * as service from "./service"
 import { program as commander } from "commander"
 import * as chalk from "chalk"
-
+import { glob } from "glob"
 interface CmdOptions {
     hw?: string;
     native?: boolean;
@@ -197,20 +197,19 @@ async function mainCli() {
     let success = await buildOnePrj(opts, prj)
 
     if (success && opts.monoRepo) {
-        for (const dir of fs.readdirSync(prj.directory)) {
-            const fulldir = path.join(prj.directory, dir)
-            if (fs.existsSync(path.join(fulldir, "pxt.json"))) {
-                info("build subfolder: " + fulldir)
-                const prj0 = prj.mkChildProject(fulldir)
-                const cfg = await prj0.readPxtConfig()
-                if (cfg.supportedTargets && cfg.supportedTargets.indexOf(targetId) < 0) {
-                    info(`skipping due to supportedTargets`)
-                    continue
-                }
-                const ok = await buildOnePrj(opts, prj0)
-                if (!ok)
-                    success = false
+        const dirs = glob.sync("**/pxt.json")
+        info(`building ${dirs.length} projects`)
+        for(const fulldir of dirs) {
+            info(`build ${fulldir}`)
+            const prj0 = prj.mkChildProject(fulldir)
+            const cfg = await prj0.readPxtConfig()
+            if (cfg.supportedTargets && cfg.supportedTargets.indexOf(targetId) < 0) {
+                info(`skipping due to supportedTargets`)
+                continue
             }
+            const ok = await buildOnePrj(opts, prj0)
+            if (!ok)
+                success = false
         }
     }
 
