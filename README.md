@@ -8,6 +8,8 @@ development of MakeCode editors.
 
 ## Installation
 
+Make sure to install [node.js](https://nodejs.org/).
+
 To install globally, run
 
 ```
