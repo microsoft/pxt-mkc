@@ -1,5 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
+import * as util from "util"
 
 import * as mkc from "./mkc"
 import * as loader from "./loader"
@@ -10,11 +11,13 @@ import * as service from "./service"
 import { program as commander } from "commander"
 import * as chalk from "chalk"
 import { glob } from "glob"
+import { getDeployDrives } from "./deploy"
 interface CmdOptions {
     hw?: string;
     native?: boolean;
     javaScript?: boolean;
     download?: string;
+    deploy?: boolean;
     pxtModules?: boolean;
     initMkc?: boolean;
     alwaysBuilt?: boolean;
@@ -58,10 +61,10 @@ async function buildOnePrj(opts: CmdOptions, prj: mkc.Project) {
         if (output)
             console.log(output.replace(/\n$/, ""))
 
-        return res.success
+        return res.success ? res : null
     } catch (e) {
         error("Exception: " + e.stack)
-        return false
+        return null
     }
 }
 
@@ -81,6 +84,7 @@ async function mainCli() {
     commander
         .version("0.0.0")
         .option("-n, --native", "compile native (default)")
+        .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
         .option("-h, --hw <id>", "set hardware for which to compile (implies -n)")
         .option("-j, --java-script", "compile to JavaScript")
         .option("-d, --download <URL>", "download project from share URL")
@@ -104,6 +108,16 @@ async function mainCli() {
         (chalk as any).level = 1
     else if (process.env["GITHUB_WORKFLOW"])
         (chalk as any).level = 1
+
+    if (opts.deploy && opts.monoRepo) {
+        error("--deploy and --mono-repo cannot be used together")
+        process.exit(1)
+    }
+
+    if (opts.deploy && opts.javaScript) {
+        error("--deploy and --java-script cannot be used together")
+        process.exit(1)
+    }
 
     mkc.setLogging({
         log: info,
@@ -148,7 +162,6 @@ async function mainCli() {
 
     await prj.loadEditorAsync(!!opts.update)
     info(`Using editor: ${prj.mkcConfig.targetWebsite}`)
-
 
     if (opts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
@@ -199,7 +212,35 @@ async function mainCli() {
             prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
     }
 
-    let success = await buildOnePrj(opts, prj)
+    const compileRes = await buildOnePrj(opts, prj)
+    if (compileRes && opts.deploy) {
+        const firmwareName = ["binary.uf2", "binary.hex", "binary.elf"].filter(f => !!compileRes.outfiles[f])[0];
+        if (!firmwareName) { // something went wrong here
+            error(`firmware missing from built files (${Object.keys(compileRes.outfiles).join(', ')})`)
+        } else {
+            const compileInfo = prj.service.runSync("pxt.appTarget.compile")
+            const drives = await getDeployDrives(compileInfo)
+
+            if (drives.length == 0) {
+                msg("cannot find any drives to deploy to");
+            } else {
+                const firmware = compileRes.outfiles[firmwareName];
+                const encoding = firmwareName == "binary.hex" ? "utf8" : "base64";
+
+                msg(`copying ${firmwareName} to ` + drives.join(", "));
+                const writeFileAsync = util.promisify(fs.writeFile)
+                const writeHexFile = (drivename: string) => {
+                    return writeFileAsync(path.join(drivename, firmwareName), firmware, encoding)
+                        .then(() => info("   wrote to " + drivename))
+                        .catch(() => error(`   failed writing to ${drivename}`));
+                };
+                for (const p of drives.map(writeHexFile)) await p
+            }
+
+        }
+    }
+
+    let success = !!compileRes
 
     if (success && opts.monoRepo) {
         const dirs = glob.sync("**/pxt.json")
