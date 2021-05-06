@@ -131,7 +131,12 @@ async function mainCli() {
 
     if (opts.configPath) {
         info(`Using config: ${opts.configPath}`)
-        prj.mkcConfig = JSON.parse(fs.readFileSync(opts.configPath, "utf8"))
+        try {
+            prj.mkcConfig = JSON.parse(fs.readFileSync(opts.configPath, "utf8"))
+        } catch (e) {
+            error(`Can't read config file: '${opts.configPath}'; ` + e.message)
+            process.exit(1)
+        }
         const lnk = prj.mkcConfig.links
         if (lnk) {
             const mkcFolder = path.resolve(".", path.dirname(opts.configPath))
@@ -199,7 +204,7 @@ async function mainCli() {
     if (success && opts.monoRepo) {
         const dirs = glob.sync("**/pxt.json")
         info(`mono-repo: building ${dirs.length} projects`)
-        for(const fullpxtjson of dirs) {
+        for (const fullpxtjson of dirs) {
             const fulldir = path.dirname(fullpxtjson)
             info(`build ${fulldir}`)
             const prj0 = prj.mkChildProject(fulldir)
@@ -227,4 +232,14 @@ async function mainCli() {
     }
 }
 
-mainCli()
+async function mainWrapper() {
+    try {
+        await mainCli()
+    } catch (e) {
+        error("Exception: " + e.stack)
+        error("Build failed")
+        process.exit(1)
+    }
+}
+
+mainWrapper()
