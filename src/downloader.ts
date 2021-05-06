@@ -207,6 +207,7 @@ export interface DownloadInfo {
     cdnUrl?: string;
     simKey?: string;
     versionNumber?: number;
+    updateCheckedAt?: number;
 }
 
 function log(msg: string) {
@@ -217,11 +218,24 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string, useCach
     const infoBuf = await cache.getAsync(webAppUrl + "-info")
     const info: DownloadInfo = infoBuf ? JSON.parse(infoBuf.toString("utf8")) : {}
 
-    if (useCached && info.manifest)
-        return loadFromCacheAsync()
-
-    if (!await hasNewManifestAsync())
-        return loadFromCacheAsync()
+    if (useCached && info.manifest) {
+        let needsUpdate = false
+        if (!info.updateCheckedAt || Date.now() - info.updateCheckedAt > 24 * 3600 * 1000) {
+            info.updateCheckedAt = Date.now()
+            await saveInfoAsync() // save last check time *before* checking - in case user hits ctrl-c we don't want another build to hang again
+            try {
+                log("Checking for updates (only happens once daily)...")
+                needsUpdate = await hasNewManifestAsync()
+            } catch (e) {
+                log(`Error checking for updates; will try again tomorrow (use -u flag to force); ${e.message}`)
+            }
+        }
+        if (!needsUpdate)
+            return loadFromCacheAsync()
+    } else {
+        if (!await hasNewManifestAsync())
+            return loadFromCacheAsync()
+    }
 
     log("Download new webapp")
     const cfg = await parseWebConfigAsync(webAppUrl)
@@ -234,6 +248,7 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string, useCach
         await hasNewManifestAsync()
     }
     info.versionNumber = (info.versionNumber || 0) + 1
+    info.updateCheckedAt = Date.now()
 
     for (let fn of ["pxtworker.js", "target.json"]) {
         await saveFileAsync(fn)
@@ -265,8 +280,12 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string, useCach
 
     return loadFromCacheAsync()
 
+    function saveInfoAsync() {
+        return cache.setAsync(webAppUrl + "-info", Buffer.from(JSON.stringify(info), "utf8"))
+    }
+
     async function loadFromCacheAsync() {
-        await cache.setAsync(webAppUrl + "-info", Buffer.from(JSON.stringify(info), "utf8"))
+        await saveInfoAsync()
         const res: mkc.DownloadedEditor = {
             cache,
             versionNumber: info.versionNumber || 0,
@@ -295,12 +314,16 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string, useCach
             } : {},
         })
 
-        if (resp.statusCode == 304)
+        if (resp.statusCode == 304) {
+            info.updateCheckedAt = Date.now()
             return false
+        }
 
         info.manifestEtag = resp.headers["etag"] as string
-        if (resp.text == info.manifest)
+        if (resp.text == info.manifest) {
+            info.updateCheckedAt = Date.now()
             return false
+        }
 
         info.manifest = resp.text
         return true
