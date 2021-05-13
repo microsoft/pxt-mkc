@@ -258,6 +258,8 @@ async function mainCli() {
         const dirs = glob.sync("**/pxt.json")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
+            if (fullpxtjson.startsWith("pxt_modules"))
+                continue
             const fulldir = path.dirname(fullpxtjson)
             info(`build ${fulldir}`)
             const prj0 = prj.mkChildProject(fulldir)
