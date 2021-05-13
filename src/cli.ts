@@ -50,12 +50,24 @@ async function buildOnePrj(opts: CmdOptions, prj: mkc.Project) {
 
         const res = await prj.buildAsync(simpleOpts)
 
+        const msgToString = (diagnostic: service.DiagnosticMessageChain | service.KsDiagnostic) => {
+            const category = diagnostic.category == 1 ? chalk.red("error") : diagnostic.category == 2 ? chalk.yellowBright("warning") : "message"
+            return `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`
+        }
+
         let output = ""
         for (let diagnostic of res.diagnostics) {
-            const category = diagnostic.category == 1 ? chalk.red("error") : diagnostic.category == 2 ? chalk.yellowBright("warning") : "message"
+            let pref = ""
             if (diagnostic.fileName)
-                output += `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1}): `;
-            output += `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`;
+                pref = `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1}): `;
+
+            if (typeof diagnostic.messageText == "string")
+                output += pref + msgToString(diagnostic);
+            else {
+                for (let chain = diagnostic.messageText; chain; chain = chain.next) {
+                    output += pref + msgToString(chain);
+                }
+            }
         }
 
         if (output)

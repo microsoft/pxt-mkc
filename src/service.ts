@@ -73,7 +73,7 @@ export interface DiagnosticMessageChain {
 export interface KsDiagnostic extends LocationInfo {
     code: number;
     category: DiagnosticCategory;
-    messageText: string; // | DiagnosticMessageChain;
+    messageText: string | DiagnosticMessageChain;
 }
 
 export interface CompileResult {
