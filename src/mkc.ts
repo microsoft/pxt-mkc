@@ -58,6 +58,7 @@ export class Project {
     lastPxtJson: string;
     private _hwVariant: string;
     writePxtModules = true
+    linkPxtModules = false
     outputPrefix = "built"
     mkcConfig: MkcJson
 
@@ -106,6 +107,41 @@ export class Project {
     }
 
     protected savePxtModulesAsync(filesmap: pxt.Map<string>) {
+        if (this.linkPxtModules) {
+            filesmap = JSON.parse(JSON.stringify(filesmap))
+            const pxtmod = "pxt_modules/"
+            const filesByPkg: pxt.Map<string[]> = {}
+            const filenames = Object.keys(filesmap)
+            for (const s of filenames) {
+                if (s.startsWith(pxtmod)) {
+                    const id = s.slice(pxtmod.length).replace(/\/.*/, "")
+                    if (!filesByPkg[id]) filesByPkg[id] = []
+                    filesByPkg[id].push(s)
+                }
+            }
+            for (const id of Object.keys(filesByPkg)) {
+                let lnk = this.mkcConfig.links?.[id]
+                let rel = ""
+                if (lnk)
+                    rel = files.relativePath(this.directory + "/pxt_modules/foobar", lnk)
+                else if (files.fileExists(`../../libs/${id}/pxt.json`)) {
+                    lnk = `../../libs/${id}`
+                    rel = `../../${lnk}`
+                }
+                if (lnk) {
+                    for (const fn of filesByPkg[id])
+                        delete filesmap[fn]
+                    log(`link ${id} -> ${lnk}`)
+                    const pxtJson = JSON.stringify({
+                        additionalFilePath: rel
+                    }, null, 4)
+                    filesmap["pxt_modules/" + id + "/pxt.json"] = pxtJson
+                    if (/---/.test(id)) {
+                        filesmap["pxt_modules/" + id.replace(/---.*/, "") + "/pxt.json"] = pxtJson
+                    }
+                }
+            }
+        }
         return files.savePxtModulesAsync(this.directory, filesmap)
     }
 

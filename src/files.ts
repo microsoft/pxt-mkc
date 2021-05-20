@@ -30,6 +30,14 @@ function resolveFilename(dir: string, filename: string) {
     throw new Error(`Invalid file name: ${filename} (in ${dir})`)
 }
 
+export function relativePath(currdir: string, target: string) {
+    return path.relative(currdir, target)
+}
+
+export function fileExists(name: string) {
+    return fs.existsSync(name)
+}
+
 export function readPrjFileAsync(dir: string, filename: string) {
     return readAsync(resolveFilename(dir, filename), "utf8")
 }
