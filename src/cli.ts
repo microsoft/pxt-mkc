@@ -98,7 +98,7 @@ async function mainCli() {
         .version("0.0.0")
         .option("-n, --native", "compile native (default)")
         .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
-        .option("-h, --hw <id>", "set hardware for which to compile (implies -n)")
+        .option("-h, --hw <id,...>", "set hardware(s) for which to compile (implies -n)")
         .option("-j, --java-script", "compile to JavaScript")
         .option("-d, --download <URL>", "download project from share URL")
         .option("-i, --init-mkc", "initialize mkc.json")
@@ -188,23 +188,13 @@ async function mainCli() {
     prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
     const hwVariants = prj.service.hwVariants
     const targetId = prj.service.runSync("pxt.appTarget.id")
+    let moreHw: string[] = []
+    const outputs: string[] = []
 
     if (opts.hw) {
-        const hw = opts.hw.toLowerCase()
-        const selected = hwVariants.filter(cfg => {
-            return cfg.name.toLowerCase() == hw ||
-                hwid(cfg).toLowerCase() == hw ||
-                cfg.card.name.toLowerCase() == hw
-        })
-        if (!selected.length) {
-            error(`No such HW id: ${opts.hw}`)
-            msg(`Available hw:`)
-            for (let cfg of hwVariants) {
-                msg(`${hwid(cfg)}, ${cfg.card.name} - ${cfg.card.description}`)
-            }
-            process.exit(1)
-        }
-        prj.hwVariant = hwid(selected[0])
+        const hws = opts.hw.split(/[\s,;]+/)
+        selectHW(hws[0])
+        moreHw = hws.slice(1)
     }
 
     if (opts.initMkc) {
@@ -225,11 +215,10 @@ async function mainCli() {
 
     if (opts.native && hwVariants.length) {
         prj.guessHwVariant()
-        info(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant} (target ${targetId})`)
-        if (!opts.alwaysBuilt)
-            prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
+        infoHW()
     }
 
+    outputs.push(prj.outputPrefix)
     const compileRes = await buildOnePrj(opts, prj)
     if (compileRes && opts.deploy) {
         const firmwareName = ["binary.uf2", "binary.hex", "binary.elf"].filter(f => !!compileRes.outfiles[f])[0];
@@ -278,6 +267,25 @@ async function mainCli() {
             if (!ok)
                 success = false
         }
+    } else if (success && moreHw.length) {
+        for (const hw of moreHw) {
+            selectHW(hw)
+            infoHW()
+            outputs.push(prj.outputPrefix)
+            await buildOnePrj(opts, prj)
+        }
+        const uf2s: Buffer[] = []
+        for (const folder of outputs) {
+            try {
+                uf2s.push(fs.readFileSync(path.join(folder, "binary.uf2")))
+            } catch { }
+        }
+        if (uf2s.length > 1) {
+            const total = Buffer.concat(uf2s)
+            const fn = "built/combined.uf2"
+            info(`combining ${uf2s.length} UF2 files into ${fn} (${Math.round(total.length/1024)}kB)`)
+            fs.writeFileSync(fn, total)
+        }
     }
 
     if (success) {
@@ -290,6 +298,30 @@ async function mainCli() {
 
     function hwid(cfg: pxt.PackageConfig) {
         return cfg.name.replace(/hw---/, "")
+    }
+
+    function selectHW(hw0: string) {
+        const hw = hw0.toLowerCase()
+        const selected = hwVariants.filter(cfg => {
+            return cfg.name.toLowerCase() == hw ||
+                hwid(cfg).toLowerCase() == hw ||
+                cfg.card.name.toLowerCase() == hw
+        })
+        if (!selected.length) {
+            error(`No such HW id: ${hw0}`)
+            msg(`Available hw:`)
+            for (let cfg of hwVariants) {
+                msg(`${hwid(cfg)}, ${cfg.card.name} - ${cfg.card.description}`)
+            }
+            process.exit(1)
+        }
+        prj.hwVariant = hwid(selected[0])
+    }
+
+    function infoHW() {
+        info(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant} (target ${targetId})`)
+        if (!opts.alwaysBuilt)
+            prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
     }
 }
 
