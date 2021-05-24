@@ -108,6 +108,9 @@ export class Project {
 
     protected savePxtModulesAsync(filesmap: pxt.Map<string>) {
         if (this.linkPxtModules) {
+            let libsPath = files.findParentDirWith("..", "pxtarget.json")
+            if (libsPath)
+                libsPath = files.relativePath(".", libsPath).replace(/\\/g, "/") + "/libs"
             filesmap = JSON.parse(JSON.stringify(filesmap))
             const pxtmod = "pxt_modules/"
             const filesByPkg: pxt.Map<string[]> = {}
@@ -124,8 +127,8 @@ export class Project {
                 let rel = ""
                 if (lnk)
                     rel = files.relativePath(this.directory + "/pxt_modules/foobar", lnk)
-                else if (files.fileExists(`../../libs/${id}/pxt.json`)) {
-                    lnk = `../../libs/${id}`
+                else if (files.fileExists(`${libsPath}/${id}/pxt.json`)) {
+                    lnk = `${libsPath}/${id}`
                     rel = `../../${lnk}`
                 }
                 if (lnk) {
