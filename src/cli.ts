@@ -3,7 +3,6 @@ import * as path from "path"
 import * as util from "util"
 
 import * as mkc from "./mkc"
-import * as loader from "./loader"
 import * as files from "./files"
 import * as bump from "./bump"
 import * as downloader from "./downloader"
