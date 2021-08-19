@@ -10,7 +10,6 @@ import * as downloader from "./downloader"
 import * as service from "./service"
 import { program as commander } from "commander"
 import * as chalk from "chalk"
-import { glob } from "glob"
 import { getDeployDrives } from "./deploy"
 interface CmdOptions {
     hw?: string;
@@ -250,7 +249,7 @@ async function mainCli() {
     let success = !!compileRes
 
     if (success && opts.monoRepo) {
-        const dirs = glob.sync("**/pxt.json")
+        const dirs = bump.monoRepoConfigs(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules"))

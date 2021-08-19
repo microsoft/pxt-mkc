@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as mkc from "./mkc"
 import * as files from "./files"
 import { httpGetJsonAsync } from './downloader';
+import { glob } from 'glob';
 
 export interface SpawnOptions {
     cmd: string;
@@ -95,10 +96,12 @@ export function runGitAsync(...args: string[]) {
     })
 }
 
-function monoRepoConfigs(prj: mkc.Project) {
-    return fs.readdirSync(prj.directory)
-        .map(fn => path.join(prj.directory, fn, "pxt.json"))
-        .filter(fs.existsSync)
+export function monoRepoConfigs(folder: string, includingSelf = true) {
+    return glob.sync(folder + "/**/pxt.json")
+        .filter(e =>
+            e.indexOf("pxt_modules") < 0 &&
+            e.indexOf("node_modules") < 0 &&
+            (includingSelf || path.resolve(folder, "pxt.json") != path.resolve(e)))
 }
 
 export async function bumpAsync(prj: mkc.Project) {
@@ -110,7 +113,7 @@ export async function bumpAsync(prj: mkc.Project) {
     newV = await queryAsync("New version", newV)
     cfg.version = newV
 
-    const configs = monoRepoConfigs(prj)
+    const configs = monoRepoConfigs(prj.directory, false)
     if (configs.length > 0) {
         if (await queryAsync(`Also update sub-packages (${configs.length}) in this repo?`, "y") == "y") {
             for (const fn of configs) {
