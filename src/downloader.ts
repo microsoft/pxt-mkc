@@ -149,7 +149,7 @@ export function httpGetJsonAsync(url: string) {
     return requestAsync({ url: url }).then(resp => resp.json)
 }
 
-interface WebConfig {
+export interface WebConfig {
     relprefix: string; // "/beta---",
     workerjs: string;  // "/beta---worker",
     monacoworkerjs: string; // "/beta---monacoworker",
@@ -208,6 +208,7 @@ export interface DownloadInfo {
     simKey?: string;
     versionNumber?: number;
     updateCheckedAt?: number;
+    webConfig?: WebConfig;
 }
 
 function log(msg: string) {
@@ -245,6 +246,7 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string, useCach
         info.manifestUrl = cfg.manifestUrl
         info.manifestEtag = null
         info.cdnUrl = cfg.cdnUrl
+        info.webConfig = cfg
         await hasNewManifestAsync()
     }
     info.versionNumber = (info.versionNumber || 0) + 1
@@ -294,6 +296,7 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string, useCach
             simUrl: info.simKey ? cache.rootPath + "/" + cache.expandKey(info.simKey) : null,
             pxtWorkerJs: (await cache.getAsync(webAppUrl + "-pxtworker.js")).toString("utf8"),
             targetJson: JSON.parse((await cache.getAsync(webAppUrl + "-target.json")).toString("utf8")),
+            webConfig: info.webConfig
         }
         return res
     }
@@ -304,7 +307,7 @@ export async function downloadAsync(cache: mkc.Cache, webAppUrl: string, useCach
     }
 
     async function hasNewManifestAsync() {
-        if (!info.manifestUrl)
+        if (!info.manifestUrl || !info.webConfig)
             return true
 
         const resp = await requestAsync({

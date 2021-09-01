@@ -28,6 +28,7 @@ export interface DownloadedEditor {
     website: string;
     pxtWorkerJs: string;
     targetJson: any;
+    webConfig: downloader.WebConfig
 }
 
 export interface Package {
@@ -255,6 +256,25 @@ export class Project {
         const err = (res as any).errorMessage
         if (err)
             throw new Error(err)
+
+        const binjs = "binary.js"
+        if (res.outfiles[binjs]) {
+            const appTarget = this.service.runSync("pxt.appTarget")
+            const boardDef = appTarget.simulator?.boardDefinition
+            if (boardDef) {
+                res.outfiles[binjs] = `// boardDefinition=${JSON.stringify(boardDef)}\n` + res.outfiles[binjs]
+            }
+            const webConfig: downloader.WebConfig = this.editor.webConfig || this.service.runSync("pxt.webConfig")
+            const meta: any = {
+                simUrl: webConfig.simUrl,
+                cdnUrl: webConfig.cdnUrl,
+                version: "v0",
+                target: appTarget.id,
+                targetVersion: appTarget.versions.target
+            };
+            
+            res.outfiles[binjs] = `// meta=${JSON.stringify(meta)}\n` + res.outfiles[binjs]
+        }
 
         await this.saveBuiltFilesAsync(res)
 
