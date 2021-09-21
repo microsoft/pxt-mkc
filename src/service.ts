@@ -1,6 +1,7 @@
 import vm = require("vm");
 import mkc = require("./mkc");
 import downloader = require("./downloader");
+import { TextDecoder, TextEncoder } from "util";
 
 const cdnUrl = "https://pxt.azureedge.net"
 
@@ -115,6 +116,8 @@ export class Ctx {
             setInterval: setInterval,
             clearImmediate: clearImmediate,
             setImmediate: setImmediate,
+            TextEncoder: TextEncoder,
+            TextDecoder: TextDecoder,
             Buffer: Buffer,
             pxtTargetBundle: {},
             scriptText: {},
