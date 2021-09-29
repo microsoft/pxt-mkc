@@ -11,6 +11,7 @@ export interface MkcJson {
     hwVariant?: string;
     links?: pxt.Map<string>;
     overrides?: Partial<pxt.PackageConfig>;
+    include?: string[];
 }
 
 export interface Cache {

@@ -44,7 +44,10 @@ The tool is configured with optional `mkc.json` file. Example:
     },
     "overrides": {
       "testDependencies": {}
-    }
+    },
+    "include": [
+      "../../common-mkc.json"
+    ]
 }
 ```
 
@@ -56,6 +59,8 @@ All fields are optional.
 * **hwVariant** specifies default hardware variant (currently only used in Arcade); try `--hw help` command line option to list variants
 * **links** overrides specific packages; these can be github packages or built-in packages
 * **overrides** is used to override specific keys in `pxt.json`
+* files listed in **include** are merged with the keys from the later ones overriding the keys from the earlier ones;
+  the keys from the current file override all included keys
 
 You can use `--config-path` to build for a different configuration, eg. `makecode -c mkc-arcade.json`.
 

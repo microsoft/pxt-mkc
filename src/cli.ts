@@ -157,19 +157,7 @@ async function mainCli() {
 
     if (opts.configPath) {
         info(`Using config: ${opts.configPath}`)
-        try {
-            prj.mkcConfig = JSON.parse(fs.readFileSync(opts.configPath, "utf8"))
-        } catch (e) {
-            error(`Can't read config file: '${opts.configPath}'; ` + e.message)
-            process.exit(1)
-        }
-        const lnk = prj.mkcConfig.links
-        if (lnk) {
-            const mkcFolder = path.resolve(".", path.dirname(opts.configPath))
-            for (const k of Object.keys(lnk)) {
-                lnk[k] = path.resolve(mkcFolder, lnk[k])
-            }
-        }
+        prj.mkcConfig = readCfg(opts.configPath)
     }
 
     await prj.loadEditorAsync(!!opts.update)
@@ -281,7 +269,7 @@ async function mainCli() {
         if (uf2s.length > 1) {
             const total = Buffer.concat(uf2s)
             const fn = "built/combined.uf2"
-            info(`combining ${uf2s.length} UF2 files into ${fn} (${Math.round(total.length/1024)}kB)`)
+            info(`combining ${uf2s.length} UF2 files into ${fn} (${Math.round(total.length / 1024)}kB)`)
             fs.writeFileSync(fn, total)
         }
     }
@@ -320,6 +308,63 @@ async function mainCli() {
         info(`using hwVariant: ${prj.mainPkg.mkcConfig.hwVariant} (target ${targetId})`)
         if (!opts.alwaysBuilt)
             prj.outputPrefix = "built/" + prj.mainPkg.mkcConfig.hwVariant
+    }
+}
+
+function isKV(v: any) {
+    return !!v && typeof v === "object" && !Array.isArray(v)
+}
+
+function jsonMergeFrom(trg: any, src: any) {
+    if (!src) return;
+    Object.keys(src).forEach(k => {
+        if (isKV(trg[k]) && isKV(src[k]))
+            jsonMergeFrom(trg[k], src[k]);
+        else if (Array.isArray(trg[k]) && Array.isArray(src[k]))
+            trg[k] = trg[k].concat(src[k])
+        else trg[k] = src[k];
+    });
+}
+
+function readCfg(cfgpath: string) {
+    const files: string[] = []
+    return readCfgRec(cfgpath)
+
+    function readCfgRec(cfgpath: string) {
+        if (files.indexOf(cfgpath) >= 0) {
+            error(`Config file loop: ${files.join(" -> ")} -> ${cfgpath}`)
+            process.exit(1)
+        }
+        const cfg = cfgFile(cfgpath)
+        const currCfg: mkc.MkcJson = {} as any
+        files.push(cfgpath)
+        for (const fn of cfg.include || []) {
+            const resolved = path.resolve(path.dirname(cfgpath), fn)
+            info(`  include: ${resolved}`)
+            jsonMergeFrom(currCfg, readCfgRec(resolved))
+        }
+        jsonMergeFrom(currCfg, cfg)
+        delete currCfg.include
+        files.pop()
+        return currCfg
+
+        function cfgFile(cfgpath: string) {
+            let cfg: mkc.MkcJson
+            try {
+                cfg = JSON.parse(fs.readFileSync(cfgpath, "utf8"))
+            } catch (e) {
+                error(`Can't read config file: '${cfgpath}'; ` + e.message)
+                process.exit(1)
+            }
+            const lnk = cfg.links
+            if (lnk) {
+                const mkcFolder = path.resolve(".", path.dirname(cfgpath))
+                for (const k of Object.keys(lnk)) {
+                    lnk[k] = path.resolve(mkcFolder, lnk[k])
+                }
+            }
+            return cfg
+        }
     }
 }
 
