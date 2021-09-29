@@ -93,7 +93,7 @@ function error(msg: string) {
 
 async function mainCli() {
     commander
-        .version("0.0.0")
+        .version(require("../package.json").version)
         .option("-n, --native", "compile native (default)")
         .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
         .option("-h, --hw <id,...>", "set hardware(s) for which to compile (implies -n)")
