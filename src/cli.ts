@@ -161,7 +161,12 @@ async function mainCli() {
     }
 
     await prj.loadEditorAsync(!!opts.update)
-    info(`Using editor: ${prj.mkcConfig.targetWebsite}`)
+
+    let version = "???"
+    try {
+        version = prj.service.runSync("pxt.appTarget?.versions?.target")
+    } catch {}
+    info(`Using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
     if (opts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
