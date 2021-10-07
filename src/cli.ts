@@ -18,6 +18,7 @@ interface CmdOptions {
     deploy?: boolean;
     pxtModules?: boolean;
     linkPxtModules?: boolean;
+    symlinkPxtModules?: boolean;
     initMkc?: boolean;
     alwaysBuilt?: boolean;
     update?: boolean;
@@ -105,6 +106,7 @@ async function mainCli() {
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("-m, --pxt-modules", "write pxt_modules/*")
+        .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
         .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .option("--colors", "force color output")
@@ -197,6 +199,9 @@ async function mainCli() {
     if (opts.linkPxtModules) {
         prj.writePxtModules = true
         prj.linkPxtModules = true
+    } else if (opts.symlinkPxtModules) {
+        prj.writePxtModules = true
+        prj.symlinkPxtModules = true
     }
 
     if (!opts.javaScript || opts.hw)

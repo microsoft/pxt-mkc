@@ -109,10 +109,16 @@ export async function saveBuiltFilesAsync(dir: string, res: mkc.service.CompileR
     await writeFilesAsync(path.join(dir, folder), res.outfiles || {}, true)
 }
 
-export async function savePxtModulesAsync(dir: string, files: pxt.Map<string>) {
+export async function savePxtModulesAsync(dir: string, files: pxt.Map<string | { symlink: string }>) {
     for (const k of Object.keys(files))
         if (k.startsWith("pxt_modules/")) {
             mkdirp(path.dirname(k))
-            await writeAsync(k, files[k])
+            const v = files[k]
+            if (typeof v == "string")
+                await writeAsync(k, v)
+            else {
+                try { fs.unlinkSync(k) } catch { }
+                fs.symlinkSync(v.symlink, k, "file")
+            }
         }
 }

@@ -61,6 +61,7 @@ export class Project {
     private _hwVariant: string;
     writePxtModules = true
     linkPxtModules = false
+    symlinkPxtModules = false
     outputPrefix = "built"
     mkcConfig: MkcJson
 
@@ -108,12 +109,13 @@ export class Project {
         return files.saveBuiltFilesAsync(this.directory, res, this.outputPrefix)
     }
 
-    protected savePxtModulesAsync(filesmap: pxt.Map<string>) {
-        if (this.linkPxtModules) {
+    protected savePxtModulesAsync(filesmap0: pxt.Map<string>) {
+        let filesmap: pxt.Map<string | { symlink: string }> = filesmap0
+        if (this.linkPxtModules || this.symlinkPxtModules) {
             let libsPath = files.findParentDirWith("..", "pxtarget.json")
             if (libsPath)
                 libsPath = files.relativePath(".", libsPath).replace(/\\/g, "/") + "/libs"
-            filesmap = JSON.parse(JSON.stringify(filesmap))
+            filesmap = JSON.parse(JSON.stringify(filesmap0))
             const pxtmod = "pxt_modules/"
             const filesByPkg: pxt.Map<string[]> = {}
             const filenames = Object.keys(filesmap)
@@ -133,7 +135,7 @@ export class Project {
                     lnk = `${libsPath}/${id}`
                     rel = `../../${lnk}`
                 }
-                if (lnk) {
+                if (lnk && this.linkPxtModules) {
                     for (const fn of filesByPkg[id])
                         delete filesmap[fn]
                     log(`link ${id} -> ${lnk}`)
@@ -143,6 +145,16 @@ export class Project {
                     filesmap["pxt_modules/" + id + "/pxt.json"] = pxtJson
                     if (/---/.test(id)) {
                         filesmap["pxt_modules/" + id.replace(/---.*/, "") + "/pxt.json"] = pxtJson
+                    }
+                } else if (lnk && this.symlinkPxtModules) {
+                    for (const fn of filesByPkg[id]) {
+                        const bn = fn.replace(/.*\//, "")
+                        if (files.fileExists(`${lnk}/${bn}`)) {
+                            filesmap[fn] = { symlink: `${rel}/${bn}` }
+                            // log(`symlink ${fn} -> ${rel}/${bn}`)
+                        } else {
+                            log(`not link ${fn}`)
+                        }
                     }
                 }
             }
@@ -273,7 +285,7 @@ export class Project {
                 target: appTarget.id,
                 targetVersion: appTarget.versions.target
             };
-            
+
             res.outfiles[binjs] = `// meta=${JSON.stringify(meta)}\n` + res.outfiles[binjs]
         }
 
