@@ -7,7 +7,7 @@ import * as files from "./files"
 import * as bump from "./bump"
 import * as downloader from "./downloader"
 import * as service from "./service"
-import { program as commander, CommandOptions } from "commander"
+import { program as commander, CommandOptions, Command } from "commander"
 import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
@@ -21,6 +21,10 @@ interface Options {
 interface ProjectOptions extends Options {
     configPath?: string;
     update?: boolean;
+    
+    pxtModules?: boolean;
+    linkPxtModules?: boolean;
+    symlinkPxtModules?: boolean;
 }
 
 interface BuildOptions extends ProjectOptions {
@@ -30,9 +34,6 @@ interface BuildOptions extends ProjectOptions {
     deploy?: boolean;
     alwaysBuilt?: boolean;
     monoRepo?: boolean;
-    pxtModules?: boolean;
-    linkPxtModules?: boolean;
-    symlinkPxtModules?: boolean;
 }
 
 interface DownloadOptions extends Options { }
@@ -41,7 +42,7 @@ interface BumpOptions extends ProjectOptions {
 
 }
 
-interface InitOptions extends Options {
+interface InitOptions extends ProjectOptions {
 }
 
 async function downloadProjectAsync(id: string) {
@@ -160,6 +161,14 @@ async function resolveProject(opts: ProjectOptions) {
     if (opts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
 
+    prj.writePxtModules = !!opts.pxtModules
+    if (opts.linkPxtModules) {
+        prj.writePxtModules = true
+        prj.linkPxtModules = true
+    } else if (opts.symlinkPxtModules) {
+        prj.writePxtModules = true
+        prj.symlinkPxtModules = true
+    }
     return prj
 }
 
@@ -187,15 +196,6 @@ async function buildCommand(opts: BuildOptions) {
         const hws = opts.hw.split(/[\s,;]+/)
         selectHW(hws[0])
         moreHw = hws.slice(1)
-    }
-
-    prj.writePxtModules = !!opts.pxtModules
-    if (opts.linkPxtModules) {
-        prj.writePxtModules = true
-        prj.linkPxtModules = true
-    } else if (opts.symlinkPxtModules) {
-        prj.writePxtModules = true
-        prj.symlinkPxtModules = true
     }
 
     if (!opts.javaScript || opts.hw)
@@ -348,9 +348,6 @@ async function initCommand(editor: string, opts: InitOptions) {
         }, null, 4))
     }
 
-    msg("saving mkc.json")
-    const prj = await resolveProject(opts)
-    fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig), { encoding: "utf-8" })
     if (!fs.existsSync("tsconfig.json")) {
         msg("saving tsconfig.json")
         fs.writeFileSync("tsconfig.json", JSON.stringify({
@@ -364,6 +361,14 @@ async function initCommand(editor: string, opts: InitOptions) {
         }, null, 4), { encoding: "utf-8" })
     }
 
+    const prj = await resolveProject(opts)
+    if (!fs.existsSync("mkc.json")) {
+        msg("saving mkc.json")
+        fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig), { encoding: "utf-8" })
+    }
+
+    if (opts.pxtModules)
+        await prj.maybeWritePxtModulesAsync()
 }
 
 function isKV(v: any) {
@@ -442,10 +447,7 @@ async function mainCli() {
         .option("-u, --update", "check for web-app updates")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
-        .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
-        .option("-m, --pxt-modules", "write pxt_modules/*")
-        .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
-        .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
+        .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")    
         .action(buildCommand)
 
     createCommand("download <URL>")
@@ -458,6 +460,9 @@ async function mainCli() {
 
     createCommand("init [editor]")
         .description("initializes the project, optionally for a particular editor")
+        .option("-m, --pxt-modules", "write pxt_modules/*")
+        .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
+        .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
         .action(initCommand)
 
     await commander.parseAsync(process.argv)
