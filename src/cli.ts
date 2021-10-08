@@ -367,8 +367,8 @@ async function initCommand(editor: string, opts: InitOptions) {
         fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig), { encoding: "utf-8" })
     }
 
-    if (opts.pxtModules)
-        await prj.maybeWritePxtModulesAsync()
+    opts.pxtModules = true
+    await prj.maybeWritePxtModulesAsync()
 }
 
 function isKV(v: any) {
@@ -460,7 +460,6 @@ async function mainCli() {
 
     createCommand("init [editor]")
         .description("initializes the project, optionally for a particular editor")
-        .option("-m, --pxt-modules", "write pxt_modules/*")
         .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
         .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
         .action(initCommand)
