@@ -37,6 +37,10 @@ interface BuildOptions extends ProjectOptions {
 
 interface DownloadOptions extends Options { }
 
+interface CleanOptions extends Options {
+
+}
+
 interface BumpOptions extends ProjectOptions {
 
 }
@@ -128,14 +132,17 @@ async function downloadCommand(URL: string, opts: DownloadOptions) {
     await downloadProjectAsync(URL)
 }
 
-async function cleanCommand(opts: DownloadOptions) {
-    applyGlobalOptions(opts)
+async function cleanCommand(opts: CleanOptions) {
+    applyGlobalOptions(opts);
 
-    if (fs.existsSync("built")) {
-        msg("deleting built folder")
-        fs.rmdirSync("built", { recursive: true, force: true } as any)
-    }
+    ["built", "pxt_modules"]
+        .filter(d => fs.existsSync(d))
+        .forEach(d => {
+            msg(`deleting ${d} folder`)
+            fs.rmdirSync(d, { recursive: true, force: true } as any)
+        })
 
+    msg("run `mkc init` again to setup your project")
     // TODO: clean cached editors?
 }
 
