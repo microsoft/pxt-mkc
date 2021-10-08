@@ -18,10 +18,6 @@ interface GlobalOptions {
     debug?: boolean;
 }
 
-interface CleanOptions {
-
-}
-
 interface ProjectOptions {
     configPath?: string;
     update?: boolean;
@@ -123,11 +119,6 @@ function applyGlobalOptions() {
         (chalk as any).level = 1
     else if (process.env["GITHUB_WORKFLOW"])
         (chalk as any).level = 1
-}
-
-async function cleanCommand(options: CleanOptions) {
-    applyGlobalOptions()
-    // TODO
 }
 
 async function downloadCommand(URL: string, opts: DownloadOptions) {
@@ -459,10 +450,6 @@ async function mainCli() {
         .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
         .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
         .action(buildCommand)
-
-    createCommand("clean")
-        .description("delete build artifacts")
-        .action(cleanCommand)
 
     createCommand("download <URL>")
         .description("download project from share URL")
