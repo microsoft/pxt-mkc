@@ -37,19 +37,19 @@
   },
   "main": "built/mkc.js",
   "devDependencies": {
-    "@semantic-release/git": "^9.0.0",
-    "@semantic-release/github": "^7.2.1",
-    "@semantic-release/npm": "^7.1.1",
-    "@semantic-release/release-notes-generator": "^9.0.2",
-    "@types/node": "^14.14.37",
-    "semantic-release": "^17.4.2",
-    "typescript": "^4.2.4"
+    "@semantic-release/git": "^10.0.0",
+    "@semantic-release/github": "^8.0.1",
+    "@semantic-release/npm": "^8.0.0",
+    "@semantic-release/release-notes-generator": "^10.0.2",
+    "@types/node": "^16.10.3",
+    "semantic-release": "^18.0.0",
+    "typescript": "^4.4.3"
   },
   "dependencies": {
-    "@types/glob": "^7.1.3",
-    "chalk": "^4.1.0",
-    "commander": "^7.2.0",
-    "glob": "^7.1.6"
+    "@types/glob": "^7.1.4",
+    "chalk": "^4.1.2",
+    "commander": "^8.2.0",
+    "glob": "^7.2.0"
   },
   "release": {
     "branch": "master",
