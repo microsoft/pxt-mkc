@@ -135,6 +135,8 @@ async function cleanCommand(opts: DownloadOptions) {
         msg("deleting built folder")
         fs.rmdirSync("built", { recursive: true, force: true } as any)
     }
+
+    // TODO: clean cached editors?
 }
 
 async function resolveProject(opts: ProjectOptions) {
