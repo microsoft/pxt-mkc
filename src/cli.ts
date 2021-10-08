@@ -128,6 +128,15 @@ async function downloadCommand(URL: string, opts: DownloadOptions) {
     await downloadProjectAsync(URL)
 }
 
+async function cleanCommand(opts: DownloadOptions) {
+    applyGlobalOptions(opts)
+
+    if (fs.existsSync("built")) {
+        msg("deleting built folder")
+        fs.rmdirSync("built", { recursive: true, force: true } as any)
+    }
+}
+
 async function resolveProject(opts: ProjectOptions) {
     const prjdir = files.findProjectDir()
     if (!prjdir) {
@@ -459,6 +468,10 @@ async function mainCli() {
     createCommand("init [editor]")
         .description("initializes the project, optionally for a particular editor")
         .action(initCommand)
+
+    createCommand("clean")
+        .description("deletes built artifacts")
+        .action(cleanCommand)
 
     await commander.parseAsync(process.argv)
 }
