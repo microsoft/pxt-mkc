@@ -12,13 +12,13 @@ import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
 
-interface GlobalOptions {
+interface Options {
     colors?: boolean;
     noColors?: boolean;
     debug?: boolean;
 }
 
-interface ProjectOptions {
+interface ProjectOptions extends Options {
     configPath?: string;
     update?: boolean;
 }
@@ -35,13 +35,13 @@ interface BuildOptions extends ProjectOptions {
     symlinkPxtModules?: boolean;
 }
 
-interface DownloadOptions { }
+interface DownloadOptions extends Options { }
 
 interface BumpOptions extends ProjectOptions {
 
 }
 
-interface InitOptions {
+interface InitOptions extends Options {
 }
 
 async function downloadProjectAsync(id: string) {
@@ -108,11 +108,13 @@ function error(msg: string) {
 
 function createCommand(name: string, opts?: CommandOptions) {
     const cmd = commander.command(name, opts)
+        .option("--colors", "force color output")
+        .option("--no-colors", "disable color output")
+        .option("--debug", "enable debug output from PXT")
     return cmd
 }
 
-function applyGlobalOptions() {
-    const opts = commander.opts()
+function applyGlobalOptions(opts: Options) {
     if (opts.noColors)
         (chalk as any).level = 0
     else if (opts.colors && !chalk.level)
@@ -122,13 +124,11 @@ function applyGlobalOptions() {
 }
 
 async function downloadCommand(URL: string, opts: DownloadOptions) {
-    applyGlobalOptions()
+    applyGlobalOptions(opts)
     await downloadProjectAsync(URL)
 }
 
 async function resolveProject(opts: ProjectOptions) {
-    const globalOpts = commander.opts()
-
     const prjdir = files.findProjectDir()
     if (!prjdir) {
         error(`could not find "pxt.json" file`)
@@ -157,14 +157,14 @@ async function resolveProject(opts: ProjectOptions) {
     } catch { }
     info(`Using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
-    if (globalOpts.debug)
+    if (opts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
 
     return prj
 }
 
 async function buildCommand(opts: BuildOptions) {
-    applyGlobalOptions()
+    applyGlobalOptions(opts)
     if (opts.deploy && opts.monoRepo) {
         error("--deploy and --mono-repo cannot be used together")
         process.exit(1)
@@ -316,13 +316,13 @@ async function buildCommand(opts: BuildOptions) {
 }
 
 async function bumpCommand(opts: BumpOptions) {
-    applyGlobalOptions()
+    applyGlobalOptions(opts)
     const prj = await resolveProject(opts)
     await bump.bumpAsync(prj)
 }
 
 async function initCommand(editor: string, opts: InitOptions) {
-    applyGlobalOptions()
+    applyGlobalOptions(opts)
     if (!fs.existsSync("pxt.json")) {
         if (!editor) {
             error("editor not specified")
@@ -432,9 +432,6 @@ async function mainCli() {
 
     commander
         .version(require("../package.json").version)
-        .option("--colors", "force color output")
-        .option("--no-colors", "disable color output")
-        .option("--debug", "enable debug output from PXT")
 
     createCommand("build", { isDefault: true })
         .description("build project")
