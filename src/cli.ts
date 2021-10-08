@@ -7,27 +7,45 @@ import * as files from "./files"
 import * as bump from "./bump"
 import * as downloader from "./downloader"
 import * as service from "./service"
-import { program as commander } from "commander"
+import { program as commander, CommandOptions } from "commander"
 import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
-interface CmdOptions {
+import { descriptors } from "./loader"
+
+interface GlobalOptions {
+    colors?: boolean;
+    noColors?: boolean;
+    debug?: boolean;
+}
+
+interface CleanOptions {
+
+}
+
+interface ProjectOptions {
+    configPath?: string;
+    update?: boolean;
+}
+
+interface BuildOptions extends ProjectOptions {
     hw?: string;
     native?: boolean;
     javaScript?: boolean;
-    download?: string;
     deploy?: boolean;
+    alwaysBuilt?: boolean;
+    monoRepo?: boolean;
     pxtModules?: boolean;
     linkPxtModules?: boolean;
     symlinkPxtModules?: boolean;
-    initMkc?: boolean;
-    alwaysBuilt?: boolean;
-    update?: boolean;
-    debug?: boolean;
-    bump?: boolean;
-    configPath?: string;
-    monoRepo?: boolean;
-    colors?: boolean;
-    noColors?: boolean;
+}
+
+interface DownloadOptions { }
+
+interface BumpOptions extends ProjectOptions {
+
+}
+
+interface InitOptions {
 }
 
 async function downloadProjectAsync(id: string) {
@@ -42,7 +60,7 @@ async function downloadProjectAsync(id: string) {
     msg("downloaded.")
 }
 
-async function buildOnePrj(opts: CmdOptions, prj: mkc.Project) {
+async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
     try {
         const simpleOpts = {
             native: opts.native
@@ -92,55 +110,33 @@ function error(msg: string) {
     console.error(chalk.red(msg))
 }
 
-async function mainCli() {
-    commander
-        .version(require("../package.json").version)
-        .option("-n, --native", "compile native (default)")
-        .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
-        .option("-h, --hw <id,...>", "set hardware(s) for which to compile (implies -n)")
-        .option("-j, --java-script", "compile to JavaScript")
-        .option("-d, --download <URL>", "download project from share URL")
-        .option("-i, --init-mkc", "initialize mkc.json")
-        .option("-u, --update", "check for web-app updates")
-        .option("-b, --bump", "bump version in pxt.json and git")
-        .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
-        .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
-        .option("-m, --pxt-modules", "write pxt_modules/*")
-        .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
-        .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
-        .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
-        .option("--colors", "force color output")
-        .option("--no-colors", "disable color output")
-        .option("--debug", "enable debug output from PXT")
-        .parse(process.argv)
+function createCommand(name: string, opts?: CommandOptions) {
+    const cmd = commander.command(name, opts)
+    return cmd
+}
 
-    const opts = commander.opts() as CmdOptions
-
+function applyGlobalOptions() {
+    const opts = commander.opts()
     if (opts.noColors)
         (chalk as any).level = 0
     else if (opts.colors && !chalk.level)
         (chalk as any).level = 1
     else if (process.env["GITHUB_WORKFLOW"])
         (chalk as any).level = 1
+}
 
-    if (opts.deploy && opts.monoRepo) {
-        error("--deploy and --mono-repo cannot be used together")
-        process.exit(1)
-    }
+async function cleanCommand(options: CleanOptions) {
+    applyGlobalOptions()
+    // TODO
+}
 
-    if (opts.deploy && opts.javaScript) {
-        error("--deploy and --java-script cannot be used together")
-        process.exit(1)
-    }
+async function downloadCommand(URL: string, opts: DownloadOptions) {
+    applyGlobalOptions()
+    await downloadProjectAsync(URL)
+}
 
-    mkc.setLogging({
-        log: info,
-        error: error,
-        debug: s => console.log(chalk.gray(s))
-    })
-
-    if (opts.download)
-        return downloadProjectAsync(opts.download)
+async function resolveProject(opts: ProjectOptions) {
+    const globalOpts = commander.opts()
 
     const prjdir = files.findProjectDir()
     if (!prjdir) {
@@ -167,16 +163,28 @@ async function mainCli() {
     let version = "???"
     try {
         version = prj.service.runSync("pxt.appTarget?.versions?.target")
-    } catch {}
+    } catch { }
     info(`Using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
-    if (opts.debug)
+    if (globalOpts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
 
-    if (opts.bump) {
-        await bump.bumpAsync(prj)
-        process.exit(0)
+    return prj
+}
+
+async function buildCommand(opts: BuildOptions) {
+    applyGlobalOptions()
+    if (opts.deploy && opts.monoRepo) {
+        error("--deploy and --mono-repo cannot be used together")
+        process.exit(1)
     }
+
+    if (opts.deploy && opts.javaScript) {
+        error("--deploy and --java-script cannot be used together")
+        process.exit(1)
+    }
+
+    const prj = await resolveProject(opts)
 
     prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
     const hwVariants = prj.service.hwVariants
@@ -188,11 +196,6 @@ async function mainCli() {
         const hws = opts.hw.split(/[\s,;]+/)
         selectHW(hws[0])
         moreHw = hws.slice(1)
-    }
-
-    if (opts.initMkc) {
-        msg("saving mkc.json")
-        fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig))
     }
 
     prj.writePxtModules = !!opts.pxtModules
@@ -321,6 +324,57 @@ async function mainCli() {
     }
 }
 
+async function bumpCommand(opts: BumpOptions) {
+    applyGlobalOptions()
+    const prj = await resolveProject(opts)
+    await bump.bumpAsync(prj)
+}
+
+async function initCommand(editor: string, opts: InitOptions) {
+    applyGlobalOptions()
+    if (!fs.existsSync("pxt.json")) {
+        if (!editor) {
+            error("editor not specified")
+            process.exit(1)
+        }
+        const target = descriptors.find(t => t.id === editor)
+        if (!target) {
+            error(`editor not found, must be one of ${descriptors.map(t => t.id).join(",")}`)
+            process.exit(1)
+        }
+
+        msg(`initializing project for ${target.name}`)
+        msg("saving main.ts")
+        fs.writeFileSync("main.ts", "// add code here", { encoding: "utf-8" })
+        msg("saving pxt.json")
+        fs.writeFileSync("pxt.json", JSON.stringify({
+            "name": "my-project",
+            "version": "0.0.0",
+            "files": ["main.ts"],
+            "dependencies": {
+                [target.corepkg]: "*"
+            }
+        }, null, 4))
+    }
+
+    msg("saving mkc.json")
+    const prj = await resolveProject(opts)
+    fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig), { encoding: "utf-8" })
+    if (!fs.existsSync("tsconfig.json")) {
+        msg("saving tsconfig.json")
+        fs.writeFileSync("tsconfig.json", JSON.stringify({
+            "compilerOptions": {
+                "target": "ES5",
+                "noImplicitAny": true,
+                "outDir": "built",
+                "rootDir": "."
+            },
+            "exclude": ["pxt_modules/**/*test.ts"]
+        }, null, 4), { encoding: "utf-8" })
+    }
+
+}
+
 function isKV(v: any) {
     return !!v && typeof v === "object" && !Array.isArray(v)
 }
@@ -376,6 +430,53 @@ function readCfg(cfgpath: string) {
             return cfg
         }
     }
+}
+
+async function mainCli() {
+    mkc.setLogging({
+        log: info,
+        error: error,
+        debug: s => console.log(chalk.gray(s))
+    })
+
+    commander
+        .version(require("../package.json").version)
+        .option("--colors", "force color output")
+        .option("--no-colors", "disable color output")
+        .option("--debug", "enable debug output from PXT")
+
+    createCommand("build", { isDefault: true })
+        .description("build project")
+        .option("-n, --native", "compile native (default)")
+        .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
+        .option("-h, --hw <id,...>", "set hardware(s) for which to compile (implies -n)")
+        .option("-j, --java-script", "compile to JavaScript")
+        .option("-u, --update", "check for web-app updates")
+        .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
+        .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
+        .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
+        .option("-m, --pxt-modules", "write pxt_modules/*")
+        .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
+        .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
+        .action(buildCommand)
+
+    createCommand("clean")
+        .description("delete build artifacts")
+        .action(cleanCommand)
+
+    createCommand("download <URL>")
+        .description("download project from share URL")
+        .action(downloadCommand)
+
+    createCommand("bump")
+        .description("bump version in pxt.json and git")
+        .action(bumpCommand)
+
+    createCommand("init [editor]")
+        .description("initializes the project, optionally for a particular editor")
+        .action(initCommand)
+
+    await commander.parseAsync(process.argv)
 }
 
 async function mainWrapper() {
