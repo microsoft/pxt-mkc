@@ -164,10 +164,6 @@ commit naming guidelines.
 - **test:** Adding missing or correcting existing tests
 - **chore:** Changes to the build process or auxiliary tools and libraries such as documentation generation
 
-## TODO
-
-- [ ] allow updating `shims.d.ts`/`enums.d.ts`
-
 ### Contributing
 
 This project welcomes contributions and suggestions. Most contributions require you to agree to a
