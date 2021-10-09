@@ -438,7 +438,13 @@ async function initCommand(template: string, deps: string[], opts: InitOptions) 
                 "outDir": "built",
                 "rootDir": "."
             },
-            "exclude": ["pxt_modules/**/*test.ts"]
+            "include": [
+                "**/*.ts"
+            ],
+            "exclude": [
+                "built/**",
+                "pxt_modules/**/*test.ts"
+            ]
         }, null, 4), { encoding: "utf-8" })
     }
 
