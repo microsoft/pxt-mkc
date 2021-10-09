@@ -61,6 +61,13 @@ To build and deploy to a device add `-d`.
 mkc -d
 ```
 
+The tool checks once a day if the MakeCode editor has been updated. However, you can force an update by using ``--update``
+during a build.
+
+```
+mkc --update
+```
+
 ### mkc build --watch
 
 Use ``--watch``, or ``-w``, with ``mkc build`` to automatically watch changes in source files and rebuild automatically.
