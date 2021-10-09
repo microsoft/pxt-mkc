@@ -11,6 +11,7 @@ import { program as commander, CommandOptions, Command, Argument, Option } from 
 import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
+import watch from 'node-watch'
 
 interface Options {
     colors?: boolean;
@@ -34,6 +35,7 @@ interface BuildOptions extends ProjectOptions {
     deploy?: boolean;
     alwaysBuilt?: boolean;
     monoRepo?: boolean;
+    watch?: boolean
 }
 
 interface DownloadOptions extends Options { }
@@ -195,14 +197,60 @@ async function buildCommand(opts: BuildOptions) {
         error("--deploy and --mono-repo cannot be used together")
         process.exit(1)
     }
-
     if (opts.deploy && opts.javaScript) {
         error("--deploy and --java-script cannot be used together")
         process.exit(1)
     }
 
-    const prj = await resolveProject(opts)
+    if (opts.watch) {
+        startWatch(opts)
+    } else await buildCommandOnce(opts)
+}
 
+function startWatch(opts: BuildOptions) {
+    const watcher = watch('./', {
+        recursive: true,
+        delay: 3000,
+        filter(f, skip) {
+            // skip node_modules, pxt_modules, built, .git
+            if (/\/?((node|pxt)_modules|built|\.git)/i.test(f)) return skip;
+            // only watch for js files
+            return /\.(json|ts|asm|cpp|c|h|hpp)$/i.test(f);
+        }
+    });
+
+    let building = false
+    let buildPending = false
+    const build = async (ev: string, filename: string) => {
+        if (ev)
+            msg(`detected ${ev} ${filename}`)
+        // don't trigger 2 build, wait and do it again
+        if (building) {
+            msg(` build in progress, waiting...`)
+            buildPending = true
+            return
+        }
+
+        // start a build
+        try {
+            building = true
+            buildPending = false
+            await buildCommandOnce(JSON.parse(JSON.stringify(opts)))
+        }
+        catch (e) {
+            error(e)
+        }
+        finally {
+            building = false
+        }
+    }
+    watcher.on('change', build)
+    info(`start watching for file changes`)
+    build(undefined, undefined)
+}
+
+async function buildCommandOnce(opts: BuildOptions) {
+    const prj = await resolveProject(opts)
     prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
     const hwVariants = prj.service.hwVariants
     const targetId = prj.service.runSync("pxt.appTarget.id")
@@ -297,10 +345,16 @@ async function buildCommand(opts: BuildOptions) {
 
     if (success) {
         msg("Build OK")
-        process.exit(0)
+        if (opts.watch)
+            return
+        else
+            process.exit(0)
     } else {
         error("Build failed")
-        process.exit(1)
+        if (opts.watch)
+            return
+        else
+            process.exit(1)
     }
 
     function hwid(cfg: pxt.PackageConfig) {
@@ -455,6 +509,7 @@ async function mainCli() {
 
     createCommand("build", { isDefault: true })
         .description("build project")
+        .option("-w, --watch", "watch source files and rebuild on changes")
         .option("-n, --native", "compile native (default)")
         .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
         .option("-h, --hw <id,...>", "set hardware(s) for which to compile (implies -n)")
