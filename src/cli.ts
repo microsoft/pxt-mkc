@@ -661,7 +661,7 @@ async function mainCli() {
         .action(downloadCommand)
 
     createCommand("bump")
-        .description("bump version in pxt.json and git")
+        .description("interactive version incrementer for a project or mono-repo")
         .action(bumpCommand)
 
     createCommand("init")
