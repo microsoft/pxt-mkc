@@ -7,7 +7,7 @@ import * as files from "./files"
 import * as bump from "./bump"
 import * as downloader from "./downloader"
 import * as service from "./service"
-import { program as commander, CommandOptions, Command, Argument } from "commander"
+import { program as commander, CommandOptions, Command, Argument, Option } from "commander"
 import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
@@ -144,7 +144,6 @@ async function cleanCommand(opts: CleanOptions) {
         })
 
     msg("run `mkc init` again to setup your project")
-    // TODO: clean cached editors?
 }
 
 async function resolveProject(opts: ProjectOptions) {
@@ -384,7 +383,6 @@ async function initCommand(template: string, opts: InitOptions) {
         fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig), { encoding: "utf-8" })
     }
     await prj.maybeWritePxtModulesAsync()
-
     msg(`project ready, run "mkc -d" to build and deploy`)
 }
 
