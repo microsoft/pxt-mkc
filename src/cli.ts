@@ -21,7 +21,7 @@ interface Options {
 interface ProjectOptions extends Options {
     configPath?: string;
     update?: boolean;
-    
+
     pxtModules?: boolean;
     linkPxtModules?: boolean;
     symlinkPxtModules?: boolean;
@@ -160,11 +160,11 @@ async function resolveProject(opts: ProjectOptions) {
             opts.configPath = path.join(cfgFolder, "mkc.json")
     }
 
-    info(`Using project: ${prjdir}/pxt.json`)
+    info(`using project: ${prjdir}/pxt.json`)
     const prj = new mkc.Project(prjdir)
 
     if (opts.configPath) {
-        info(`Using config: ${opts.configPath}`)
+        info(`using config: ${opts.configPath}`)
         prj.mkcConfig = readCfg(opts.configPath)
     }
 
@@ -174,7 +174,7 @@ async function resolveProject(opts: ProjectOptions) {
     try {
         version = prj.service.runSync("pxt.appTarget?.versions?.target")
     } catch { }
-    info(`Using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
+    info(`using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
     if (opts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
@@ -342,13 +342,9 @@ async function bumpCommand(opts: BumpOptions) {
 async function initCommand(editor: string, opts: InitOptions) {
     applyGlobalOptions(opts)
     if (!fs.existsSync("pxt.json")) {
-        if (!editor) {
-            error("editor not specified")
-            process.exit(1)
-        }
-        const target = descriptors.find(t => t.id === editor)
+        const target = !!editor && descriptors.find(t => t.id === editor)
         if (!target) {
-            error(`editor not found, must be one of ${descriptors.map(t => t.id).join(",")}`)
+            error(`editor not found, must be one of ${descriptors.map(t => t.id).join(", ")}`)
             process.exit(1)
         }
 
@@ -360,10 +356,13 @@ async function initCommand(editor: string, opts: InitOptions) {
             "name": "my-project",
             "version": "0.0.0",
             "files": ["main.ts"],
-            "dependencies": {
-                [target.corepkg]: "*"
-            }
+            "supportedTargets": [target.id],
+            "dependencies": target.dependencies,
+            "testDependencies": target.testDependencies || {}
         }, null, 4))
+        fs.writeFileSync("mkc.json", JSON.stringify({
+            targetWebsite: target.website
+        }, null, 4), { encoding: "utf-8" })
     }
 
     if (!fs.existsSync("tsconfig.json")) {
@@ -379,14 +378,15 @@ async function initCommand(editor: string, opts: InitOptions) {
         }, null, 4), { encoding: "utf-8" })
     }
 
+    opts.pxtModules = true
     const prj = await resolveProject(opts)
     if (!fs.existsSync("mkc.json")) {
         msg("saving mkc.json")
         fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig), { encoding: "utf-8" })
     }
-
-    opts.pxtModules = true
     await prj.maybeWritePxtModulesAsync()
+
+    msg(`project ready, run "mkc -d" to build and deploy`)
 }
 
 function isKV(v: any) {
@@ -465,7 +465,7 @@ async function mainCli() {
         .option("-u, --update", "check for web-app updates")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
-        .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")    
+        .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .action(buildCommand)
 
     createCommand("download <URL>")

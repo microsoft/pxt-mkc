@@ -6,8 +6,10 @@ export interface TargetDescriptor {
     name: string;
     description: string;
     website: string;
-    corepkg: string;
+    corepkg?: string;
     label?: string;
+    dependencies: Record<string, string>
+    testDependencies?: Record<string, string>
 }
 
 export const descriptors: TargetDescriptor[] = [{
@@ -16,27 +18,47 @@ export const descriptors: TargetDescriptor[] = [{
     description: "Old school games",
     website: "https://arcade.makecode.com/beta",
     corepkg: "device",
+    dependencies: {
+        "core": "*"
+    }
 }, {
     id: "microbit",
     name: "micro:bit",
     description: "Get creative, get connected, get coding",
     website: "https://makecode.microbit.org/beta",
     corepkg: "core",
+    dependencies: {
+        "core": "*",
+        "radio": "*",
+        "microphone": "*"
+    }
+}, {
+    id: "maker",
+    name: "Maker",
+    description: "Makery boards for MakeCode",
+    website: "https://maker.makecode.com/",
+    dependencies: { "core": "*" },
+    testDependencies: { "jacdac-iot-s2": "*" }
 }, {
     id: "adafruit",
     name: "Circuit Playground Express",
     description: "An educational board from Adafruit",
     website: "https://makecode.adafruit.com/beta",
     corepkg: "circuit-playground",
+    dependencies: {
+        "circuit-playground": "*"
+    }
 }]
 
 export function guessMkcJson(prj: mkc.Package) {
     const mkc = prj.mkcConfig
     const ver = prj.config.targetVersions || { target: "" }
+    const vers = prj.config.supportedTargets || []
 
-    const theTarget = descriptors.filter(d => d.id == ver.targetId)[0]
-        || descriptors.filter(d => d.website == ver.targetWebsite)[0]
-        || descriptors.filter(d => !!prj.config?.testDependencies?.[d.corepkg] || !!prj.config.dependencies[d.corepkg])[0]
+    const theTarget = descriptors.find(d => d.id == ver.targetId)
+        || descriptors.find(d => d.website == ver.targetWebsite)
+        || descriptors.find(d => vers.indexOf(d.id) > -1)
+        || descriptors.find(d => d.corepkg && !!prj.config?.testDependencies?.[d.corepkg] || !!prj.config.dependencies[d.corepkg])
 
     if (!mkc.targetWebsite) {
         if (ver.targetWebsite) {
