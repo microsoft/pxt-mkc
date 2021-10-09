@@ -37,6 +37,10 @@ interface BuildOptions extends ProjectOptions {
 
 interface DownloadOptions extends Options { }
 
+interface CleanOptions extends Options {
+
+}
+
 interface BumpOptions extends ProjectOptions {
 
 }
@@ -126,6 +130,20 @@ function applyGlobalOptions(opts: Options) {
 async function downloadCommand(URL: string, opts: DownloadOptions) {
     applyGlobalOptions(opts)
     await downloadProjectAsync(URL)
+}
+
+async function cleanCommand(opts: CleanOptions) {
+    applyGlobalOptions(opts);
+
+    ["built", "pxt_modules"]
+        .filter(d => fs.existsSync(d))
+        .forEach(d => {
+            msg(`deleting ${d} folder`)
+            fs.rmdirSync(d, { recursive: true, force: true } as any)
+        })
+
+    msg("run `mkc init` again to setup your project")
+    // TODO: clean cached editors?
 }
 
 async function resolveProject(opts: ProjectOptions) {
@@ -459,6 +477,10 @@ async function mainCli() {
     createCommand("init [editor]")
         .description("initializes the project, optionally for a particular editor")
         .action(initCommand)
+
+    createCommand("clean")
+        .description("deletes built artifacts")
+        .action(cleanCommand)
 
     await commander.parseAsync(process.argv)
 }
