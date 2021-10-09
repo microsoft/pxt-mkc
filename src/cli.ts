@@ -12,6 +12,7 @@ import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
 import watch from 'node-watch'
+const fetch = require('node-fetch')
 
 interface Options {
     colors?: boolean;
@@ -50,6 +51,8 @@ interface BumpOptions extends ProjectOptions {
 
 interface InitOptions extends ProjectOptions {
 }
+
+interface AddOptions extends ProjectOptions { }
 
 async function downloadProjectAsync(id: string) {
     id = id.replace(/.*\//, '')
@@ -395,6 +398,10 @@ async function bumpCommand(opts: BumpOptions) {
 async function initCommand(template: string, opts: InitOptions) {
     applyGlobalOptions(opts)
     if (!fs.existsSync("pxt.json")) {
+        if (!template) {
+            error("missing template")
+            process.exit(1)
+        }
         const target = descriptors.find(t => t.id === template)
         if (!target) {
             error(`template not found`)
@@ -415,6 +422,11 @@ async function initCommand(template: string, opts: InitOptions) {
         fs.writeFileSync("mkc.json", JSON.stringify({
             targetWebsite: target.website
         }, null, 4), { encoding: "utf-8" })
+    } else {
+        if (template) {
+            error("directory is not empty, cannot apply template")
+            process.exit(1)
+        }
     }
 
     if (!fs.existsSync("tsconfig.json")) {
@@ -438,6 +450,121 @@ async function initCommand(template: string, opts: InitOptions) {
     }
     await prj.maybeWritePxtModulesAsync()
     msg(`project ready, run "mkc -d" to build and deploy`)
+}
+
+async function makeCodeExtensions() {
+    let data: {
+        service: string
+        client: {
+            name: string,
+            repo: string,
+            qName: string,
+            default: string
+        }
+    }[] = []
+    try {
+        const r = await fetch("https://raw.githubusercontent.com/microsoft/jacdac/main/services/makecode-extensions.json")
+        data = (await r.json()) as any
+    } catch (e) {
+    }
+    return data
+}
+
+
+function join(...parts: string[]) {
+    return parts.filter(p => !!p).join('/');
+}
+
+// parse https://github.com/[company]/[project](/filepath)(#tag)
+function parseRepoId(repo: string) {
+    if (!repo) return undefined;
+    // clean out whitespaces
+    repo = repo.trim();
+    // trim trailing /
+    repo = repo.replace(/\/$/, '')
+
+    // convert github pages into github repo
+    const mgh = /^https:\/\/([^./#]+)\.github\.io\/([^/#]+)\/?$/i.exec(repo);
+    if (mgh)
+        repo = `github:${mgh[1]}/${mgh[2]}`;
+
+    repo = repo.replace(/^github:/i, "")
+    repo = repo.replace(/^https:\/\/github\.com\//i, "")
+    repo = repo.replace(/\.git\b/i, "")
+
+    const m = /^([^#\/:]+)\/([^#\/:]+)(\/([^#]+))?(#([^\/:]*))?$/.exec(repo);
+    if (!m)
+        return undefined;
+    const owner = m[1];
+    const project = m[2];
+    let fileName = m[4];
+    const tag = m[6];
+
+    const treeM = fileName && /^tree\/([^\/]+\/)/.exec(fileName)
+    if (treeM) {
+        // https://github.com/pelikhan/mono-demo/tree/master/demo2
+        fileName = fileName.slice(treeM[0].length);
+        // branch info?
+    }
+
+    return {
+        owner,
+        project,
+        slug: join(owner, project),
+        fullName: join(owner, project, fileName),
+        tag,
+        fileName
+    }
+}
+
+async function fetchExtension(slug: string) {
+    const url = `https://pxt.azureedge.net/api/gh/${slug}`
+    const req = await fetch(url)
+    if (req.status !== 200) {
+        error(`resolution of ${slug} failed (${req.status})`)
+        process.exit(1)
+    }
+    const script: {
+        version: string
+        defaultBranch: string
+    } = (await req.json()) as any
+    return script
+}
+
+async function addCommand(repo: string, opts: AddOptions) {
+    applyGlobalOptions(opts)
+    opts.pxtModules = true
+
+    msg(`adding ${repo}`)
+    const prj = await resolveProject(opts)
+
+    repo = repo.toLowerCase()
+    if (/^jacdac-/.test(repo)) {
+        const exts = await makeCodeExtensions()
+        const ext = exts.find(ext => ext.client.name === repo)
+        if (ext) {
+            info(`found jacdac ${ext.client.repo}`)
+            repo = ext.client.repo
+        }
+    }
+
+    const rid = parseRepoId(repo)
+    if (!rid) {
+        error("unkown repository format, try https://github.com/.../...")
+        process.exit(1)
+    }
+
+    const d = await fetchExtension(rid.slug)
+    const pxtJson = await prj.readPxtConfig()
+    const name = join(rid.project, rid.fileName).replace(/^pxt-/, '').replace("/", "-")
+    pxtJson.dependencies[name] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch}`
+    fs.writeFileSync("pxt.json", JSON.stringify(pxtJson, null, 4), { encoding: "utf-8" })
+
+    // reload
+    {
+        const prj = await resolveProject(opts)
+        await prj.maybeWritePxtModulesAsync()
+    }
 }
 
 function isKV(v: any) {
@@ -529,7 +656,7 @@ async function mainCli() {
         .action(bumpCommand)
 
     createCommand("init")
-        .addArgument(new Argument("<template>", "project template name").choices(descriptors.map(d => d.id)))
+        .addArgument(new Argument("[template]", "project template name").choices(descriptors.map(d => d.id)))
         .description("initializes the project, optionally for a particular editor")
         .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
         .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
@@ -538,6 +665,11 @@ async function mainCli() {
     createCommand("clean")
         .description("deletes built artifacts")
         .action(cleanCommand)
+
+    createCommand("add [repo]")
+        .description("add new dependencies")
+        .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
+        .action(addCommand)
 
     await commander.parseAsync(process.argv)
 }

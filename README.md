@@ -84,6 +84,20 @@ Run the clean command to erase build artifacts and cached packages.
 mkc clean
 ```
 
+### mkc add
+
+Adds a new dependency to the project. Pass a GitHub repository URL to the ``add`` command.
+
+```
+mkc add https://github.com/microsoft/pxt-jacdac/button
+```
+
+For Jacdac extensions, simply write ``jacdac-servicename``
+
+```
+mkc add jacdac-button
+```
+
 ### mkc bump
 
 Interactive update of the version number of the current project 
