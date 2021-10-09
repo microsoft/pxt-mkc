@@ -344,10 +344,10 @@ async function initCommand(editor: string, opts: InitOptions) {
     if (!fs.existsSync("pxt.json")) {
         const target = !!editor && descriptors.find(t => t.id === editor)
         if (!target) {
-            error(`editor not found, must be one of ${descriptors.map(t => t.id).join(", ")}`)
+            error(`editor not found, must be one of the following:`)
+            descriptors.map(t => info(`  ${t.id}`))
             process.exit(1)
         }
-
         msg(`initializing project for ${target.name}`)
         msg("saving main.ts")
         fs.writeFileSync("main.ts", "// add code here", { encoding: "utf-8" })
@@ -356,8 +356,8 @@ async function initCommand(editor: string, opts: InitOptions) {
             "name": "my-project",
             "version": "0.0.0",
             "files": ["main.ts"],
-            "supportedTargets": [target.id],
-            "dependencies": target.dependencies,
+            "supportedTargets": [target.targetId],
+            "dependencies": target.dependencies || (target.corepkg && { [target.corepkg]: "*" }) || {},
             "testDependencies": target.testDependencies || {}
         }, null, 4))
         fs.writeFileSync("mkc.json", JSON.stringify({
