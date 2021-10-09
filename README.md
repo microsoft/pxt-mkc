@@ -24,7 +24,7 @@ npm install -u -g makecode
 
 ## Usage
 
-The command line tool can be invoked as ``makecode`` or ``mkc`` for short.
+The command line tool can be invoked as `makecode` or `mkc` for short.
 
 ### mkc init
 
@@ -35,6 +35,12 @@ mkc init microbit
 ```
 
 where `microbit` is the template name. To get the list of supported templates, do `mkc help init`.
+
+It is possible to specify a list of dependencies to be added to the template.
+
+```
+mkc init microbit jacdac jacdac-button jacdac-led
+```
 
 Your project is ready to be edited. If you are a Visual Studio Code user, type `code .` and you're ready to go!
 
@@ -61,7 +67,7 @@ To build and deploy to a device add `-d`.
 mkc -d
 ```
 
-The tool checks once a day if the MakeCode editor has been updated. However, you can force an update by using ``--update``
+The tool checks once a day if the MakeCode editor has been updated. However, you can force an update by using `--update`
 during a build.
 
 ```
@@ -70,7 +76,7 @@ mkc --update
 
 ### mkc build --watch
 
-Use ``--watch``, or ``-w``, with ``mkc build`` to automatically watch changes in source files and rebuild automatically.
+Use `--watch`, or `-w`, with `mkc build` to automatically watch changes in source files and rebuild automatically.
 
 ```
 mkc -w
@@ -86,13 +92,13 @@ mkc clean
 
 ### mkc add
 
-Adds a new dependency to the project. Pass a GitHub repository URL to the ``add`` command.
+Adds a new dependency to the project. Pass a GitHub repository URL to the `add` command.
 
 ```
 mkc add https://github.com/microsoft/pxt-jacdac/button
 ```
 
-For Jacdac extensions, simply write ``jacdac-servicename``
+For Jacdac extensions, simply write `jacdac-servicename`
 
 ```
 mkc add jacdac-button
@@ -100,7 +106,7 @@ mkc add jacdac-button
 
 ### mkc bump
 
-Interactive update of the version number of the current project 
+Interactive update of the version number of the current project
 and nested projects in a mono-repo.
 
 ```
@@ -144,7 +150,7 @@ All fields are optional.
 - files listed in **include** are merged with the keys from the later ones overriding the keys from the earlier ones;
   the keys from the current file override all included keys
 
-You can use `--config-path` to build for a different configuration 
+You can use `--config-path` to build for a different configuration
 
 ```
 mkc -c mkc-arcade.json

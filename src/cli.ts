@@ -395,7 +395,7 @@ async function bumpCommand(opts: BumpOptions) {
     await bump.bumpAsync(prj)
 }
 
-async function initCommand(template: string, opts: InitOptions) {
+async function initCommand(template: string, deps: string[], opts: InitOptions) {
     applyGlobalOptions(opts)
     if (!fs.existsSync("pxt.json")) {
         if (!template) {
@@ -448,6 +448,11 @@ async function initCommand(template: string, opts: InitOptions) {
         msg("saving mkc.json")
         fs.writeFileSync("mkc.json", mkc.stringifyConfig(prj.mainPkg.mkcConfig), { encoding: "utf-8" })
     }
+
+    for (const dep of deps)
+        await addDependency(prj, dep, undefined)
+
+    prj.mainPkg = null
     await prj.maybeWritePxtModulesAsync()
     msg(`project ready, run "mkc -d" to build and deploy`)
 }
@@ -531,15 +536,22 @@ async function fetchExtension(slug: string) {
     return script
 }
 
-async function addCommand(repo: string, opts: AddOptions) {
+async function addCommand(repo: string, name: string, opts: AddOptions) {
     applyGlobalOptions(opts)
     opts.pxtModules = true
 
     msg(`adding ${repo}`)
     const prj = await resolveProject(opts)
+    await addDependency(prj, repo, name)
+    prj.mainPkg = null
+    await prj.maybeWritePxtModulesAsync()
+}
 
-    repo = repo.toLowerCase()
-    if (/^jacdac-/.test(repo)) {
+async function addDependency(prj: mkc.Project, repo: string, name: string) {
+    repo = repo.toLowerCase().trim()
+    if (repo === "jacdac")
+        repo = "https://github.com/microsoft/pxt-jacdac"
+    else if (/^jacdac-/.test(repo)) {
         const exts = await makeCodeExtensions()
         const ext = exts.find(ext => ext.client.name === repo)
         if (ext) {
@@ -556,15 +568,11 @@ async function addCommand(repo: string, opts: AddOptions) {
 
     const d = await fetchExtension(rid.slug)
     const pxtJson = await prj.readPxtConfig()
-    const name = join(rid.project, rid.fileName).replace(/^pxt-/, '').replace("/", "-")
-    pxtJson.dependencies[name] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch}`
-    fs.writeFileSync("pxt.json", JSON.stringify(pxtJson, null, 4), { encoding: "utf-8" })
+    const dname = name || join(rid.project, rid.fileName).replace(/^pxt-/, '').replace("/", "-")
 
-    // reload
-    {
-        const prj = await resolveProject(opts)
-        await prj.maybeWritePxtModulesAsync()
-    }
+    pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch}`
+    info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
+    fs.writeFileSync("pxt.json", JSON.stringify(pxtJson, null, 4), { encoding: "utf-8" })
 }
 
 function isKV(v: any) {
@@ -647,7 +655,8 @@ async function mainCli() {
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .action(buildCommand)
 
-    createCommand("download <URL>")
+    createCommand("download")
+        .argument("<url>", "url to the shared project from your makecode editor")
         .description("download project from share URL")
         .action(downloadCommand)
 
@@ -657,6 +666,7 @@ async function mainCli() {
 
     createCommand("init")
         .addArgument(new Argument("[template]", "project template name").choices(descriptors.map(d => d.id)))
+        .argument('<repo...>', "dependencies to be added to the project")
         .description("initializes the project, optionally for a particular editor")
         .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
         .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
@@ -666,7 +676,9 @@ async function mainCli() {
         .description("deletes built artifacts")
         .action(cleanCommand)
 
-    createCommand("add [repo]")
+    createCommand("add")
+        .argument("<repo>", "url to the github repository")
+        .argument("[name]", "name of the dependency")
         .description("add new dependencies")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .action(addCommand)
