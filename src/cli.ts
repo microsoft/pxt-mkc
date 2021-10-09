@@ -7,7 +7,7 @@ import * as files from "./files"
 import * as bump from "./bump"
 import * as downloader from "./downloader"
 import * as service from "./service"
-import { program as commander, CommandOptions, Command } from "commander"
+import { program as commander, CommandOptions, Command, Argument } from "commander"
 import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
@@ -339,13 +339,12 @@ async function bumpCommand(opts: BumpOptions) {
     await bump.bumpAsync(prj)
 }
 
-async function initCommand(editor: string, opts: InitOptions) {
+async function initCommand(template: string, opts: InitOptions) {
     applyGlobalOptions(opts)
     if (!fs.existsSync("pxt.json")) {
-        const target = !!editor && descriptors.find(t => t.id === editor)
+        const target = descriptors.find(t => t.id === template)
         if (!target) {
-            error(`editor not found, must be one of the following:`)
-            descriptors.map(t => info(`  ${t.id}`))
+            error(`template not found`)
             process.exit(1)
         }
         msg(`initializing project for ${target.name}`)
@@ -476,7 +475,8 @@ async function mainCli() {
         .description("bump version in pxt.json and git")
         .action(bumpCommand)
 
-    createCommand("init [editor]")
+    createCommand("init")
+        .addArgument(new Argument("<template>", "project template name").choices(descriptors.map(d => d.id)))
         .description("initializes the project, optionally for a particular editor")
         .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
         .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
