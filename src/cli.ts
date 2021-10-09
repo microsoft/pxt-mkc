@@ -205,19 +205,20 @@ async function buildCommand(opts: BuildOptions) {
     if (opts.watch) {
         const watcher = watch('./', {
             recursive: true,
-            delay: 500,
+            delay: 3000,
             filter(f, skip) {
                 // skip node_modules, pxt_modules, built, .git
-                if (/\/((node|pxt)_modules|built|\.git)/.test(f)) return skip;
+                if (/\/?((node|pxt)_modules|built|\.git)/i.test(f)) return skip;
                 // only watch for js files
-                return /(pxt\.json|\.ts|\.asm|\.cpp|\.h|\.hpp)$/.test(f);
+                return /\.(json|ts|asm|cpp|c|h|hpp)$/i.test(f);
             }
         });
 
         let building = false
         let buildPending = false
-        const build = async (ev: string) => {
-            msg(ev)
+        const build = async (ev: string, filename: string) => {
+            if (ev)
+                msg(`detected ${ev} ${filename}`)
             // don't trigger 2 build, wait and do it again
             if (building) {
                 buildPending = true
@@ -238,7 +239,8 @@ async function buildCommand(opts: BuildOptions) {
             }
         }
         watcher.on('change', build)
-        build(`start watching for file changes`)
+        info(`start watching for file changes`)
+        build(undefined, undefined)
     } else await buildCommandOnce(opts)
 }
 
