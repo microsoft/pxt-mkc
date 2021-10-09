@@ -203,45 +203,50 @@ async function buildCommand(opts: BuildOptions) {
     }
 
     if (opts.watch) {
-        const watcher = watch('./', {
-            recursive: true,
-            delay: 3000,
-            filter(f, skip) {
-                // skip node_modules, pxt_modules, built, .git
-                if (/\/?((node|pxt)_modules|built|\.git)/i.test(f)) return skip;
-                // only watch for js files
-                return /\.(json|ts|asm|cpp|c|h|hpp)$/i.test(f);
-            }
-        });
-
-        let building = false
-        let buildPending = false
-        const build = async (ev: string, filename: string) => {
-            if (ev)
-                msg(`detected ${ev} ${filename}`)
-            // don't trigger 2 build, wait and do it again
-            if (building) {
-                buildPending = true
-                return
-            }
-
-            // start a build
-            try {
-                building = true
-                buildPending = false
-                buildCommandOnce(JSON.parse(JSON.stringify(opts)))
-            }
-            catch (e) {
-                error(e)
-            }
-            finally {
-                building = false
-            }
-        }
-        watcher.on('change', build)
-        info(`start watching for file changes`)
-        build(undefined, undefined)
+        startWatch(opts)
     } else await buildCommandOnce(opts)
+}
+
+function startWatch(opts: BuildOptions) {
+    const watcher = watch('./', {
+        recursive: true,
+        delay: 3000,
+        filter(f, skip) {
+            // skip node_modules, pxt_modules, built, .git
+            if (/\/?((node|pxt)_modules|built|\.git)/i.test(f)) return skip;
+            // only watch for js files
+            return /\.(json|ts|asm|cpp|c|h|hpp)$/i.test(f);
+        }
+    });
+
+    let building = false
+    let buildPending = false
+    const build = async (ev: string, filename: string) => {
+        if (ev)
+            msg(`detected ${ev} ${filename}`)
+        // don't trigger 2 build, wait and do it again
+        if (building) {
+            msg(` build in progress, waiting...`)
+            buildPending = true
+            return
+        }
+
+        // start a build
+        try {
+            building = true
+            buildPending = false
+            await buildCommandOnce(JSON.parse(JSON.stringify(opts)))
+        }
+        catch (e) {
+            error(e)
+        }
+        finally {
+            building = false
+        }
+    }
+    watcher.on('change', build)
+    info(`start watching for file changes`)
+    build(undefined, undefined)
 }
 
 async function buildCommandOnce(opts: BuildOptions) {
