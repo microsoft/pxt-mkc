@@ -3,27 +3,66 @@ import * as downloader from "./downloader"
 
 export interface TargetDescriptor {
     id: string;
+    targetId: string;
     name: string;
     description: string;
     website: string;
-    corepkg: string;
+    corepkg?: string;
     label?: string;
+    dependencies?: Record<string, string>
+    testDependencies?: Record<string, string>
 }
 
 export const descriptors: TargetDescriptor[] = [{
     id: "arcade",
+    targetId: "arcade",
     name: "MakeCode Arcade",
     description: "Old school games",
     website: "https://arcade.makecode.com/beta",
     corepkg: "device",
 }, {
     id: "microbit",
+    targetId: "microbit",
     name: "micro:bit",
     description: "Get creative, get connected, get coding",
     website: "https://makecode.microbit.org/beta",
     corepkg: "core",
+    dependencies: {
+        "core": "*",
+        "radio": "*",
+        "microphone": "*"
+    }
+}, {
+    id: "maker-jacdac-brain-esp32",
+    targetId: "maker",
+    name: "Maker ESP32-S2",
+    description: "Jacdac ESP32-S2 brain",
+    website: "https://maker.makecode.com/",
+    corepkg: "jacdac-iot-s2",
+}, {
+    id: "maker-jacdac-brain-f4",
+    targetId: "maker",
+    name: "Maker Jacdac Brain F4",
+    description: "Jacdac STM32 F4 brain",
+    website: "https://maker.makecode.com/",
+    corepkg: "jacdac-brain-f4",
+}, {
+    id: "maker-jacdac-brain-rp2040",
+    targetId: "maker",
+    name: "Maker Jacdac Brain RP2040",
+    description: "Jacdac STM32 RP2040 brain",
+    website: "https://maker.makecode.com/",
+    corepkg: "jacdac-brain-rp2040",
+}, {
+    id: "maker-jacdac-brain-nrf52",
+    targetId: "maker",
+    name: "Maker Jacdac Brain NRF52",
+    description: "Jacdac STM32 NRF52 brain",
+    website: "https://maker.makecode.com/",
+    corepkg: "jacdac-nrfbrain",
 }, {
     id: "adafruit",
+    targetId: "adafruit",
     name: "Circuit Playground Express",
     description: "An educational board from Adafruit",
     website: "https://makecode.adafruit.com/beta",
@@ -33,10 +72,12 @@ export const descriptors: TargetDescriptor[] = [{
 export function guessMkcJson(prj: mkc.Package) {
     const mkc = prj.mkcConfig
     const ver = prj.config.targetVersions || { target: "" }
+    const vers = prj.config.supportedTargets || []
 
-    const theTarget = descriptors.filter(d => d.id == ver.targetId)[0]
-        || descriptors.filter(d => d.website == ver.targetWebsite)[0]
-        || descriptors.filter(d => !!prj.config?.testDependencies?.[d.corepkg] || !!prj.config.dependencies[d.corepkg])[0]
+    const theTarget = descriptors.find(d => d.targetId == ver.targetId)
+        || descriptors.find(d => d.website == ver.targetWebsite)
+        || descriptors.find(d => vers.indexOf(d.targetId) > -1)
+        || descriptors.find(d => d.corepkg && !!prj.config?.testDependencies?.[d.corepkg] || !!prj.config.dependencies[d.corepkg])
 
     if (!mkc.targetWebsite) {
         if (ver.targetWebsite) {
