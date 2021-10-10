@@ -92,7 +92,7 @@ mkc clean
 
 ### mkc search
 
-Search for an existing GitHub extension
+Search for extensions hosted on GitHub.
 
 ```
 mkc search jacdac
