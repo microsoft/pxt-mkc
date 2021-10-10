@@ -24,7 +24,7 @@ npm install -u -g makecode
 
 ## Usage
 
-The command line tool can be invoked as `makecode` or `mkc` for short.
+The command line tool can be invoked as **`makecode`** or **`mkc`** for short.
 
 ### mkc init
 
