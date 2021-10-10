@@ -12,6 +12,7 @@ import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
 import watch from 'node-watch'
+import { cloudRoot } from "./mkc"
 const fetch = require('node-fetch')
 
 interface Options {
@@ -53,6 +54,8 @@ interface InitOptions extends ProjectOptions {
 }
 
 interface AddOptions extends ProjectOptions { }
+
+interface SearchOptions extends ProjectOptions { }
 
 async function downloadProjectAsync(id: string) {
     id = id.replace(/.*\//, '')
@@ -542,6 +545,28 @@ async function fetchExtension(slug: string) {
     return script
 }
 
+async function searchCommand(query: string, opts: SearchOptions) {
+    applyGlobalOptions(opts)
+    msg(`searching for ${query}`)
+    const prj = await resolveProject(opts)
+    const targetid = prj.editor.targetJson.id
+    const res = await fetch(`${cloudRoot}ghsearch/${targetid}/${targetid}?q=${encodeURIComponent(query)}`)
+    if (res.status !== 200) {
+        error(`search request failed`)
+        process.exit(1)
+    }
+    const payload: {
+        items: { name: string; full_name: string; private: boolean; description: string; default_branch: string; owner: { login: string } }[]
+    } = await res.json()
+    const { items } = payload
+    items?.forEach(({ full_name, description, owner }) => {
+        msg(`  ${full_name}`)
+        info(`    https://github.com/${full_name}`)
+        if (description)
+            info(`    ${description}`)
+    })
+}
+
 async function addCommand(repo: string, name: string, opts: AddOptions) {
     applyGlobalOptions(opts)
     opts.pxtModules = true
@@ -688,6 +713,12 @@ async function mainCli() {
         .description("add new dependencies")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .action(addCommand)
+
+    createCommand("search")
+        .argument("<query>", "extension to search for")
+        .description("search for an extension")
+        .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
+        .action(searchCommand)
 
     await commander.parseAsync(process.argv)
 }
