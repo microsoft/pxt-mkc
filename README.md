@@ -90,6 +90,16 @@ Run the clean command to erase build artifacts and cached packages.
 mkc clean
 ```
 
+### mkc search
+
+Search for an existing GitHub extension
+
+```
+mkc search jacdac
+```
+
+You can use the result with the `add` command to add extensions to your project.
+
 ### mkc add
 
 Adds a new dependency to the project. Pass a GitHub repository URL to the `add` command.
