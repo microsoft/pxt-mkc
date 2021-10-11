@@ -131,7 +131,7 @@ Downloads a shared MakeCode project to files and initializes the project.
 mkc download https://.....
 ```
 
-## Configuration
+## Advanced Configuration
 
 The `init` commands creates a `mkc.json` file that you can also use for additional configurations.
 
@@ -160,7 +160,7 @@ All fields are optional.
 - files listed in **include** are merged with the keys from the later ones overriding the keys from the earlier ones;
   the keys from the current file override all included keys
 
-You can use `--config-path` to build for a different configuration
+You can use `--config-path` or `-c` to build for a different configuration.
 
 ```
 mkc -c mkc-arcade.json
