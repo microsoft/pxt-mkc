@@ -30,33 +30,6 @@ interface ProjectOptions extends Options {
     symlinkPxtModules?: boolean;
 }
 
-interface BuildOptions extends ProjectOptions {
-    hw?: string;
-    native?: boolean;
-    javaScript?: boolean;
-    deploy?: boolean;
-    alwaysBuilt?: boolean;
-    monoRepo?: boolean;
-    watch?: boolean
-}
-
-interface DownloadOptions extends Options { }
-
-interface CleanOptions extends Options {
-
-}
-
-interface BumpOptions extends ProjectOptions {
-
-}
-
-interface InitOptions extends ProjectOptions {
-}
-
-interface AddOptions extends ProjectOptions { }
-
-interface SearchOptions extends ProjectOptions { }
-
 async function downloadProjectAsync(id: string) {
     id = id.replace(/.*\//, '')
     const url = mkc.cloudRoot + id + "/text"
@@ -136,11 +109,13 @@ function applyGlobalOptions(opts: Options) {
         (chalk as any).level = 1
 }
 
+interface DownloadOptions extends Options { }
 async function downloadCommand(URL: string, opts: DownloadOptions) {
     applyGlobalOptions(opts)
     await downloadProjectAsync(URL)
 }
 
+interface CleanOptions extends Options { }
 async function cleanCommand(opts: CleanOptions) {
     applyGlobalOptions(opts);
 
@@ -197,6 +172,15 @@ async function resolveProject(opts: ProjectOptions) {
     return prj
 }
 
+interface BuildOptions extends ProjectOptions {
+    hw?: string;
+    native?: boolean;
+    javaScript?: boolean;
+    deploy?: boolean;
+    alwaysBuilt?: boolean;
+    monoRepo?: boolean;
+    watch?: boolean
+}
 async function buildCommand(opts: BuildOptions) {
     applyGlobalOptions(opts)
     if (opts.deploy && opts.monoRepo) {
@@ -392,12 +376,14 @@ async function buildCommandOnce(opts: BuildOptions) {
     }
 }
 
+interface BumpOptions extends ProjectOptions { }
 async function bumpCommand(opts: BumpOptions) {
     applyGlobalOptions(opts)
     const prj = await resolveProject(opts)
     await bump.bumpAsync(prj)
 }
 
+interface InitOptions extends ProjectOptions { }
 async function initCommand(template: string, deps: string[], opts: InitOptions) {
     applyGlobalOptions(opts)
     if (!fs.existsSync("pxt.json")) {
@@ -545,6 +531,7 @@ async function fetchExtension(slug: string) {
     return script
 }
 
+interface SearchOptions extends ProjectOptions { }
 async function searchCommand(query: string, opts: SearchOptions) {
     applyGlobalOptions(opts)
     msg(`searching for ${query}`)
@@ -567,6 +554,7 @@ async function searchCommand(query: string, opts: SearchOptions) {
     })
 }
 
+interface AddOptions extends ProjectOptions { }
 async function addCommand(repo: string, name: string, opts: AddOptions) {
     applyGlobalOptions(opts)
     opts.pxtModules = true
