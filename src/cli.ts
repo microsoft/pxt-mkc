@@ -685,7 +685,7 @@ async function mainCli() {
 
     createCommand("init")
         .addArgument(new Argument("[template]", "project template name").choices(descriptors.map(d => d.id)))
-        .argument('<repo...>', "dependencies to be added to the project")
+        .argument('[repo...]', "dependencies to be added to the project")
         .description("initializes the project, optionally for a particular editor")
         .option("--symlink-pxt-modules", "symlink files in pxt_modules/* for auto-completion")
         .option("--link-pxt-modules", "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)")
