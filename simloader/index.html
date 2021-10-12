@@ -106,19 +106,9 @@
         </iframe>
         <div id="fullscreen">⇲</div>
         <script type="text/javascript">
-            const tool = /tool=microbit-oob/.test(window.location)
-                ? "microbit-oob"
-                : "binary"
-            const local = /^http:\/\/localhost:/.test(window.location.href)
             makeCodeRun({
                 selfId: window.location.hash.slice(1),
-                tool,
-                js:
-                    "./assets/js/" +
-                    tool +
-                    (local ? "-local" : "") +
-                    ".js?v=" +
-                    Math.random(),
+                js: "binary.js?v=" + Math.random(),
             })
         </script>
     </body>

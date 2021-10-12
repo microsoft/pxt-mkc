@@ -45,6 +45,10 @@ function makeCodeRun(options) {
                     return ""
                 }
             )
+
+            // force local sim
+            meta.simUrl = window.location.protocol + "//" + window.location.host + "/sim.html"
+
             // load simulator with correct version
             document
                 .getElementById("simframe")
