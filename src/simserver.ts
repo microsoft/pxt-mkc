@@ -1,6 +1,7 @@
 import http = require('http');
 import url = require('url');
 import mkc = require('./mkc');
+import { simloaderFiles } from './simloaderfiles';
 
 const mime: pxt.Map<string> = {
     js: "application/javascript",
@@ -12,13 +13,19 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7000) {
     http.createServer(async (request, response) => {
         let path = request.url
         if (path == "/")
-            path = "/sim.html"
+            path = "/index.html"
         path = path.replace(/.*\//, "")
         path = path.replace(/\?.*/, "")
 
         let buf: Buffer = null
-        if (/^[\w\.\-]+$/.test(path))
+
+        if (simloaderFiles.hasOwnProperty(path)) {
+            buf = Buffer.from(simloaderFiles[path], "utf-8")
+        } else if (/^[\w\.\-]+$/.test(path)) {
             buf = await ed.cache.getAsync(ed.website + "-" + path)
+            if (!buf)
+                buf = await ed.cache.getAsync(path)
+        }
 
         if (buf) {
             const m = mime[path.replace(/.*\./, "")] || "application/octet-stream"

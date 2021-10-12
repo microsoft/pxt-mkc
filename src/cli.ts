@@ -13,6 +13,7 @@ import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
 import watch from 'node-watch'
 import { cloudRoot } from "./mkc"
+import { startSimServer } from "./simserver"
 const fetch = require('node-fetch')
 
 interface Options {
@@ -107,6 +108,15 @@ function applyGlobalOptions(opts: Options) {
         (chalk as any).level = 1
     else if (process.env["GITHUB_WORKFLOW"])
         (chalk as any).level = 1
+}
+
+interface ServeOptions extends BuildOptions { }
+async function serveCommand(opts:BuildOptions){
+    applyGlobalOptions(opts);
+    const prj = await resolveProject(opts)
+    const port = 7000
+    msg(`listening on http://localhost:${port}`)
+    startSimServer(prj.editor, port)
 }
 
 interface DownloadOptions extends Options { }
@@ -673,6 +683,10 @@ async function mainCli() {
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .action(buildCommand)
+
+    createCommand("serve")
+        .description("start simulator server")
+        .action(serveCommand)
 
     createCommand("download")
         .argument("<url>", "url to the shared project from your makecode editor")

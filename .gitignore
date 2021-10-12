@@ -3,3 +3,4 @@ built
 .DS_Store
 node_modules
 *.vsix
+src/simloaderfiles.ts
