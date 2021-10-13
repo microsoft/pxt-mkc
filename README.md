@@ -82,6 +82,15 @@ Use `--watch`, or `-w`, with `mkc build` to automatically watch changes in sourc
 mkc -w
 ```
 
+### mkc serve
+
+Use `mkc serve` to start a watch-build and localhost server with simulator.
+Defaults to http://localhost:7000
+
+```
+mkc serve
+```
+
 ### mkc clean
 
 Run the clean command to erase build artifacts and cached packages.

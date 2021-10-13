@@ -68,7 +68,7 @@ export function mkHomeCache(dir?: string): mkc.Cache {
     mkdirp(rootPath)
 
     function expandKey(key: string) {
-        return key.replace(/[^\.a-z0-9\-]/g, c => "_" + c.charCodeAt(0) + "_")
+        return key.replace(/[^\.a-z0-9_\-]/g, c => "_" + c.charCodeAt(0) + "_")
     }
 
     function keyPath(key: string) {

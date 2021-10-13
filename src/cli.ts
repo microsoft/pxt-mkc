@@ -13,6 +13,7 @@ import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
 import watch from 'node-watch'
 import { cloudRoot } from "./mkc"
+import { startSimServer } from "./simserver"
 const fetch = require('node-fetch')
 
 interface Options {
@@ -29,6 +30,8 @@ interface ProjectOptions extends Options {
     linkPxtModules?: boolean;
     symlinkPxtModules?: boolean;
 }
+
+function clone<T>(v: T): T { return JSON.parse(JSON.stringify(v)) }
 
 async function downloadProjectAsync(id: string) {
     id = id.replace(/.*\//, '')
@@ -109,6 +112,22 @@ function applyGlobalOptions(opts: Options) {
         (chalk as any).level = 1
 }
 
+interface ServeOptions extends BuildOptions {
+    port?: string
+}
+async function serveCommand(opts: ServeOptions) {
+    applyGlobalOptions(opts);
+    opts.javaScript = true
+    if (opts.watch)
+        startWatch(clone(opts))
+    opts = clone(opts)
+    opts.update = false
+    const prj = await resolveProject(opts, !!opts.watch)
+    const port = parseInt(opts.port) || 7000
+    msg(`listening on http://localhost:${port}`)
+    startSimServer(prj.editor, port)
+}
+
 interface DownloadOptions extends Options { }
 async function downloadCommand(URL: string, opts: DownloadOptions) {
     applyGlobalOptions(opts)
@@ -129,7 +148,7 @@ async function cleanCommand(opts: CleanOptions) {
     msg("run `mkc init` again to setup your project")
 }
 
-async function resolveProject(opts: ProjectOptions) {
+async function resolveProject(opts: ProjectOptions, quiet = false) {
     const prjdir = files.findProjectDir()
     if (!prjdir) {
         error(`could not find "pxt.json" file`)
@@ -142,12 +161,12 @@ async function resolveProject(opts: ProjectOptions) {
             opts.configPath = path.join(cfgFolder, "mkc.json")
     }
 
-    info(`using project: ${prjdir}/pxt.json`)
+    log(`using project: ${prjdir}/pxt.json`)
     const prj = new mkc.Project(prjdir)
 
     if (opts.configPath) {
-        info(`using config: ${opts.configPath}`)
-        prj.mkcConfig = readCfg(opts.configPath)
+        log(`using config: ${opts.configPath}`)
+        prj.mkcConfig = readCfg(opts.configPath, quiet)
     }
 
     await prj.loadEditorAsync(!!opts.update)
@@ -156,7 +175,7 @@ async function resolveProject(opts: ProjectOptions) {
     try {
         version = prj.service.runSync("pxt.appTarget?.versions?.target")
     } catch { }
-    info(`using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
+    log(`using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
     if (opts.debug)
         prj.service.runSync("(() => { pxt.options.debug = 1 })()")
@@ -170,6 +189,10 @@ async function resolveProject(opts: ProjectOptions) {
         prj.symlinkPxtModules = true
     }
     return prj
+
+    function log(msg: string) {
+        if (!quiet) info(msg)
+    }
 }
 
 interface BuildOptions extends ProjectOptions {
@@ -197,10 +220,14 @@ async function buildCommand(opts: BuildOptions) {
     } else await buildCommandOnce(opts)
 }
 
+function delay(ms: number) {
+    return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
 function startWatch(opts: BuildOptions) {
     const watcher = watch('./', {
         recursive: true,
-        delay: 3000,
+        delay: 200,
         filter(f, skip) {
             // skip node_modules, pxt_modules, built, .git
             if (/\/?((node|pxt)_modules|built|\.git)/i.test(f)) return skip;
@@ -214,18 +241,27 @@ function startWatch(opts: BuildOptions) {
     const build = async (ev: string, filename: string) => {
         if (ev)
             msg(`detected ${ev} ${filename}`)
+
+        buildPending = true
+
+        await delay(100) // wait for other change events, that might have piled-up to arrive
+
         // don't trigger 2 build, wait and do it again
         if (building) {
             msg(` build in progress, waiting...`)
-            buildPending = true
             return
         }
 
         // start a build
         try {
             building = true
-            buildPending = false
-            await buildCommandOnce(JSON.parse(JSON.stringify(opts)))
+            while (buildPending) {
+                buildPending = false
+                const opts0 = clone(opts)
+                if (ev) // if not first time, don't update
+                    opts0.update = false
+                await buildCommandOnce(opts0)
+            }
         }
         catch (e) {
             error(e)
@@ -609,7 +645,7 @@ function jsonMergeFrom(trg: any, src: any) {
     });
 }
 
-function readCfg(cfgpath: string) {
+function readCfg(cfgpath: string, quiet = false) {
     const files: string[] = []
     return readCfgRec(cfgpath)
 
@@ -623,7 +659,8 @@ function readCfg(cfgpath: string) {
         files.push(cfgpath)
         for (const fn of cfg.include || []) {
             const resolved = path.resolve(path.dirname(cfgpath), fn)
-            info(`  include: ${resolved}`)
+            if (!quiet)
+                info(`  include: ${resolved}`)
             jsonMergeFrom(currCfg, readCfgRec(resolved))
         }
         jsonMergeFrom(currCfg, cfg)
@@ -673,6 +710,14 @@ async function mainCli() {
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .action(buildCommand)
+
+    createCommand("serve")
+        .description("start simulator server")
+        .option("--no-watch", "do not watch source files")
+        .option("-p, --port <number>", "port to listen at")
+        .option("-u, --update", "check for web-app updates")
+        .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
+        .action(serveCommand)
 
     createCommand("download")
         .argument("<url>", "url to the shared project from your makecode editor")
