@@ -20,7 +20,9 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7000) {
         let buf: Buffer = null
 
         if (path == "binary.js") {
-            buf = fs.readFileSync("built/binary.js")
+            try {
+                buf = fs.readFileSync("built/binary.js")
+            } catch { }
         } else if (simloaderFiles.hasOwnProperty(path)) {
             buf = Buffer.from(simloaderFiles[path], "utf-8")
         } else if (/^[\w\.\-]+$/.test(path)) {
