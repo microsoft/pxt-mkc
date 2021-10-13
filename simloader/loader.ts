@@ -6,6 +6,7 @@ function addSimMessageHandler(channel: string, handler: () => void) {
 
 function makeCodeRun(options) {
     let code = ""
+    let code0 = ""
     let isReady = false
     let simState = {}
     let simStateChanged = false
@@ -26,36 +27,52 @@ function makeCodeRun(options) {
 
     // init runtime
     initSimState()
-    fetchCode()
+    startCode()
+    autoReload()
+
+    function fetchSourceCode() {
+        return fetch(options.js)
+            .then(resp => resp.status == 200 ? resp.text() : undefined)
+    }
 
     // helpers
-    function fetchCode() {
-        sendReq(options.js, function (c, status) {
-            if (status != 200) return
-            code = c
-            // find metadata
-            code.replace(/^\/\/\s+meta=([^\n]+)\n/m, function (m, metasrc) {
-                meta = JSON.parse(metasrc)
-                return ""
-            })
-            code.replace(
-                /^\/\/\s+boardDefinition=([^\n]+)\n/m,
-                function (m, metasrc) {
-                    boardDefinition = JSON.parse(metasrc)
+    function autoReload() {
+        setInterval(() => {
+            fetchSourceCode()
+                .then(c => {
+                    if (c && c != code0)
+                        window.location.reload();
+                })
+        }, 1000)
+    }
+    function startCode() {
+        fetchSourceCode()
+            .then(c => {
+                if (!c) return
+                code0 = code = c
+                // find metadata
+                code.replace(/^\/\/\s+meta=([^\n]+)\n/m, function (m, metasrc) {
+                    meta = JSON.parse(metasrc)
                     return ""
-                }
-            )
+                })
+                code.replace(
+                    /^\/\/\s+boardDefinition=([^\n]+)\n/m,
+                    function (m, metasrc) {
+                        boardDefinition = JSON.parse(metasrc)
+                        return ""
+                    }
+                )
 
-            // force local sim
-            meta.simUrl = window.location.protocol + "//" + window.location.host + "/sim.html"
+                // force local sim
+                meta.simUrl = window.location.protocol + "//" + window.location.host + "/sim.html"
 
-            // load simulator with correct version
-            document
-                .getElementById("simframe")
-                .setAttribute("src", meta.simUrl + "#" + frameid)
-            let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl)
-            simOrigin = m[0]
-        })
+                // load simulator with correct version
+                document
+                    .getElementById("simframe")
+                    .setAttribute("src", meta.simUrl + "#" + frameid)
+                let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl)
+                simOrigin = m[0]
+            })
     }
 
     function startSim() {
@@ -182,17 +199,6 @@ function makeCodeRun(options) {
     function postMessage(msg) {
         const frame = document.getElementById("simframe") as HTMLIFrameElement
         if (meta && frame) frame.contentWindow.postMessage(msg, meta.simUrl)
-    }
-
-    function sendReq(url, cb) {
-        let xhttp = new XMLHttpRequest()
-        xhttp.onreadystatechange = function () {
-            if (xhttp.readyState == 4) {
-                cb(xhttp.responseText, xhttp.status)
-            }
-        }
-        xhttp.open("GET", url, true)
-        xhttp.send()
     }
 
     function initSimState() {
