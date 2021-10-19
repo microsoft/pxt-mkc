@@ -14,6 +14,7 @@ import { descriptors } from "./loader"
 import watch from 'node-watch'
 import { cloudRoot } from "./mkc"
 import { startSimServer } from "./simserver"
+import { expandStackTrace } from "./stackresolver"
 const fetch = require('node-fetch')
 
 interface Options {
@@ -590,6 +591,11 @@ async function searchCommand(query: string, opts: SearchOptions) {
     })
 }
 
+async function stackCommand(opts: ProjectOptions) {
+    const srcmap = JSON.parse(fs.readFileSync("built/binary.srcmap", "utf8"))
+    console.log(expandStackTrace(srcmap, fs.readFileSync(0, 'utf-8')))
+}
+
 interface AddOptions extends ProjectOptions { }
 async function addCommand(repo: string, name: string, opts: AddOptions) {
     applyGlobalOptions(opts)
@@ -752,6 +758,10 @@ async function mainCli() {
         .description("search for an extension")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .action(searchCommand)
+
+    createCommand("stack", { hidden: true })
+        .description("expand stack trace")
+        .action(stackCommand)
 
     await commander.parseAsync(process.argv)
 }
