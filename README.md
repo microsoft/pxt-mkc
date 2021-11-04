@@ -138,6 +138,12 @@ Adding ``--version-file`` will make `mkc` write a TypeScript file with the versi
 mkc bump --version-file version.ts
 ```
 
+Add ``--stage`` to test the bump without pushing to git.
+
+```
+mkc --stage
+```
+
 ### mkc download
 
 Downloads a shared MakeCode project to files and initializes the project.
