@@ -413,11 +413,14 @@ async function buildCommandOnce(opts: BuildOptions) {
     }
 }
 
-interface BumpOptions extends ProjectOptions { }
+interface BumpOptions extends ProjectOptions {
+    versionFile?: string
+    stage?: boolean
+}
 async function bumpCommand(opts: BumpOptions) {
     applyGlobalOptions(opts)
     const prj = await resolveProject(opts)
-    await bump.bumpAsync(prj)
+    await bump.bumpAsync(prj, opts?.versionFile, opts?.stage)
 }
 
 interface InitOptions extends ProjectOptions { }
@@ -732,6 +735,8 @@ async function mainCli() {
 
     createCommand("bump")
         .description("interactive version incrementer for a project or mono-repo")
+        .option("--version-file <file>", "write generated version number into the file")
+        .option("--stage", "skip git commit and push operations")
         .action(bumpCommand)
 
     createCommand("init")

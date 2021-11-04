@@ -104,14 +104,33 @@ export function monoRepoConfigs(folder: string, includingSelf = true) {
             (includingSelf || path.resolve(folder, "pxt.json") != path.resolve(e)))
 }
 
-export async function bumpAsync(prj: mkc.Project) {
-    await needsGitCleanAsync()
-    await runGitAsync("pull")
+export async function bumpAsync(prj: mkc.Project, versionFile: string, stage: boolean) {
+    if (stage)
+        mkc.log(`operation staged, skipping git commit/push`)
+
+    if (!stage) {
+        await needsGitCleanAsync()
+        await runGitAsync("pull")
+    }
     const cfg = prj.mainPkg.config
     const m = /^(\d+\.\d+)\.(\d+)(.*)/.exec(cfg.version)
     let newV = m ? m[1] + "." + (parseInt(m[2]) + 1) + m[3] : ""
     newV = await queryAsync("New version", newV)
     cfg.version = newV
+
+    if (versionFile) {
+        mkc.log(`writing version ${newV} in ${versionFile}`)
+        const versionSrc =
+            `
+// Auto-generated file: do not edit.
+namespace ${cfg.name.replace(/^pxt-/, '').split(/-/g).map((p, i) => i == 0 ? p : (p[0].toUpperCase() + p.slice(1))).join("")} {
+    /**
+     * Version of the library
+     */
+    export const VERSION = "${newV}"
+}`
+        fs.writeFileSync(versionFile, versionSrc, { encoding: "utf-8" })
+    }
 
     const configs = monoRepoConfigs(prj.directory, false)
     if (configs.length > 0) {
@@ -125,27 +144,30 @@ export async function bumpAsync(prj: mkc.Project) {
     }
 
     await files.writeFilesAsync(prj.directory, { "pxt.json": mkc.stringifyConfig(cfg) }, true)
-    await runGitAsync("commit", "-a", "-m", newV)
-    await runGitAsync("tag", "v" + newV)
-    await runGitAsync("push")
-    await runGitAsync("push", "--tags")
 
-    const urlinfo = await spawnWithPipeAsync({
-        cmd: "git",
-        args: ["remote", "get-url", "origin"],
-        pipe: true
-    }).then(v => v, err => {
-        mkc.error(err)
-        return null as Buffer
-    })
-    const url = urlinfo?.toString("utf8")?.trim()
-    if (url) {
-        const slug = url.replace(/.*github\.com\//i, "")
-        if (slug != url) {
-            mkc.log(`Github slug ${slug}; refreshing makecode.com cache`)
-            const res = await httpGetJsonAsync("https://makecode.com/api/gh/" + slug + "/refs?nocache=1")
-            const sha = res?.refs?.["refs/tags/v" + newV]
-            mkc.log(`refreshed ${newV} -> ${sha}`)
+    if (!stage) {
+        await runGitAsync("commit", "-a", "-m", newV)
+        await runGitAsync("tag", "v" + newV)
+        await runGitAsync("push")
+        await runGitAsync("push", "--tags")
+
+        const urlinfo = await spawnWithPipeAsync({
+            cmd: "git",
+            args: ["remote", "get-url", "origin"],
+            pipe: true
+        }).then(v => v, err => {
+            mkc.error(err)
+            return null as Buffer
+        })
+        const url = urlinfo?.toString("utf8")?.trim()
+        if (url) {
+            const slug = url.replace(/.*github\.com\//i, "")
+            if (slug != url) {
+                mkc.log(`Github slug ${slug}; refreshing makecode.com cache`)
+                const res = await httpGetJsonAsync("https://makecode.com/api/gh/" + slug + "/refs?nocache=1")
+                const sha = res?.refs?.["refs/tags/v" + newV]
+                mkc.log(`refreshed ${newV} -> ${sha}`)
+            }
         }
     }
 }

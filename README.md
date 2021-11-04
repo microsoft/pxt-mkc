@@ -132,6 +132,12 @@ and nested projects in a mono-repo.
 mkc bump
 ```
 
+Adding ``--version-file`` will make `mkc` write a TypeScript file with the version number.
+
+```
+mkc bump --version-file version.ts
+```
+
 ### mkc download
 
 Downloads a shared MakeCode project to files and initializes the project.
