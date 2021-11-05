@@ -116,6 +116,7 @@ export async function bumpAsync(prj: mkc.Project, versionFile: string, stage: bo
     const m = /^(\d+\.\d+)\.(\d+)(.*)/.exec(cfg.version)
     let newV = m ? m[1] + "." + (parseInt(m[2]) + 1) + m[3] : ""
     newV = await queryAsync("New version", newV)
+    const newTag = "v" + newV
     cfg.version = newV
 
     if (versionFile) {
@@ -127,7 +128,7 @@ namespace ${cfg.name.replace(/^pxt-/, '').split(/-/g).map((p, i) => i == 0 ? p :
     /**
      * Version of the library
      */
-    export const VERSION = "${newV}"
+    export const VERSION = "${newTag}"
 }`
         fs.writeFileSync(versionFile, versionSrc, { encoding: "utf-8" })
     }
@@ -147,7 +148,7 @@ namespace ${cfg.name.replace(/^pxt-/, '').split(/-/g).map((p, i) => i == 0 ? p :
 
     if (!stage) {
         await runGitAsync("commit", "-a", "-m", newV)
-        await runGitAsync("tag", "v" + newV)
+        await runGitAsync("tag", newTag)
         await runGitAsync("push")
         await runGitAsync("push", "--tags")
 
@@ -165,7 +166,7 @@ namespace ${cfg.name.replace(/^pxt-/, '').split(/-/g).map((p, i) => i == 0 ? p :
             if (slug != url) {
                 mkc.log(`Github slug ${slug}; refreshing makecode.com cache`)
                 const res = await httpGetJsonAsync("https://makecode.com/api/gh/" + slug + "/refs?nocache=1")
-                const sha = res?.refs?.["refs/tags/v" + newV]
+                const sha = res?.refs?.["refs/tags/" + newTag]
                 mkc.log(`refreshed ${newV} -> ${sha}`)
             }
         }
