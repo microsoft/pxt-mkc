@@ -604,8 +604,8 @@ async function searchCommand(query: string, opts: SearchOptions) {
             info(`    ${description}`)
     })
 
-    if (/jacdac/.test(query)) {
-        const q = query.replace(/jacdac-*/, '')
+    if (/jacdac/i.test(query)) {
+        const q = query.replace(/jacdac-*/i, '')
         const exts = await makeCodeExtensions()
         for (const ext of exts.filter(ext => ext.client.name.indexOf(q) > -1 || ext.service.indexOf(q) > -1)) {
             msg(`  ${ext.client.name}`)
