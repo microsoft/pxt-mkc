@@ -82,14 +82,9 @@ Use `--watch`, or `-w`, with `mkc build` to automatically watch changes in sourc
 mkc -w
 ```
 
-### Serve built files in Codespaces
+### Built files in codespace
 
-In codespaces, you can launch a local web server for the built folder so that you can retreive the built files using port forwarding.
-Use `--serve-binaries`, or `-s` with `mkc build`. Defaults to http://localhost:7001
-
-```
-mkc -w -sb
-```
+From Visual Studio Code, browse to the built folder and right click `Download` on the desired file.
 
 ### mkc serve
 
