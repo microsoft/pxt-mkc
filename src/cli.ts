@@ -204,8 +204,8 @@ interface BuildOptions extends ProjectOptions {
     alwaysBuilt?: boolean;
     monoRepo?: boolean;
     watch?: boolean
-    serve?: boolean
-    port?: number
+    serveBinaries?: boolean
+    binariesPort?: string
 }
 async function buildCommand(opts: BuildOptions) {
     applyGlobalOptions(opts)
@@ -218,8 +218,8 @@ async function buildCommand(opts: BuildOptions) {
         process.exit(1)
     }
 
-    if (opts.serve) {
-        const port = parseInt(opts.port) || 7001
+    if (opts.serveBinaries) {
+        const port = parseInt(opts.binariesPort) || 7001
         startBuiltServer(port)
     }
     if (opts.watch) {
@@ -757,8 +757,8 @@ async function mainCli() {
         .option("-u, --update", "check for web-app updates")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
-        .option("-s, --serve", "serve built binary folder to allow easy download in codespaces")
-        .option("-p, --port <number>", "port to listen at, default to 7001")
+        .option("-sb, --serve-binaries", "serve built binary folder to allow easy download in codespaces")
+        .option("-bp, --binaries-port <number>", "port to listen at, default to 7001")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .action(buildCommand)
 
