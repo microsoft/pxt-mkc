@@ -1,0 +1,16 @@
+{
+    "name": "test",
+    "description": "",
+    "dependencies": {
+        "core": "*",
+        "radio": "*",
+        "microphone": "*"
+    },
+    "files": [
+        "main.ts"
+    ],
+    "public": true,
+    "supportedTargets": [
+        "microbit"
+    ]
+}

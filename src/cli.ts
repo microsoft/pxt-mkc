@@ -204,6 +204,8 @@ interface BuildOptions extends ProjectOptions {
     alwaysBuilt?: boolean;
     monoRepo?: boolean;
     watch?: boolean
+    serve?: boolean
+    port?: number
 }
 async function buildCommand(opts: BuildOptions) {
     applyGlobalOptions(opts)
@@ -216,6 +218,10 @@ async function buildCommand(opts: BuildOptions) {
         process.exit(1)
     }
 
+    if (opts.serve) {
+        const port = parseInt(opts.port) || 7001
+        startBuiltServer(port)
+    }
     if (opts.watch) {
         startWatch(opts)
     } else await buildCommandOnce(opts)
@@ -223,6 +229,30 @@ async function buildCommand(opts: BuildOptions) {
 
 function delay(ms: number) {
     return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+function startBuiltServer(port: number) {
+    const handler = require('serve-handler');
+    const http = require('http');
+    const server = http.createServer((request: any, response: any) => {
+        return handler(request, response, {
+            public: "./built/",
+            cleanUrls: true,
+            headers: [
+                {
+                    "source": "**/*.@(hex|uf2)",
+                    "headers": [{
+                        "key": "Content-Disposition",
+                        "value": "attachment"
+                    }]
+                }
+            ]
+        });
+    })
+
+    server.listen(port, () => {
+        info(`start serving binaries at http://localhost:${port}`);
+    });
 }
 
 function startWatch(opts: BuildOptions) {
@@ -717,13 +747,15 @@ async function mainCli() {
         .option("-u, --update", "check for web-app updates")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .option("-r, --mono-repo", "also build all subfolders with 'pxt.json' in them")
+        .option("-s, --serve", "serve built binary folder to allow easy download in codespaces")
+        .option("-p, --port <number>", "port to listen at, default to 7001")
         .option("--always-built", "always generate files in built/ folder (and not built/hw-variant/)")
         .action(buildCommand)
 
     createCommand("serve")
         .description("start simulator server")
         .option("--no-watch", "do not watch source files")
-        .option("-p, --port <number>", "port to listen at")
+        .option("-p, --port <number>", "port to listen at, default to 7000")
         .option("-u, --update", "check for web-app updates")
         .option("-c, --config-path <file>", "set configuration file path (default: \"mkc.json\")")
         .action(serveCommand)
