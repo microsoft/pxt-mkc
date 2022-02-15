@@ -507,6 +507,16 @@ async function initCommand(template: string, deps: string[], opts: InitOptions) 
         }, null, 4), { encoding: "utf-8" })
     }
 
+    const prettierrc = ".prettierrc"
+    if (!fs.existsSync(prettierrc)) {
+        msg(`saving ${prettierrc}`)
+        fs.writeFileSync(prettierrc, JSON.stringify({
+            "arrowParens": "avoid",
+            "semi": false,
+            "tabWidth": 4
+        }))
+    }
+
     opts.pxtModules = true
     const prj = await resolveProject(opts)
     if (!fs.existsSync("mkc.json")) {
