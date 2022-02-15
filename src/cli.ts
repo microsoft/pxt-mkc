@@ -244,6 +244,9 @@ function startBuiltServer(port: number) {
                     "headers": [{
                         "key": "Content-Disposition",
                         "value": "attachment"
+                    }, {
+                        "key": "Cache-Control",
+                        "value": "no-cache"
                     }]
                 }
             ]
