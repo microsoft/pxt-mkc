@@ -584,6 +584,7 @@ async function fetchExtension(slug: string) {
 interface SearchOptions extends ProjectOptions { }
 async function searchCommand(query: string, opts: SearchOptions) {
     applyGlobalOptions(opts)
+    query = query.trim().toLowerCase()
     msg(`searching for ${query}`)
     const prj = await resolveProject(opts)
     const targetid = prj.editor.targetJson.id
@@ -602,6 +603,16 @@ async function searchCommand(query: string, opts: SearchOptions) {
         if (description)
             info(`    ${description}`)
     })
+
+    if (/jacdac/.test(query)) {
+        const q = query.replace(/jacdac-*/, '')
+        const exts = await makeCodeExtensions()
+        for (const ext of exts.filter(ext => ext.client.name.indexOf(q) > -1 || ext.service.indexOf(q) > -1)) {
+            msg(`  ${ext.client.name}`)
+            info(`    https://${ext.client.repo}`)
+        }
+    }
+
 }
 
 async function stackCommand(opts: ProjectOptions) {
