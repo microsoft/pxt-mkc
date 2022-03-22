@@ -265,7 +265,10 @@ function startWatch(opts: BuildOptions) {
 <head>
 ${entries.length === 0 ? `<meta http-equiv="refresh" content="1">` : ''}
 <style>
-body { font-family: monospace; font-size: 14pt; }
+* { font-family: monospace; font-size: 16pt; }
+@media (prefers-color-scheme: dark) { 
+    * { background: #2d2d2d; color: #fff; }
+}  
 </style>
 </head>
 <body>
