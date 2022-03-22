@@ -256,7 +256,8 @@ function startWatch(opts: BuildOptions) {
             } else {
                 // display default path
                 res.writeHead(200, {
-                    "Cache-Control": "no-cache"
+                    "Cache-Control": "no-cache",
+                    "Content-Type": "text/html"
                 });
                 const entries = Object.entries(binaries)
                 res.end(`
