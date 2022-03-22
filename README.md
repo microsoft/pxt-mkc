@@ -82,6 +82,15 @@ Use `--watch`, or `-w`, with `mkc build` to automatically watch changes in sourc
 mkc -w
 ```
 
+### mkc build --watch --serve
+
+When building within a virtual machine without USB access, like in GitHub Codespaces or Windows Subsytem for Linux, the `--serve`, or `-s` option starts a local web server
+that serves the compiled binaries by the build process.
+
+```
+mkc -w -s
+```
+
 ### Built files in codespace
 
 From Visual Studio Code, browse to the built folder and right click `Download` on the desired file.
@@ -136,13 +145,13 @@ and nested projects in a mono-repo.
 mkc bump
 ```
 
-Adding ``--version-file`` will make `mkc` write a TypeScript file with the version number.
+Adding `--version-file` will make `mkc` write a TypeScript file with the version number.
 
 ```
 mkc bump --version-file version.ts
 ```
 
-Add ``--stage`` to test the bump without pushing to git.
+Add `--stage` to test the bump without pushing to git.
 
 ```
 mkc --stage
