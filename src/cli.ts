@@ -241,7 +241,7 @@ function startWatch(opts: BuildOptions) {
         const port = opts.servePort || 7001
         createServer(async (req, res) => {
             // find file
-            const k = req.url.toLowerCase().replace(/^\//, '')
+            const k = req.url.toLowerCase().replace(/^\//, '').replace(/\/$/i, '')
             const data = binaries[k]
             if (data) {
                 res.writeHead(200, {
