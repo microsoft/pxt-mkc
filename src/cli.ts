@@ -1,6 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import * as util from "util"
+import { createServer } from "http"
 
 import * as mkc from "./mkc"
 import * as files from "./files"
@@ -125,7 +126,7 @@ async function serveCommand(opts: ServeOptions) {
     opts.update = false
     const prj = await resolveProject(opts, !!opts.watch)
     const port = parseInt(opts.port) || 7000
-    msg(`listening on http://localhost:${port}`)
+    msg(`simulator web server at http://localhost:${port}`)
     startSimServer(prj.editor, port)
 }
 
@@ -201,6 +202,8 @@ interface BuildOptions extends ProjectOptions {
     native?: boolean;
     javaScript?: boolean;
     deploy?: boolean;
+    serve?: boolean;
+    servePort?: number;
     alwaysBuilt?: boolean;
     monoRepo?: boolean;
     watch?: boolean
@@ -215,7 +218,14 @@ async function buildCommand(opts: BuildOptions) {
         error("--deploy and --java-script cannot be used together")
         process.exit(1)
     }
-
+    if (opts.serve && !opts.watch) {
+        error("--serve must be used with --watch")
+        process.exit(1)
+    }
+    if (opts.serve && opts.monoRepo) {
+        error("--serve and --mono-repo cannot be used together")
+        process.exit(1)
+    }
     if (opts.watch) {
         startWatch(opts)
     } else await buildCommandOnce(opts)
@@ -226,6 +236,44 @@ function delay(ms: number) {
 }
 
 function startWatch(opts: BuildOptions) {
+    const binaries: Record<string, Buffer | string> = {}
+    if (opts.serve) {
+        const port = opts.servePort || 7001
+        createServer(async (req, res) => {
+            // find file
+            const k = req.url.toLowerCase().replace(/^\//, '')
+            const data = binaries[k]
+            if (data) {
+                res.writeHead(200, {
+                    "Cache-Control": "no-cache"
+                });
+                res.end(data);
+            }
+            else {
+                // display default path
+                res.writeHead(200, {
+                    "Cache-Control": "no-cache"
+                });
+                res.end(`
+<html>
+<head>
+<style>
+body { font-family: monospace; font-size: 14pt; }
+</style>
+</head>
+<body>
+<h1>MakeCode firmware files</h1>
+<p>Refresh page to see updated list of firmwares.</p>
+<table>
+${Object.entries(binaries).map(([key, value]) => `<tr><td><a href="/${key}">${key}</a></td><td>${Math.ceil(value.length / 1e3)}Kb</td></tr>`).join('\n')}
+</table>
+</body>
+</html>`)
+            }
+        }).listen(port);
+        msg(`firmware file server at http://localhost:${port}/`)
+    }
+
     const watcher = watch('./', {
         recursive: true,
         delay: 200,
@@ -261,7 +309,14 @@ function startWatch(opts: BuildOptions) {
                 const opts0 = clone(opts)
                 if (ev) // if not first time, don't update
                     opts0.update = false
-                await buildCommandOnce(opts0)
+                const files = await buildCommandOnce(opts0)
+                if (files)
+                    Object.entries(files).forEach(([key, value]) => {
+                        if (!/\.hex$/.test(key))
+                            binaries[key] = value
+                        else
+                            binaries[key] = Buffer.from(value, 'base64')
+                    })
             }
         }
         catch (e) {
@@ -272,11 +327,11 @@ function startWatch(opts: BuildOptions) {
         }
     }
     watcher.on('change', build)
-    info(`start watching for file changes`)
+    msg(`start watching for file changes`)
     build(undefined, undefined)
 }
 
-async function buildCommandOnce(opts: BuildOptions) {
+async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     const prj = await resolveProject(opts)
     prj.service.runSync("(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()")
     const hwVariants = prj.service.hwVariants
@@ -373,13 +428,13 @@ async function buildCommandOnce(opts: BuildOptions) {
     if (success) {
         msg("Build OK")
         if (opts.watch)
-            return
+            return compileRes?.outfiles
         else
             process.exit(0)
     } else {
         error("Build failed")
         if (opts.watch)
-            return
+            return compileRes?.outfiles
         else
             process.exit(1)
     }
@@ -733,6 +788,8 @@ async function mainCli() {
         .option("-w, --watch", "watch source files and rebuild on changes")
         .option("-n, --native", "compile native (default)")
         .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
+        .option("-s, --serve", "start firmware files web server")
+        .option("-p", "--serve-port", "specify the port for firmware file web server")
         .option("-h, --hw <id,...>", "set hardware(s) for which to compile (implies -n)")
         .option("-j, --java-script", "compile to JavaScript")
         .option("-u, --update", "check for web-app updates")
@@ -742,7 +799,7 @@ async function mainCli() {
         .action(buildCommand)
 
     createCommand("serve")
-        .description("start simulator server")
+        .description("start local simulator web server")
         .option("--no-watch", "do not watch source files")
         .option("-p, --port <number>", "port to listen at, default to 7000")
         .option("-u, --update", "check for web-app updates")

@@ -82,6 +82,15 @@ Use `--watch`, or `-w`, with `mkc build` to automatically watch changes in sourc
 mkc -w
 ```
 
+### mkc build --watch --serve
+
+When building within a virtual machine without USB access, the `--serve`, or `-s` option starts a local web server
+that serves the compiled binaries by the build process.
+
+```
+mkc -w -s
+```
+
 ### Built files in codespace
 
 From Visual Studio Code, browse to the built folder and right click `Download` on the desired file.
