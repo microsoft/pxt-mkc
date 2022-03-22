@@ -244,28 +244,34 @@ function startWatch(opts: BuildOptions) {
             const k = req.url.toLowerCase().replace(/^\//, '').replace(/\/$/i, '')
             const data = binaries[k]
             if (data) {
+                info(`found firmware file ${k}`)
                 res.writeHead(200, {
-                    "Cache-Control": "no-cache"
+                    "Cache-Control": "no-cache",
+                    "Content-Type": typeof data === "string" ? "text/plain" : "application/octet-stream"
                 });
                 res.end(data);
-            }
-            else {
+            } else if (k === 'favicon.ico') {
+                res.writeHead(404)
+                res.end()
+            } else {
                 // display default path
                 res.writeHead(200, {
                     "Cache-Control": "no-cache"
                 });
+                const entries = Object.entries(binaries)
                 res.end(`
 <html>
 <head>
+${entries.length === 0 ? `<meta http-equiv="refresh" content="1">` : ''}
 <style>
 body { font-family: monospace; font-size: 14pt; }
 </style>
 </head>
 <body>
 <h1>MakeCode firmware files</h1>
-<p>Refresh page to see updated list of firmwares.</p>
+${entries.length === 0 ? `<p>Waiting for first build...</p>` : ''}
 <table>
-${Object.entries(binaries).map(([key, value]) => `<tr><td><a href="/${key}">${key}</a></td><td>${Math.ceil(value.length / 1e3)}Kb</td></tr>`).join('\n')}
+${entries.map(([key, value]) => `<tr><td><a download="${key}" href="/${key}">${key}</a></td><td>${Math.ceil(value.length / 1e3)}Kb</td></tr>`).join('\n')}
 </table>
 </body>
 </html>`)
@@ -312,7 +318,7 @@ ${Object.entries(binaries).map(([key, value]) => `<tr><td><a href="/${key}">${ke
                 const files = await buildCommandOnce(opts0)
                 if (files)
                     Object.entries(files).forEach(([key, value]) => {
-                        if (!/\.hex$/.test(key))
+                        if (/\.(hex|json|asm)$/.test(key))
                             binaries[key] = value
                         else
                             binaries[key] = Buffer.from(value, 'base64')
