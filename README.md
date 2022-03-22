@@ -84,7 +84,7 @@ mkc -w
 
 ### mkc build --watch --serve
 
-When building within a virtual machine without USB access, the `--serve`, or `-s` option starts a local web server
+When building within a virtual machine without USB access, like in GitHub Codespaces or Windows Subsytem for Linux, the `--serve`, or `-s` option starts a local web server
 that serves the compiled binaries by the build process.
 
 ```
@@ -145,13 +145,13 @@ and nested projects in a mono-repo.
 mkc bump
 ```
 
-Adding ``--version-file`` will make `mkc` write a TypeScript file with the version number.
+Adding `--version-file` will make `mkc` write a TypeScript file with the version number.
 
 ```
 mkc bump --version-file version.ts
 ```
 
-Add ``--stage`` to test the bump without pushing to git.
+Add `--stage` to test the bump without pushing to git.
 
 ```
 mkc --stage
