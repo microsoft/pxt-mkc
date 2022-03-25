@@ -33,7 +33,10 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7000) {
 
         if (buf) {
             const m = mime[path.replace(/.*\./, "")] || "application/octet-stream"
-            response.writeHead(200, { 'Content-type': m });
+            response.writeHead(200, {
+                'Content-type': m,
+                'Cache-Control': 'no-cache'
+            });
             response.end(buf);
         } else {
             response.writeHead(404, { 'Content-type': 'text/plain' });
