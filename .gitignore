@@ -2,5 +2,6 @@ tmp
 built
 .DS_Store
 node_modules
+pxt_modules
 *.vsix
 src/simloaderfiles.ts

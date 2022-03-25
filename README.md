@@ -44,6 +44,15 @@ mkc init microbit jacdac jacdac-button jacdac-led
 
 Your project is ready to be edited. If you are a Visual Studio Code user, type `code .` and you're ready to go!
 
+### mkc install
+
+This command downloads the sources of extensions to the file system so that your TypeScript
+IDE can use them
+
+```
+mkc install
+```
+
 ### mkc build
 
 In a folder with `pxt.json` file, run the build command.
