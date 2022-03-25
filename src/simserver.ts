@@ -1,19 +1,18 @@
-import http = require('http');
-import fs = require('fs');
-import mkc = require('./mkc');
-import { simloaderFiles } from './simloaderfiles';
+import http = require("http")
+import fs = require("fs")
+import mkc = require("./mkc")
+import { simloaderFiles } from "./simloaderfiles"
 
 const mime: pxt.Map<string> = {
     js: "application/javascript",
     css: "text/css",
-    html: "text/html"
+    html: "text/html",
 }
 
 export function startSimServer(ed: mkc.DownloadedEditor, port = 7000) {
     http.createServer(async (request, response) => {
         let path = request.url
-        if (path == "/")
-            path = "/index.html"
+        if (path == "/") path = "/index.html"
         path = path.replace(/.*\//, "")
         path = path.replace(/\?.*/, "")
 
@@ -22,22 +21,22 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7000) {
         if (path == "binary.js") {
             try {
                 buf = fs.readFileSync("built/binary.js")
-            } catch { }
+            } catch {}
         } else if (simloaderFiles.hasOwnProperty(path)) {
             buf = Buffer.from(simloaderFiles[path], "utf-8")
         } else if (/^[\w\.\-]+$/.test(path)) {
             buf = await ed.cache.getAsync(ed.website + "-" + path)
-            if (!buf)
-                buf = await ed.cache.getAsync(path)
+            if (!buf) buf = await ed.cache.getAsync(path)
         }
 
         if (buf) {
-            const m = mime[path.replace(/.*\./, "")] || "application/octet-stream"
-            response.writeHead(200, { 'Content-type': m });
-            response.end(buf);
+            const m =
+                mime[path.replace(/.*\./, "")] || "application/octet-stream"
+            response.writeHead(200, { "Content-type": m })
+            response.end(buf)
         } else {
-            response.writeHead(404, { 'Content-type': 'text/plain' });
-            response.end("Not found");
+            response.writeHead(404, { "Content-type": "text/plain" })
+            response.end("Not found")
         }
-    }).listen(port);
+    }).listen(port)
 }
