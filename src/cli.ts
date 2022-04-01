@@ -19,7 +19,7 @@ import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
 import watch from "node-watch"
-import { cloudRoot } from "./mkc"
+import { cloudRoot, MkcJson } from "./mkc"
 import { startSimServer } from "./simserver"
 import { expandStackTrace } from "./stackresolver"
 const fetch = require("node-fetch")
@@ -69,8 +69,8 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
                 diagnostic.category == 1
                     ? chalk.red("error")
                     : diagnostic.category == 2
-                    ? chalk.yellowBright("warning")
-                    : "message"
+                        ? chalk.yellowBright("warning")
+                        : "message"
             return `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`
         }
 
@@ -78,9 +78,8 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
         for (let diagnostic of res.diagnostics) {
             let pref = ""
             if (diagnostic.fileName)
-                pref = `${diagnostic.fileName}(${diagnostic.line + 1},${
-                    diagnostic.column + 1
-                }): `
+                pref = `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1
+                    }): `
 
             if (typeof diagnostic.messageText == "string")
                 output += pref + msgToString(diagnostic)
@@ -146,22 +145,22 @@ async function serveCommand(opts: ServeOptions) {
     startSimServer(prj.editor, port)
 }
 
-interface DownloadOptions extends Options {}
+interface DownloadOptions extends Options { }
 async function downloadCommand(URL: string, opts: DownloadOptions) {
     applyGlobalOptions(opts)
     await downloadProjectAsync(URL)
 }
 
-interface CleanOptions extends Options {}
+interface CleanOptions extends Options { }
 async function cleanCommand(opts: CleanOptions) {
     applyGlobalOptions(opts)
 
-    ;["built", "pxt_modules"]
-        .filter(d => fs.existsSync(d))
-        .forEach(d => {
-            msg(`deleting ${d} folder`)
-            fs.rmdirSync(d, { recursive: true, force: true } as any)
-        })
+        ;["built", "pxt_modules"]
+            .filter(d => fs.existsSync(d))
+            .forEach(d => {
+                msg(`deleting ${d} folder`)
+                fs.rmdirSync(d, { recursive: true, force: true } as any)
+            })
 
     msg("run `mkc init` again to setup your project")
 }
@@ -191,7 +190,7 @@ async function resolveProject(opts: ProjectOptions, quiet = false) {
     let version = "???"
     try {
         version = prj.service.runSync("pxt.appTarget?.versions?.target")
-    } catch {}
+    } catch { }
     log(`using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
     if (opts.debug) prj.service.runSync("(() => { pxt.options.debug = 1 })()")
@@ -296,13 +295,13 @@ ${entries.length === 0 ? `<meta http-equiv="refresh" content="1">` : ""}
 ${entries.length === 0 ? `<p>Waiting for first build...</p>` : ""}
 <table>
 ${entries
-    .map(
-        ([key, value]) =>
-            `<tr><td><a download="${key}" href="/${key}">${key}</a></td><td>${Math.ceil(
-                value.length / 1e3
-            )}Kb</td></tr>`
-    )
-    .join("\n")}
+                        .map(
+                            ([key, value]) =>
+                                `<tr><td><a download="${key}" href="/${key}">${key}</a></td><td>${Math.ceil(
+                                    value.length / 1e3
+                                )}Kb</td></tr>`
+                        )
+                        .join("\n")}
 </table>
 </body>
 </html>`)
@@ -460,7 +459,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
         for (const folder of outputs) {
             try {
                 uf2s.push(fs.readFileSync(path.join(folder, "binary.uf2")))
-            } catch {}
+            } catch { }
         }
         if (uf2s.length > 1) {
             const total = Buffer.concat(uf2s)
@@ -527,7 +526,7 @@ async function bumpCommand(opts: BumpOptions) {
     await bump.bumpAsync(prj, opts?.versionFile, opts?.stage)
 }
 
-interface InstallOptions extends ProjectOptions {}
+interface InstallOptions extends ProjectOptions { }
 async function installCommand(opts: InstallOptions) {
     applyGlobalOptions(opts)
     if (!fs.existsSync("pxt.json")) {
@@ -541,7 +540,7 @@ async function installCommand(opts: InstallOptions) {
     await prj.maybeWritePxtModulesAsync()
 }
 
-interface InitOptions extends ProjectOptions {}
+interface InitOptions extends ProjectOptions { }
 async function initCommand(
     template: string,
     deps: string[],
@@ -583,8 +582,9 @@ async function initCommand(
         fs.writeFileSync(
             "mkc.json",
             JSON.stringify(
-                {
+                <MkcJson>{
                     targetWebsite: target.website,
+                    links: {},
                 },
                 null,
                 4
@@ -669,7 +669,7 @@ async function jacdacMakeCodeExtensions() {
             "https://raw.githubusercontent.com/microsoft/jacdac/main/services/makecode-extensions.json"
         )
         data = (await r.json()) as any
-    } catch (e) {}
+    } catch (e) { }
     return data
 }
 
@@ -731,7 +731,7 @@ async function fetchExtension(slug: string) {
     return script
 }
 
-interface SearchOptions extends ProjectOptions {}
+interface SearchOptions extends ProjectOptions { }
 async function searchCommand(query: string, opts: SearchOptions) {
     applyGlobalOptions(opts)
     query = query.trim().toLowerCase()
@@ -782,7 +782,7 @@ async function stackCommand(opts: ProjectOptions) {
     console.log(expandStackTrace(srcmap, fs.readFileSync(0, "utf-8")))
 }
 
-interface AddOptions extends ProjectOptions {}
+interface AddOptions extends ProjectOptions { }
 async function addCommand(repo: string, name: string, opts: AddOptions) {
     applyGlobalOptions(opts)
     opts.pxtModules = true
@@ -818,9 +818,8 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
         name ||
         join(rid.project, rid.fileName).replace(/^pxt-/, "").replace("/", "-")
 
-    pxtJson.dependencies[dname] = `github:${rid.fullName}#${
-        d.version ? `v${d.version}` : d.defaultBranch
-    }`
+    pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch
+        }`
     info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
     fs.writeFileSync("pxt.json", JSON.stringify(pxtJson, null, 4), {
         encoding: "utf-8",

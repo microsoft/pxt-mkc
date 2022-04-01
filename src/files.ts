@@ -122,11 +122,15 @@ export async function savePxtModulesAsync(
         if (k.startsWith("pxt_modules/")) {
             mkdirp(path.dirname(k))
             const v = files[k]
-            if (typeof v == "string") await writeAsync(k, v)
+            if (typeof v == "string") {
+                mkc.debug(`    write ${k}`)
+                await writeAsync(k, v)
+            }
             else {
+                mkc.debug(`    link ${k}`)
                 try {
                     fs.unlinkSync(k)
-                } catch {}
+                } catch { }
                 fs.symlinkSync(v.symlink, k, "file")
             }
         }
