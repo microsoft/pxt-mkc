@@ -124,7 +124,10 @@ function createCommand(name: string, opts?: CommandOptions) {
     return cmd
 }
 
+let debugMode = false
 function applyGlobalOptions(opts: Options) {
+    if (opts.debug) debugMode = true
+
     if (opts.noColors) (chalk as any).level = 0
     else if (opts.colors && !chalk.level) (chalk as any).level = 1
     else if (process.env["GITHUB_WORKFLOW"]) (chalk as any).level = 1
@@ -526,7 +529,9 @@ async function bumpCommand(opts: BumpOptions) {
     await bump.bumpAsync(prj, opts?.versionFile, opts?.stage)
 }
 
-interface InstallOptions extends ProjectOptions { }
+interface InstallOptions extends ProjectOptions {
+    monoRepo?: boolean
+}
 async function installCommand(opts: InstallOptions) {
     applyGlobalOptions(opts)
     if (!fs.existsSync("pxt.json")) {
@@ -537,7 +542,19 @@ async function installCommand(opts: InstallOptions) {
     opts.pxtModules = true
     const prj = await resolveProject(opts)
     prj.mainPkg = null
-    await prj.maybeWritePxtModulesAsync()
+    if (opts.monoRepo) {
+        const dirs = bump.monoRepoConfigs(".")
+        info(`mono-repo: building ${dirs.length} projects`)
+        for (const fullpxtjson of dirs) {
+            if (fullpxtjson.startsWith("pxt_modules")) continue
+            const fulldir = path.dirname(fullpxtjson)
+            info(`install ${fulldir}`)
+            const prj0 = prj.mkChildProject(fulldir)
+            await prj0.maybeWritePxtModulesAsync()
+        }
+    } else {
+        await prj.maybeWritePxtModulesAsync()
+    }
 }
 
 interface InitOptions extends ProjectOptions { }
@@ -886,7 +903,10 @@ async function mainCli() {
     mkc.setLogging({
         log: info,
         error: error,
-        debug: s => console.log(chalk.gray(s)),
+        debug: s => {
+            if (debugMode)
+                console.debug(chalk.gray(s))
+        },
     })
 
     commander.version(require("../package.json").version)
@@ -974,6 +994,10 @@ async function mainCli() {
 
     createCommand("install")
         .description("downloads the dependencies")
+        .option(
+            "-r, --mono-repo",
+            "also install in all subfolders with 'pxt.json' in them"
+        )
         .option(
             "--symlink-pxt-modules",
             "symlink files in pxt_modules/* for auto-completion"
