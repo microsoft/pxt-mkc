@@ -224,7 +224,11 @@ interface BuildOptions extends ProjectOptions {
     monoRepo?: boolean
     watch?: boolean
 }
-async function buildCommand(opts: BuildOptions) {
+async function buildCommand(opts: BuildOptions, info: any) {
+    if (info?.args?.length) {
+        error("invalid command")
+        process.exit(1)
+    }
     applyGlobalOptions(opts)
     if (opts.deploy && opts.monoRepo) {
         error("--deploy and --mono-repo cannot be used together")
