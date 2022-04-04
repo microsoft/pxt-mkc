@@ -41,5 +41,5 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7000) {
             response.writeHead(404, { "Content-type": "text/plain" })
             response.end("Not found")
         }
-    }).listen(port)
+    }).listen(port, "127.0.0.1")
 }

@@ -122,7 +122,7 @@ function makeCodeRun(options) {
                 } else if (d.type == "simulator") {
                     switch (d.command) {
                         case "restart":
-                            if (/localhost/.test(window.location.host)) {
+                            if (/localhost|127\.0\.0\.1/.test(window.location.host)) {
                                 window.location.reload();
                             } else {
                                 stopSim();
