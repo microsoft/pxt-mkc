@@ -144,7 +144,7 @@ async function serveCommand(opts: ServeOptions) {
     opts.update = false
     const prj = await resolveProject(opts, !!opts.watch)
     const port = parseInt(opts.port) || 7000
-    msg(`simulator web server at http://localhost:${port}`)
+    msg(`simulator web server at http://127.0.0.1:${port}`)
     startSimServer(prj.editor, port)
 }
 
@@ -313,7 +313,7 @@ ${entries
 </body>
 </html>`)
             }
-        }).listen(port)
+        }).listen(port, "127.0.0.1")
         msg(`firmware file server at http://127.0.0.1:${port}/`)
     }
 

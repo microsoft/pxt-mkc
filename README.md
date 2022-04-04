@@ -107,7 +107,7 @@ From Visual Studio Code, browse to the built folder and right click `Download` o
 ### mkc serve
 
 Use `mkc serve` to start a watch-build and localhost server with simulator.
-Defaults to http://localhost:7000
+Defaults to http://127.0.0.1:7000
 
 ```
 mkc serve
