@@ -224,7 +224,7 @@ interface BuildOptions extends ProjectOptions {
     monoRepo?: boolean
     watch?: boolean
 }
-async function buildCommand(opts: BuildOptions, info: any) {
+async function buildCommand(opts: BuildOptions, info: Command) {
     if (info?.args?.length) {
         error("invalid command")
         process.exit(1)
