@@ -4,7 +4,9 @@
     "dependencies": {
         "core": "*",
         "radio": "*",
-        "microphone": "*"
+        "microphone": "*",
+        "jacdac": "github:microsoft/pxt-jacdac",
+        "jacdac-button": "github:microsoft/pxt-jacdac/button#v0.8.18"
     },
     "files": [
         "main.ts"

@@ -160,7 +160,7 @@ export class Ctx {
                         throw new Error("only https: supported")
                     if (u.method != "GET") throw new Error("only GET supported")
                     if (!options.url.startsWith(cdnUrl + "/"))
-                        throw new Error("only CDN URLs support: " + cdnUrl)
+                        throw new Error("only CDN URLs support: " + cdnUrl + ", got " + options.url)
                     mkc.log("GET " + options.url)
                 }),
             pkgOverrideAsync: id => {
