@@ -159,8 +159,8 @@ export class Ctx {
                     if (u.protocol != "https:")
                         throw new Error("only https: supported")
                     if (u.method != "GET") throw new Error("only GET supported")
-                    if (!options.url.startsWith(cdnUrl + "/"))
-                        throw new Error("only CDN URLs support: " + cdnUrl + ", got " + options.url)
+                    if (!options.url.startsWith(cdnUrl + "/") && !options.url.startsWith("https://www.makecode.com/api/"))
+                        throw new Error("only CDN URLs and makecode.com/api support: " + cdnUrl + ", got " + options.url)
                     mkc.log("GET " + options.url)
                 }),
             pkgOverrideAsync: id => {
@@ -172,7 +172,7 @@ export class Ctx {
         this.runFunctionSync("pxt.setupSimpleCompile", [callbacks])
         // disable packages config for now; otherwise we do a HTTP request on every compile
         this.runSync(
-            "pxt.packagesConfigAsync = () => Promise.resolve(undefined)"
+            "pxt.packagesConfigAsync = () => Promise.resolve({})"
         )
         this.runFunctionSync("pxt.setupWebConfig", [
             {
