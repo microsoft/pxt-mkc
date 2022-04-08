@@ -22,6 +22,7 @@ import watch from "node-watch"
 import { cloudRoot, MkcJson } from "./mkc"
 import { startSimServer } from "./simserver"
 import { expandStackTrace } from "./stackresolver"
+import { startBinariesServer } from "./binserver"
 const fetch = require("node-fetch")
 
 interface Options {
@@ -69,8 +70,8 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
                 diagnostic.category == 1
                     ? chalk.red("error")
                     : diagnostic.category == 2
-                        ? chalk.yellowBright("warning")
-                        : "message"
+                    ? chalk.yellowBright("warning")
+                    : "message"
             return `${category} TS${diagnostic.code}: ${diagnostic.messageText}\n`
         }
 
@@ -78,8 +79,9 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
         for (let diagnostic of res.diagnostics) {
             let pref = ""
             if (diagnostic.fileName)
-                pref = `${diagnostic.fileName}(${diagnostic.line + 1},${diagnostic.column + 1
-                    }): `
+                pref = `${diagnostic.fileName}(${diagnostic.line + 1},${
+                    diagnostic.column + 1
+                }): `
 
             if (typeof diagnostic.messageText == "string")
                 output += pref + msgToString(diagnostic)
@@ -134,7 +136,8 @@ function applyGlobalOptions(opts: Options) {
 }
 
 interface ServeOptions extends BuildOptions {
-    port?: string
+    host?: string
+    port?: number
 }
 async function serveCommand(opts: ServeOptions) {
     applyGlobalOptions(opts)
@@ -143,27 +146,27 @@ async function serveCommand(opts: ServeOptions) {
     opts = clone(opts)
     opts.update = false
     const prj = await resolveProject(opts, !!opts.watch)
-    const port = parseInt(opts.port) || 7000
-    msg(`simulator web server at http://127.0.0.1:${port}`)
-    startSimServer(prj.editor, port)
+    const host = opts.host || "localhost"
+    const port = opts.port || 7000
+    msg(`simulator web server at http://${host}:${port}`)
+    startSimServer(prj.editor, host, port)
 }
 
-interface DownloadOptions extends Options { }
+interface DownloadOptions extends Options {}
 async function downloadCommand(URL: string, opts: DownloadOptions) {
     applyGlobalOptions(opts)
     await downloadProjectAsync(URL)
 }
 
-interface CleanOptions extends Options { }
+interface CleanOptions extends Options {}
 async function cleanCommand(opts: CleanOptions) {
     applyGlobalOptions(opts)
-
-        ;["built", "pxt_modules"]
-            .filter(d => fs.existsSync(d))
-            .forEach(d => {
-                msg(`deleting ${d} folder`)
-                fs.rmdirSync(d, { recursive: true, force: true } as any)
-            })
+    ;["built", "pxt_modules"]
+        .filter(d => fs.existsSync(d))
+        .forEach(d => {
+            msg(`deleting ${d} folder`)
+            fs.rmdirSync(d, { recursive: true, force: true } as any)
+        })
 
     msg("run `mkc init` again to setup your project")
 }
@@ -193,7 +196,7 @@ async function resolveProject(opts: ProjectOptions, quiet = false) {
     let version = "???"
     try {
         version = prj.service.runSync("pxt.appTarget?.versions?.target")
-    } catch { }
+    } catch {}
     log(`using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
     if (opts.debug) prj.service.runSync("(() => { pxt.options.debug = 1 })()")
@@ -219,7 +222,8 @@ interface BuildOptions extends ProjectOptions {
     javaScript?: boolean
     deploy?: boolean
     serve?: boolean
-    servePort?: number
+    host?: string
+    port?: number
     alwaysBuilt?: boolean
     monoRepo?: boolean
     watch?: boolean
@@ -258,63 +262,10 @@ function delay(ms: number) {
 function startWatch(opts: BuildOptions) {
     const binaries: Record<string, Buffer | string> = {}
     if (opts.serve) {
-        const port = opts.servePort || 7001
-        createServer(async (req, res) => {
-            // find file
-            const k = req.url
-                .toLowerCase()
-                .replace(/^\//, "")
-                .replace(/\/$/i, "")
-            const data = binaries[k]
-            if (data) {
-                info(`found firmware file ${k}`)
-                res.writeHead(200, {
-                    "Cache-Control": "no-cache",
-                    "Content-Type":
-                        typeof data === "string"
-                            ? "text/plain"
-                            : "application/octet-stream",
-                })
-                res.end(data)
-            } else if (k === "favicon.ico") {
-                res.writeHead(404)
-                res.end()
-            } else {
-                // display default path
-                res.writeHead(200, {
-                    "Cache-Control": "no-cache",
-                    "Content-Type": "text/html",
-                })
-                const entries = Object.entries(binaries)
-                res.end(`
-<html>
-<head>
-${entries.length === 0 ? `<meta http-equiv="refresh" content="1">` : ""}
-<style>
-* { font-family: monospace; font-size: 16pt; }
-@media (prefers-color-scheme: dark) { 
-    * { background: #2d2d2d; color: #fff; }
-}  
-</style>
-</head>
-<body>
-<h1>MakeCode firmware files</h1>
-${entries.length === 0 ? `<p>Waiting for first build...</p>` : ""}
-<table>
-${entries
-                        .map(
-                            ([key, value]) =>
-                                `<tr><td><a download="${key}" href="/${key}">${key}</a></td><td>${Math.ceil(
-                                    value.length / 1e3
-                                )}Kb</td></tr>`
-                        )
-                        .join("\n")}
-</table>
-</body>
-</html>`)
-            }
-        }).listen(port, "127.0.0.1")
-        msg(`firmware file server at http://127.0.0.1:${port}/`)
+        const host = opts.host || "localhost"
+        const port = opts.port || 7001
+        msg(`firmware file server at http://${host}:${port}/`)
+        startBinariesServer(host, port, binaries)
     }
 
     const watcher = watch("./", {
@@ -466,7 +417,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
         for (const folder of outputs) {
             try {
                 uf2s.push(fs.readFileSync(path.join(folder, "binary.uf2")))
-            } catch { }
+            } catch {}
         }
         if (uf2s.length > 1) {
             const total = Buffer.concat(uf2s)
@@ -561,7 +512,7 @@ async function installCommand(opts: InstallOptions) {
     }
 }
 
-interface InitOptions extends ProjectOptions { }
+interface InitOptions extends ProjectOptions {}
 async function initCommand(
     template: string,
     deps: string[],
@@ -690,7 +641,7 @@ async function jacdacMakeCodeExtensions() {
             "https://raw.githubusercontent.com/microsoft/jacdac/main/services/makecode-extensions.json"
         )
         data = (await r.json()) as any
-    } catch (e) { }
+    } catch (e) {}
     return data
 }
 
@@ -752,7 +703,7 @@ async function fetchExtension(slug: string) {
     return script
 }
 
-interface SearchOptions extends ProjectOptions { }
+interface SearchOptions extends ProjectOptions {}
 async function searchCommand(query: string, opts: SearchOptions) {
     applyGlobalOptions(opts)
     query = query.trim().toLowerCase()
@@ -803,7 +754,7 @@ async function stackCommand(opts: ProjectOptions) {
     console.log(expandStackTrace(srcmap, fs.readFileSync(0, "utf-8")))
 }
 
-interface AddOptions extends ProjectOptions { }
+interface AddOptions extends ProjectOptions {}
 async function addCommand(repo: string, name: string, opts: AddOptions) {
     applyGlobalOptions(opts)
     opts.pxtModules = true
@@ -839,8 +790,9 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
         name ||
         join(rid.project, rid.fileName).replace(/^pxt-/, "").replace("/", "-")
 
-    pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch
-        }`
+    pxtJson.dependencies[dname] = `github:${rid.fullName}#${
+        d.version ? `v${d.version}` : d.defaultBranch
+    }`
     info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
     fs.writeFileSync("pxt.json", JSON.stringify(pxtJson, null, 4), {
         encoding: "utf-8",
@@ -908,8 +860,7 @@ async function mainCli() {
         log: info,
         error: error,
         debug: s => {
-            if (debugMode)
-                console.debug(chalk.gray(s))
+            if (debugMode) console.debug(chalk.gray(s))
         },
     })
 
@@ -922,8 +873,11 @@ async function mainCli() {
         .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
         .option("-s, --serve", "start firmware files web server")
         .option(
-            "-p",
-            "--serve-port",
+            "--host <string>",
+            "specify the host for firmware file web server"
+        )
+        .option(
+            "--port <number>",
             "specify the port for firmware file web server"
         )
         .option(
@@ -949,6 +903,7 @@ async function mainCli() {
     createCommand("serve")
         .description("start local simulator web server")
         .option("--no-watch", "do not watch source files")
+        .option("-h", "--host <string>", "host name if other than localhost")
         .option("-p, --port <number>", "port to listen at, default to 7000")
         .option("-u, --update", "check for web-app updates")
         .option(
