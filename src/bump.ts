@@ -5,6 +5,7 @@ import * as mkc from "./mkc"
 import * as files from "./files"
 import { httpGetJsonAsync } from "./downloader"
 import { glob } from "glob"
+import { lt, valid, clean, inc } from "semver"
 
 export interface SpawnOptions {
     cmd: string
@@ -114,10 +115,23 @@ export function monoRepoConfigs(folder: string, includingSelf = true) {
         )
 }
 
+function collectCurrentVersion(prj: mkc.Project) {
+    const configs = monoRepoConfigs(prj.directory, false)
+    let version = "0.0.0"
+    for (const config of configs) {
+        const cfg = JSON.parse(fs.readFileSync(config, "utf8"))
+        const v = clean(cfg.version)
+        if (valid(v) && lt(version, v))
+            version = v
+    }
+    return version
+}
+
 export async function bumpAsync(
     prj: mkc.Project,
     versionFile: string,
-    stage: boolean
+    stage: boolean,
+    minor: boolean
 ) {
     if (stage) mkc.log(`operation staged, skipping git commit/push`)
 
@@ -126,8 +140,8 @@ export async function bumpAsync(
         await runGitAsync("pull")
     }
     const cfg = prj.mainPkg.config
-    const m = /^(\d+\.\d+)\.(\d+)(.*)/.exec(cfg.version)
-    let newV = m ? m[1] + "." + (parseInt(m[2]) + 1) + m[3] : ""
+    const currentVersion = collectCurrentVersion(prj)
+    let newV = inc(currentVersion, minor ? "minor" : "patch")
     newV = await queryAsync("New version", newV)
     const newTag = "v" + newV
     cfg.version = newV

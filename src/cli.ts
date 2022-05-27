@@ -526,11 +526,12 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
 interface BumpOptions extends ProjectOptions {
     versionFile?: string
     stage?: boolean
+    minor?: boolean
 }
 async function bumpCommand(opts: BumpOptions) {
     applyGlobalOptions(opts)
     const prj = await resolveProject(opts)
-    await bump.bumpAsync(prj, opts?.versionFile, opts?.stage)
+    await bump.bumpAsync(prj, opts?.versionFile, opts?.stage, opts?.minor)
 }
 
 interface InstallOptions extends ProjectOptions {
@@ -974,6 +975,7 @@ async function mainCli() {
             "write generated version number into the file"
         )
         .option("--stage", "skip git commit and push operations")
+        .option("--minor", "increment minor version")
         .action(bumpCommand)
 
     createCommand("init")
