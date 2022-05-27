@@ -20,7 +20,7 @@ export interface SpawnOptions {
 
 export function spawnAsync(opts: SpawnOptions) {
     opts.pipe = false
-    return spawnWithPipeAsync(opts).then(() => {})
+    return spawnWithPipeAsync(opts).then(() => { })
 }
 
 export function spawnWithPipeAsync(opts: SpawnOptions) {
@@ -34,10 +34,10 @@ export function spawnWithPipeAsync(opts: SpawnOptions) {
             env: process.env,
             stdio: opts.pipe
                 ? [
-                      opts.input == null ? process.stdin : "pipe",
-                      "pipe",
-                      process.stderr,
-                  ]
+                    opts.input == null ? process.stdin : "pipe",
+                    "pipe",
+                    process.stderr,
+                ]
                 : "inherit",
             shell: opts.shell || false,
         } as any)
@@ -131,7 +131,7 @@ export async function bumpAsync(
     prj: mkc.Project,
     versionFile: string,
     stage: boolean,
-    minor: boolean
+    release: "patch" | "minor" | "major"
 ) {
     if (stage) mkc.log(`operation staged, skipping git commit/push`)
 
@@ -141,20 +141,25 @@ export async function bumpAsync(
     }
     const cfg = prj.mainPkg.config
     const currentVersion = collectCurrentVersion(prj)
-    let newV = inc(currentVersion, minor ? "minor" : "patch")
-    newV = await queryAsync("New version", newV)
+    let newV = currentVersion
+    if (release)
+        newV = inc(currentVersion, release)
+    else
+        newV = await queryAsync("New version", newV)
     const newTag = "v" + newV
     cfg.version = newV
 
+    mkc.log(`new version: ${newV}`)
+
     if (versionFile) {
-        mkc.log(`writing version ${newV} in ${versionFile}`)
+        mkc.log(`writing version in ${versionFile}`)
         const versionSrc = `
 // Auto-generated file: do not edit.
 namespace ${cfg.name
-            .replace(/^pxt-/, "")
-            .split(/-/g)
-            .map((p, i) => (i == 0 ? p : p[0].toUpperCase() + p.slice(1)))
-            .join("")} {
+                .replace(/^pxt-/, "")
+                .split(/-/g)
+                .map((p, i) => (i == 0 ? p : p[0].toUpperCase() + p.slice(1)))
+                .join("")} {
     /**
      * Version of the library
      */
