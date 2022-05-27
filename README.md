@@ -148,7 +148,7 @@ mkc add jacdac-button
 ### mkc bump
 
 Interactive update of the version number of the current project
-and nested projects in a mono-repo.
+and all nested projects in a mono-repo.
 
 ```
 mkc bump
