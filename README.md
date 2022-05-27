@@ -154,6 +154,12 @@ and nested projects in a mono-repo.
 mkc bump
 ```
 
+Use ``--major``, ``--minor``, ``--patch`` to automatically increment the version number.
+
+```
+mkc bump --patch
+```
+
 Adding `--version-file` will make `mkc` write a TypeScript file with the version number.
 
 ```

@@ -14,5 +14,7 @@
     "public": true,
     "supportedTargets": [
         "microbit"
-    ]
+    ],
+    "binaryonly": true,
+    "version": "0.0.1"
 }
