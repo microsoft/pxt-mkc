@@ -697,7 +697,7 @@ jobs:
     prj.mainPkg = null
     prj.writePxtModules = true
     await prj.maybeWritePxtModulesAsync()
-    msg(`project ready, run "mkc -d" to build and deploy`)
+    msg(`project ready, run "makecode -d" to build and deploy`)
 }
 
 async function jacdacMakeCodeExtensions() {
