@@ -657,6 +657,28 @@ async function initCommand(
         )
     }
 
+    const gh = ".github/workflows/makecode.yml"
+    if (!fs.existsSync(gh)) {
+        if (!fs.existsSync(".github")) fs.mkdirSync(".github")
+        if (!fs.existsSync(".github/workflows")) fs.mkdirSync(".github/workflows")
+        msg(`saving ${gh}`)
+        fs.writeFileSync(gh,
+            `name: MakeCode Build
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - run: npx makecode
+`)
+    }
+
     opts.pxtModules = true
     const prj = await resolveProject(opts)
     if (!fs.existsSync("mkc.json")) {

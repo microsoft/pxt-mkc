@@ -150,7 +150,7 @@ export async function bumpAsync(
 
     if (versionFile) {
         const cfg = prj.mainPkg.config
-        mkc.log(`writing version in ${versionFile}`)
+        mkc.debug(`writing version in ${versionFile}`)
         const versionSrc = `
 // Auto-generated file: do not edit.
 namespace ${cfg.name
@@ -199,7 +199,7 @@ namespace ${cfg.name
                     "https://makecode.com/api/gh/" + slug + "/refs?nocache=1"
                 )
                 const sha = res?.refs?.["refs/tags/" + newTag]
-                mkc.log(`refreshed ${newV} -> ${sha}`)
+                mkc.debug(`refreshed ${newV} -> ${sha}`)
             }
         }
     }
