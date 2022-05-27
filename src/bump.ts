@@ -116,11 +116,11 @@ export function monoRepoConfigs(folder: string, includingSelf = true) {
 }
 
 function collectCurrentVersion(prj: mkc.Project) {
-    const configs = monoRepoConfigs(prj.directory, false)
+    const configs = monoRepoConfigs(prj.directory, true)
     let version = "0.0.0"
     for (const config of configs) {
         const cfg = JSON.parse(fs.readFileSync(config, "utf8"))
-        const v = clean(cfg.version)
+        const v = clean(cfg.version || "")
         if (valid(v) && lt(version, v))
             version = v
     }
