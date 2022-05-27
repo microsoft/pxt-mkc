@@ -115,8 +115,7 @@ export function monoRepoConfigs(folder: string, includingSelf = true) {
         )
 }
 
-function collectCurrentVersion(prj: mkc.Project) {
-    const configs = monoRepoConfigs(prj.directory, true)
+function collectCurrentVersion(configs: string[]) {
     let version = "0.0.0"
     for (const config of configs) {
         const cfg = JSON.parse(fs.readFileSync(config, "utf8"))
@@ -139,19 +138,18 @@ export async function bumpAsync(
         await needsGitCleanAsync()
         await runGitAsync("pull")
     }
-    const cfg = prj.mainPkg.config
-    const currentVersion = collectCurrentVersion(prj)
+    const configs = monoRepoConfigs(prj.directory, true)
+    const currentVersion = collectCurrentVersion(configs)
     let newV = currentVersion
     if (release)
         newV = inc(currentVersion, release)
     else
         newV = await queryAsync("New version", newV)
     const newTag = "v" + newV
-    cfg.version = newV
-
     mkc.log(`new version: ${newV}`)
 
     if (versionFile) {
+        const cfg = prj.mainPkg.config
         mkc.log(`writing version in ${versionFile}`)
         const versionSrc = `
 // Auto-generated file: do not edit.
@@ -168,27 +166,12 @@ namespace ${cfg.name
         fs.writeFileSync(versionFile, versionSrc, { encoding: "utf-8" })
     }
 
-    const configs = monoRepoConfigs(prj.directory, false)
-    if (configs.length > 0) {
-        if (
-            (await queryAsync(
-                `Also update sub-packages (${configs.length}) in this repo?`,
-                "y"
-            )) == "y"
-        ) {
-            for (const fn of configs) {
-                const cfg0 = JSON.parse(fs.readFileSync(fn, "utf8"))
-                cfg0.version = newV
-                fs.writeFileSync(fn, mkc.stringifyConfig(cfg0))
-            }
-        }
+    for (const fn of configs) {
+        const cfg0 = JSON.parse(fs.readFileSync(fn, "utf8"))
+        cfg0.version = newV
+        mkc.debug(`updating ${fn}`)
+        fs.writeFileSync(fn, mkc.stringifyConfig(cfg0))
     }
-
-    await files.writeFilesAsync(
-        prj.directory,
-        { "pxt.json": mkc.stringifyConfig(cfg) },
-        true
-    )
 
     if (!stage) {
         await runGitAsync("commit", "-a", "-m", newV)
