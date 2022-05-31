@@ -140,11 +140,11 @@ export async function bumpAsync(
     }
     const configs = monoRepoConfigs(prj.directory, true)
     const currentVersion = collectCurrentVersion(configs)
-    let newV = currentVersion
+    let newV: string
     if (release)
         newV = inc(currentVersion, release)
     else
-        newV = await queryAsync("New version", newV)
+        newV = await queryAsync("New version", inc(currentVersion, "patch"))
     const newTag = "v" + newV
     mkc.log(`new version: ${newV}`)
 
