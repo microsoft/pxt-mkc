@@ -1,7 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
 import * as util from "util"
-import { createServer } from "http"
 
 import * as mkc from "./mkc"
 import * as files from "./files"
@@ -13,7 +12,6 @@ import {
     CommandOptions,
     Command,
     Argument,
-    Option,
 } from "commander"
 import * as chalk from "chalk"
 import { getDeployDrives } from "./deploy"
@@ -218,8 +216,6 @@ interface BuildOptions extends ProjectOptions {
     native?: boolean
     javaScript?: boolean
     deploy?: boolean
-    serve?: boolean
-    servePort?: number
     alwaysBuilt?: boolean
     monoRepo?: boolean
     watch?: boolean
@@ -238,14 +234,6 @@ async function buildCommand(opts: BuildOptions, info: Command) {
         error("--deploy and --java-script cannot be used together")
         process.exit(1)
     }
-    if (opts.serve && !opts.watch) {
-        error("--serve must be used with --watch")
-        process.exit(1)
-    }
-    if (opts.serve && opts.monoRepo) {
-        error("--serve and --mono-repo cannot be used together")
-        process.exit(1)
-    }
     if (opts.watch) {
         startWatch(opts)
     } else await buildCommandOnce(opts)
@@ -257,66 +245,6 @@ function delay(ms: number) {
 
 function startWatch(opts: BuildOptions) {
     const binaries: Record<string, Buffer | string> = {}
-    if (opts.serve) {
-        const port = opts.servePort || 7001
-        createServer(async (req, res) => {
-            // find file
-            const k = req.url
-                .toLowerCase()
-                .replace(/^\//, "")
-                .replace(/\/$/i, "")
-            const data = binaries[k]
-            if (data) {
-                info(`found firmware file ${k}`)
-                res.writeHead(200, {
-                    "Cache-Control": "no-cache",
-                    "Content-Type":
-                        typeof data === "string"
-                            ? "text/plain"
-                            : "application/octet-stream",
-                })
-                res.end(data)
-            } else if (k === "favicon.ico") {
-                res.writeHead(404)
-                res.end()
-            } else {
-                // display default path
-                res.writeHead(200, {
-                    "Cache-Control": "no-cache",
-                    "Content-Type": "text/html",
-                })
-                const entries = Object.entries(binaries)
-                res.end(`
-<html>
-<head>
-${entries.length === 0 ? `<meta http-equiv="refresh" content="1">` : ""}
-<style>
-* { font-family: monospace; font-size: 16pt; }
-@media (prefers-color-scheme: dark) { 
-    * { background: #2d2d2d; color: #fff; }
-}  
-</style>
-</head>
-<body>
-<h1>MakeCode firmware files</h1>
-${entries.length === 0 ? `<p>Waiting for first build...</p>` : ""}
-<table>
-${entries
-                        .map(
-                            ([key, value]) =>
-                                `<tr><td><a download="${key}" href="/${key}">${key}</a></td><td>${Math.ceil(
-                                    value.length / 1e3
-                                )}Kb</td></tr>`
-                        )
-                        .join("\n")}
-</table>
-</body>
-</html>`)
-            }
-        }).listen(port, "127.0.0.1")
-        msg(`firmware file server at http://127.0.0.1:${port}/`)
-    }
-
     const watcher = watch("./", {
         recursive: true,
         delay: 200,
@@ -945,7 +873,6 @@ async function mainCli() {
         .option("-w, --watch", "watch source files and rebuild on changes")
         .option("-n, --native", "compile native (default)")
         .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
-        .option("-s, --serve", "start firmware files web server")
         .option(
             "-p",
             "--serve-port",
