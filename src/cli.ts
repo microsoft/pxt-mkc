@@ -885,11 +885,6 @@ async function mainCli() {
         .option("-n, --native", "compile native (default)")
         .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
         .option(
-            "-p",
-            "--serve-port",
-            "specify the port for firmware file web server"
-        )
-        .option(
             "-h, --hw <id,...>",
             "set hardware(s) for which to compile (implies -n)"
         )
