@@ -26,6 +26,7 @@ interface Options {
     colors?: boolean
     noColors?: boolean
     debug?: boolean
+    compileFlags?: string
 }
 
 interface ProjectOptions extends Options {
@@ -119,6 +120,8 @@ function createCommand(name: string, opts?: CommandOptions) {
         .option("--colors", "force color output")
         .option("--no-colors", "disable color output")
         .option("--debug", "enable debug output from PXT")
+        .option("-f, --compile-flags <flag,...>",
+            "set PXT compiler options (?compile=... or PXT_COMPILE_SWITCHES=... in other tools)")
     return cmd
 }
 
@@ -195,6 +198,14 @@ async function resolveProject(opts: ProjectOptions, quiet = false) {
     log(`using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
     if (opts.debug) prj.service.runSync("(() => { pxt.options.debug = 1 })()")
+
+    if (opts.compileFlags) {
+        prj.service.runSync(`(() => { 
+            pxt.setCompileSwitches(${JSON.stringify(opts.compileFlags)});
+            if (pxt.appTarget.compile.switches.asmdebug)
+                ts.pxtc.assembler.debug = 1
+        })()`)
+    }
 
     prj.writePxtModules = !!opts.pxtModules
     if (opts.linkPxtModules) {

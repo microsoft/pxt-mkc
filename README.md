@@ -210,6 +210,21 @@ You can use `--config-path` or `-c` to build for a different configuration.
 mkc -c mkc-arcade.json
 ```
 
+## Compile switches
+
+Options can be passed to PXT compiler using `--compile-flags` (`-f`) option:
+
+```
+mkc -f size            # generate .csv file with function sizes
+mkc -f asmdebug        # generate more comments in assembly listing
+mkc -f profile         # enable profiling counters
+mkc -f rawELF          # don't generate .UF2 but a raw ELF file
+mkc -f size,asmdebug   # example with two options
+```
+
+The same options (except for `asmdebug`) can be passed to website with `?compiler=...` or `?compile=...` argument
+and to the regular `pxt` command line utility with `PXT_COMPILE_SWITCHES=...`.
+
 ## Local development
 
 This section describes how to build mkc itself.
