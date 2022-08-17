@@ -164,7 +164,7 @@ mkc bump --version-file version.ts
 Add `--stage` to test the bump without pushing to git.
 
 ```
-mkc --stage
+mkc bump --stage
 ```
 
 ### mkc download
