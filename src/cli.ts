@@ -20,6 +20,7 @@ import watch from "node-watch"
 import { cloudRoot, MkcJson } from "./mkc"
 import { startSimServer } from "./simserver"
 import { expandStackTrace } from "./stackresolver"
+import { monoRepoConfigs } from "./files"
 const fetch = require("node-fetch")
 
 interface Options {
@@ -376,7 +377,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     let success = !!compileRes
 
     if (success && opts.monoRepo) {
-        const dirs = bump.monoRepoConfigs(".")
+        const dirs = monoRepoConfigs(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules")) continue
@@ -489,7 +490,7 @@ async function installCommand(opts: InstallOptions) {
     const prj = await resolveProject(opts)
     prj.mainPkg = null
     if (opts.monoRepo) {
-        const dirs = bump.monoRepoConfigs(".")
+        const dirs = monoRepoConfigs(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules")) continue

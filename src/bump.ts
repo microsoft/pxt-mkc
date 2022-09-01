@@ -1,11 +1,9 @@
 import * as child_process from "child_process"
 import * as fs from "fs"
-import * as path from "path"
 import * as mkc from "./mkc"
-import * as files from "./files"
 import { httpGetJsonAsync } from "./downloader"
-import { glob } from "glob"
-import { lt, valid, clean, inc } from "semver"
+import { inc } from "semver"
+import { collectCurrentVersion, monoRepoConfigs } from "./files"
 
 export interface SpawnOptions {
     cmd: string
@@ -101,29 +99,6 @@ export function runGitAsync(...args: string[]) {
         args: args,
         cwd: ".",
     })
-}
-
-export function monoRepoConfigs(folder: string, includingSelf = true) {
-    return glob
-        .sync(folder + "/**/pxt.json")
-        .filter(
-            e =>
-                e.indexOf("pxt_modules") < 0 &&
-                e.indexOf("node_modules") < 0 &&
-                (includingSelf ||
-                    path.resolve(folder, "pxt.json") != path.resolve(e))
-        )
-}
-
-function collectCurrentVersion(configs: string[]) {
-    let version = "0.0.0"
-    for (const config of configs) {
-        const cfg = JSON.parse(fs.readFileSync(config, "utf8"))
-        const v = clean(cfg.version || "")
-        if (valid(v) && lt(version, v))
-            version = v
-    }
-    return version
 }
 
 export async function bumpAsync(

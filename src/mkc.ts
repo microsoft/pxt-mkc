@@ -5,6 +5,7 @@ export import files = require("./files")
 export import service = require("./service")
 export import loader = require("./loader")
 export import simserver = require("./simserver")
+import { collectCurrentVersion, monoRepoConfigs } from "./files"
 
 export interface MkcJson {
     targetWebsite: string
@@ -48,7 +49,7 @@ export let cloudRoot = "https://makecode.com/api/"
 function jsonCopyFrom<T>(trg: T, src: T) {
     let v = JSON.parse(JSON.stringify(src))
     for (let k of Object.keys(src)) {
-        ;(trg as any)[k] = (v as any)[k]
+        ; (trg as any)[k] = (v as any)[k]
     }
 }
 
@@ -150,8 +151,8 @@ export class Project {
                     if (/---/.test(id)) {
                         filesmap[
                             "pxt_modules/" +
-                                id.replace(/---.*/, "") +
-                                "/pxt.json"
+                            id.replace(/---.*/, "") +
+                            "/pxt.json"
                         ] = pxtJson
                     }
                 } else if (lnk && this.symlinkPxtModules) {
@@ -296,10 +297,12 @@ export class Project {
             }
             const webConfig: downloader.WebConfig =
                 this.editor.webConfig || this.service.runSync("pxt.webConfig")
+            const configs = monoRepoConfigs(this.directory, true)
+            const version = `v${collectCurrentVersion(configs) || "0"}`
             const meta: any = {
                 simUrl: webConfig.simUrl,
                 cdnUrl: webConfig.cdnUrl,
-                version: "v0",
+                version,
                 target: appTarget.id,
                 targetVersion: appTarget.versions.target,
             }
