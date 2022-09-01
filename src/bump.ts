@@ -143,6 +143,13 @@ namespace ${cfg.name
 
     for (const fn of configs) {
         const cfg0 = JSON.parse(fs.readFileSync(fn, "utf8"))
+        if (cfg0?.codal?.libraries?.length == 1) {
+            const lib: string = cfg0.codal.libraries[0]
+            if (lib.endsWith("#v" + cfg0.version)) {
+                mkc.debug(`updating codal library in ${fn}`)
+                cfg0.codal.libraries[0] = lib.replace(/#.*/, "#v" + newV)
+            }
+        }
         cfg0.version = newV
         mkc.debug(`updating ${fn}`)
         fs.writeFileSync(fn, mkc.stringifyConfig(cfg0))
