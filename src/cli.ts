@@ -339,9 +339,9 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     const compileRes = await buildOnePrj(opts, prj)
     if (compileRes && opts.javaScript) {
         // mimicing https://github.com/microsoft/pxt/blob/6b05a8fd5f7071a393ca5d5752ca99647a863fc0/webapp/src/compiler.ts#L191
-        const simUrl = prj.service.runSync("pxt.webConfig.simUrl")
+        const simUrl = prj.editor.webConfig.simUrl
         const targetVersion = prj.service.runSync("pxt.appTarget.versions.target")
-        const cdnUrl = prj.service.runSync("pxt.webConfig.cdnUrl")
+        const cdnUrl = prj.editor.webConfig.cdnUrl
         const configs = monoRepoConfigs(prj.directory, true)
         const version = collectCurrentVersion(configs)
 
@@ -353,6 +353,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
             targetVersion
         };
 
+        // TODO
         //const gitJson = pkg.mainPkg.readGitJson();
         //if (gitJson)
         //    meta.repo = pxt.github.parseRepoId(gitJson.repo).fullName;
