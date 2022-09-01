@@ -20,6 +20,7 @@ import watch from "node-watch"
 import { cloudRoot, MkcJson } from "./mkc"
 import { startSimServer } from "./simserver"
 import { expandStackTrace } from "./stackresolver"
+import { collectCurrentVersion, monoRepoConfigs } from "./files"
 const fetch = require("node-fetch")
 
 interface Options {
@@ -230,6 +231,7 @@ interface BuildOptions extends ProjectOptions {
     alwaysBuilt?: boolean
     monoRepo?: boolean
     watch?: boolean
+    version?: string
 }
 async function buildCommand(opts: BuildOptions, info: Command) {
     if (info?.args?.length) {
@@ -335,6 +337,30 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
 
     outputs.push(prj.outputPrefix)
     const compileRes = await buildOnePrj(opts, prj)
+    if (compileRes && opts.javaScript) {
+        // mimicing https://github.com/microsoft/pxt/blob/6b05a8fd5f7071a393ca5d5752ca99647a863fc0/webapp/src/compiler.ts#L191
+        const simUrl = prj.service.runSync("pxt.webConfig.simUrl")
+        const targetVersion = prj.service.runSync("pxt.appTarget.versions.target")
+        const cdnUrl = prj.service.runSync("pxt.webConfig.cdnUrl")
+        const configs = monoRepoConfigs(prj.directory, true)
+        const version = collectCurrentVersion(configs)
+
+        const meta: any = {
+            simUrl: simUrl.replace(/\/[^\-]*---simulator/, `/v${targetVersion}/---simulator`),
+            cdnUrl,
+            version: version,
+            target: targetId,
+            targetVersion
+        };
+
+        //const gitJson = pkg.mainPkg.readGitJson();
+        //if (gitJson)
+        //    meta.repo = pxt.github.parseRepoId(gitJson.repo).fullName;
+        compileRes.outfiles["binary.js"] =
+            `// meta=${JSON.stringify(meta)}
+${compileRes.outfiles["binary.js"]}`;
+
+    }
     if (compileRes && opts.deploy) {
         const firmwareName = ["binary.uf2", "binary.hex", "binary.elf"].filter(
             f => !!compileRes.outfiles[f]
@@ -376,7 +402,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     let success = !!compileRes
 
     if (success && opts.monoRepo) {
-        const dirs = bump.monoRepoConfigs(".")
+        const dirs = monoRepoConfigs(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules")) continue
@@ -489,7 +515,7 @@ async function installCommand(opts: InstallOptions) {
     const prj = await resolveProject(opts)
     prj.mainPkg = null
     if (opts.monoRepo) {
-        const dirs = bump.monoRepoConfigs(".")
+        const dirs = monoRepoConfigs(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules")) continue

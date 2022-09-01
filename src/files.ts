@@ -2,6 +2,8 @@ import * as fs from "fs"
 import * as path from "path"
 import * as util from "util"
 import * as mkc from "./mkc"
+import { glob } from "glob"
+import { lt, valid, clean } from "semver"
 
 export function findParentDirWith(base: string, filename: string) {
     let s = base
@@ -134,4 +136,27 @@ export async function savePxtModulesAsync(
                 fs.symlinkSync(v.symlink, k, "file")
             }
         }
+}
+
+export function monoRepoConfigs(folder: string, includingSelf = true) {
+    return glob
+        .sync(folder + "/**/pxt.json")
+        .filter(
+            e =>
+                e.indexOf("pxt_modules") < 0 &&
+                e.indexOf("node_modules") < 0 &&
+                (includingSelf ||
+                    path.resolve(folder, "pxt.json") != path.resolve(e))
+        )
+}
+
+export function collectCurrentVersion(configs: string[]) {
+    let version = "0.0.0"
+    for (const config of configs) {
+        const cfg = JSON.parse(fs.readFileSync(config, "utf8"))
+        const v = clean(cfg.version || "")
+        if (valid(v) && lt(version, v))
+            version = v
+    }
+    return version
 }
