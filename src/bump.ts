@@ -134,7 +134,7 @@ namespace ${cfg.name
                 .map((p, i) => (i == 0 ? p : p[0].toUpperCase() + p.slice(1)))
                 .join("")} {
     /**
-     * Version of the library
+     * Version of the package
      */
     export const VERSION = "${newTag}"
 }`
