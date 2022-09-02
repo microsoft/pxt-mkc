@@ -145,7 +145,7 @@ async function serveCommand(opts: ServeOptions) {
     opts = clone(opts)
     opts.update = false
     const prj = await resolveProject(opts, !!opts.watch)
-    const port = parseInt(opts.port) || 7000
+    const port = parseInt(opts.port) || 7001
     msg(`simulator web server at http://127.0.0.1:${port}`)
     startSimServer(prj.editor, port)
 }
@@ -908,7 +908,7 @@ async function mainCli() {
     createCommand("serve")
         .description("start local simulator web server")
         .option("--no-watch", "do not watch source files")
-        .option("-p, --port <number>", "port to listen at, default to 7000")
+        .option("-p, --port <number>", "port to listen at, default to 7001")
         .option("-u, --update", "check for web-app updates")
         .option(
             "-c, --config-path <file>",

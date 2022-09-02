@@ -9,7 +9,7 @@ const mime: pxt.Map<string> = {
     html: "text/html",
 }
 
-export function startSimServer(ed: mkc.DownloadedEditor, port = 7000) {
+export function startSimServer(ed: mkc.DownloadedEditor, port = 7001) {
     http.createServer(async (request, response) => {
         let path = request.url
         if (path == "/") path = "/index.html"

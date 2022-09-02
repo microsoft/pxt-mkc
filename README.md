@@ -117,7 +117,7 @@ To access the build files from a remote machine,
 ### mkc serve
 
 Use `mkc serve` to start a watch-build and localhost server with simulator.
-Defaults to http://127.0.0.1:7000
+Defaults to http://127.0.0.1:7001
 
 ```
 mkc serve
