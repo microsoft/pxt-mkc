@@ -31,7 +31,7 @@ function makeCodeRun(options) {
     let simOrigin = undefined
     const selfId = options.selfId || "pxt" + Math.random()
     const tool = options.tool
-    const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(window.location.host)
+    const isLocalHost = /^(localhost|127\.0\.0\.1)(:|$)/i.test(window.location.host)
 
     // hide scrollbar
     window.scrollTo(0, 1)
