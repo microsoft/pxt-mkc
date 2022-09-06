@@ -1,7 +1,7 @@
 type InitFn = (props: { send: (msg: Uint8Array) => void }) => void
 type HandlerFn = {
     channel: string,
-    handler: (data: any) => void,
+    handler: (data: Uint8Array) => void,
     init: InitFn
 }
 
