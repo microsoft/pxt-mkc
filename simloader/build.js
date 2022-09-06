@@ -10,6 +10,7 @@ function addFile(id, fn) {
 
 addFile("loader.js", "built/loader.js")
 addFile("index.html", "index.html")
+addFile("custom.js", "custom.js")
 
 res += "}\n"
 const outfn = "src/simloaderfiles.ts"

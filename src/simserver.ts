@@ -23,7 +23,15 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7001) {
                 buf = fs.readFileSync("built/binary.js")
             } catch { }
         } else if (simloaderFiles.hasOwnProperty(path)) {
-            buf = Buffer.from(simloaderFiles[path], "utf-8")
+            if (path != 'loader.js')
+                try {
+                    buf = fs.readFileSync("assets/" + path)
+                } catch {
+                    try {
+                        buf = fs.readFileSync("assets/js/" + path)
+                    } catch { }
+                }
+            if (!buf) buf = Buffer.from(simloaderFiles[path], "utf-8")
         } else if (/^[\w\.\-]+$/.test(path)) {
             buf = await ed.cache.getAsync(ed.website + "-" + path)
             if (!buf) buf = await ed.cache.getAsync(path)
@@ -34,7 +42,7 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7001) {
                 mime[path.replace(/.*\./, "")] || "application/octet-stream"
             response.writeHead(200, {
                 "Content-type": m,
-                "Cache-Control": "no-cache"
+                "Cache-Control": "no-cache",
             })
             response.end(buf)
         } else {

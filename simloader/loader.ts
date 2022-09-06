@@ -1,7 +1,22 @@
-let channelHandlers = {}
+type InitFn = (props: { send: (msg: Uint8Array) => void }) => void
+type HandlerFn = {
+    channel: string,
+    handler: (data: Uint8Array) => void,
+    init: InitFn
+}
 
-function addSimMessageHandler(channel: string, handler: () => void) {
-    channelHandlers[channel] = handler
+let channelHandlers: { [name: string]: HandlerFn } = {}
+
+function addSimMessageHandler(
+    channel: string,
+    handler: (data: any) => void,
+    init: (props: { send: (msg: Uint8Array) => void }) => void
+) {
+    channelHandlers[channel] = {
+        channel: channel,
+        init: init,
+        handler: handler,
+    }
 }
 
 function makeCodeRun(options) {
@@ -16,6 +31,7 @@ function makeCodeRun(options) {
     let simOrigin = undefined
     const selfId = options.selfId || "pxt" + Math.random()
     const tool = options.tool
+    const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(window.location.host)
 
     // hide scrollbar
     window.scrollTo(0, 1)
@@ -28,7 +44,8 @@ function makeCodeRun(options) {
     // init runtime
     initSimState()
     startCode()
-    autoReload()
+    if (isLocalHost)
+        autoReload()
 
     function fetchSourceCode() {
         return fetch(options.js)
@@ -64,7 +81,12 @@ function makeCodeRun(options) {
                 )
 
                 // force local sim
-                meta.simUrl = window.location.protocol + "//" + window.location.host + "/sim.html"
+                if (isLocalHost)
+                    meta.simUrl = window.location.protocol + "//" + window.location.host + "/sim.html"
+
+                var ap = document.getElementById("download-a") as HTMLAnchorElement
+                if (meta.version && ap && ap.download)
+                    ap.download = ap.download.replace(/VERSION/, meta.version)
 
                 // load simulator with correct version
                 document
@@ -72,6 +94,7 @@ function makeCodeRun(options) {
                     .setAttribute("src", meta.simUrl + "#" + frameid)
                 let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl)
                 simOrigin = m[0]
+                initFullScreen()
             })
     }
 
@@ -122,7 +145,7 @@ function makeCodeRun(options) {
                 } else if (d.type == "simulator") {
                     switch (d.command) {
                         case "restart":
-                            if (/localhost|127\.0\.0\.1/.test(window.location.host)) {
+                            if (isLocalHost) {
                                 window.location.reload();
                             } else {
                                 stopSim();
@@ -155,13 +178,10 @@ function makeCodeRun(options) {
                         d.sender = selfId
                         window.parent.postMessage(d, "*")
                     }
-                    const handler = channelHandlers[d.channel]
-                    if (handler) {
+                    const ch = channelHandlers[d.channel]
+                    if (ch) {
                         try {
-                            const buf = d.data
-                            const str = uint8ArrayToString(buf)
-                            const data = JSON.parse(str)
-                            handler(data)
+                            ch.handler(d.data)
                         } catch (e) {
                             console.log(`invalid simmessage`)
                             console.log(e)
@@ -182,6 +202,19 @@ function makeCodeRun(options) {
         },
         false
     )
+
+    // initialize simmessages
+    Object.keys(channelHandlers)
+        .map(k => channelHandlers[k])
+        .filter(ch => !!ch.init)
+        .forEach(ch => {
+            const send = (msg) => postMessage({
+                type: "messagepacket",
+                channel: ch.channel,
+                data: msg
+            })
+            ch.init({ send });
+        })
 
     // helpers
     function uint8ArrayToString(input) {
@@ -212,5 +245,15 @@ function makeCodeRun(options) {
                 localStorage["pxt_simstate"] = JSON.stringify(simState)
             simStateChanged = false
         }, 200)
+    }
+
+    function initFullScreen() {
+        var sim = document.getElementById("simframe");
+        var fs = document.getElementById("fullscreen");
+        if (fs && sim.requestFullscreen) {
+            fs.onclick = function () { sim.requestFullscreen(); }
+        } else if (fs) {
+            fs.remove();
+        }
     }
 }
