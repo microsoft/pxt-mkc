@@ -21,15 +21,16 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7001) {
         if (path == "binary.js") {
             try {
                 buf = fs.readFileSync("built/binary.js")
-            } catch {}
+            } catch { }
         } else if (simloaderFiles.hasOwnProperty(path)) {
-            try {
-                buf = fs.readFileSync("assets/" + path)
-            } catch {
+            if (path != 'loader.js')
                 try {
-                    buf = fs.readFileSync("assets/js/" + path)
-                } catch {}
-            }
+                    buf = fs.readFileSync("assets/" + path)
+                } catch {
+                    try {
+                        buf = fs.readFileSync("assets/js/" + path)
+                    } catch { }
+                }
             if (!buf) buf = Buffer.from(simloaderFiles[path], "utf-8")
         } else if (/^[\w\.\-]+$/.test(path)) {
             buf = await ed.cache.getAsync(ed.website + "-" + path)
