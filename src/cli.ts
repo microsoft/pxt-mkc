@@ -148,7 +148,7 @@ async function serveCommand(opts: ServeOptions) {
     const port = parseInt(opts.port) || 7001
     const url = `http://127.0.0.1:${port}`
     msg(`simulator at ${url}`)
-    msg(`jacdac+simulator at https://microsoft.github.io/jacdac-docs/clients/javascript/devtools#${encodeURIComponent(url)}}`)
+    msg(`Jacdac+simulator at https://microsoft.github.io/jacdac-docs/clients/javascript/devtools#${url}`)
     startSimServer(prj.editor, port)
 }
 
