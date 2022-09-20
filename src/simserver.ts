@@ -2,6 +2,7 @@ import http = require("http")
 import fs = require("fs")
 import mkc = require("./mkc")
 import { simloaderFiles } from "./simloaderfiles"
+import { createHash } from "node:crypto"
 
 const mime: pxt.Map<string> = {
     js: "application/javascript",
@@ -38,10 +39,12 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7001) {
         }
 
         if (buf) {
-            const m =
+            const etag = createHash('sha256').update(buf).digest('hex');
+            const m = 
                 mime[path.replace(/.*\./, "")] || "application/octet-stream"
             response.writeHead(200, {
                 "Content-type": m,
+                "ETAG": etag,
                 "Cache-Control": "no-cache",
             })
             response.end(buf)
