@@ -39,7 +39,7 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7001) {
         }
 
         if (buf) {
-            const etag = createHash('sha256').update(buf).digest('hex');
+            const etag = createHash('sha1').update(buf).digest('hex');
             const m = 
                 mime[path.replace(/.*\./, "")] || "application/octet-stream"
             response.writeHead(200, {

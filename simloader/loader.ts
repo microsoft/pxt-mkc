@@ -1,7 +1,7 @@
 type InitFn = (props: { send: (msg: Uint8Array) => void }) => void
 type HandlerFn = {
-    channel: string,
-    handler: (data: Uint8Array) => void,
+    channel: string
+    handler: (data: Uint8Array) => void
     init: InitFn
 }
 
@@ -21,7 +21,7 @@ function addSimMessageHandler(
 
 function makeCodeRun(options) {
     let code = ""
-    let code0 = ""
+    let codeETag = ""
     let isReady = false
     let simState = {}
     let simStateChanged = false
@@ -31,7 +31,9 @@ function makeCodeRun(options) {
     let simOrigin = undefined
     const selfId = options.selfId || "pxt" + Math.random()
     const tool = options.tool
-    const isLocalHost = /^(localhost|127\.0\.0\.1)(:|$)/i.test(window.location.host)
+    const isLocalHost = /^(localhost|127\.0\.0\.1)(:|$)/i.test(
+        window.location.host
+    )
 
     // hide scrollbar
     window.scrollTo(0, 1)
@@ -44,58 +46,77 @@ function makeCodeRun(options) {
     // init runtime
     initSimState()
     startCode()
-    if (isLocalHost)
-        autoReload()
+    if (isLocalHost) autoReload()
 
-    function fetchSourceCode() {
-        return fetch(options.js)
-            .then(resp => resp.status == 200 ? resp.text() : undefined)
+    async function fetchSourceCode() {
+        const headers: any = {}
+        if (codeETag) headers["If-None-Match"] = codeETag
+        const resp = await fetch({
+            url: options.js,
+            headers,
+        } as RequestInfo)
+        const { status } = resp
+        console.log({ status })
+        if (resp.status !== 200)
+            return {
+                status,
+            }
+        else {
+            const text = await resp.text()
+            return {
+                status,
+                etag: resp.headers["ETag"],
+                text,
+            }
+        }
     }
 
     // helpers
     function autoReload() {
         setInterval(() => {
-            fetchSourceCode()
-                .then(c => {
-                    if (c && c != code0)
-                        window.location.reload();
-                })
+            fetchSourceCode().then(({ etag }) => {
+                if (etag && etag != codeETag) window.location.reload()
+            })
         }, 1000)
     }
     function startCode() {
-        fetchSourceCode()
-            .then(c => {
-                if (!c) return
-                code0 = code = c
-                // find metadata
-                code.replace(/^\/\/\s+meta=([^\n]+)\n/m, function (m, metasrc) {
-                    meta = JSON.parse(metasrc)
-                    return ""
-                })
-                code.replace(
-                    /^\/\/\s+boardDefinition=([^\n]+)\n/m,
-                    function (m, metasrc) {
-                        boardDefinition = JSON.parse(metasrc)
-                        return ""
-                    }
-                )
-
-                // force local sim
-                if (isLocalHost)
-                    meta.simUrl = window.location.protocol + "//" + window.location.host + "/sim.html"
-
-                var ap = document.getElementById("download-a") as HTMLAnchorElement
-                if (meta.version && ap && ap.download)
-                    ap.download = ap.download.replace(/VERSION/, meta.version)
-
-                // load simulator with correct version
-                document
-                    .getElementById("simframe")
-                    .setAttribute("src", meta.simUrl + "#" + frameid)
-                let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl)
-                simOrigin = m[0]
-                initFullScreen()
+        fetchSourceCode().then(({ etag, text }) => {
+            if (!text) return
+            codeETag = etag
+            code = text
+            // find metadata
+            code.replace(/^\/\/\s+meta=([^\n]+)\n/m, function (m, metasrc) {
+                meta = JSON.parse(metasrc)
+                return ""
             })
+            code.replace(
+                /^\/\/\s+boardDefinition=([^\n]+)\n/m,
+                function (m, metasrc) {
+                    boardDefinition = JSON.parse(metasrc)
+                    return ""
+                }
+            )
+
+            // force local sim
+            if (isLocalHost)
+                meta.simUrl =
+                    window.location.protocol +
+                    "//" +
+                    window.location.host +
+                    "/sim.html"
+
+            var ap = document.getElementById("download-a") as HTMLAnchorElement
+            if (meta.version && ap && ap.download)
+                ap.download = ap.download.replace(/VERSION/, meta.version)
+
+            // load simulator with correct version
+            document
+                .getElementById("simframe")
+                .setAttribute("src", meta.simUrl + "#" + frameid)
+            let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl)
+            simOrigin = m[0]
+            initFullScreen()
+        })
     }
 
     function startSim() {
@@ -146,10 +167,10 @@ function makeCodeRun(options) {
                     switch (d.command) {
                         case "restart":
                             if (isLocalHost) {
-                                window.location.reload();
+                                window.location.reload()
                             } else {
-                                stopSim();
-                                startSim();
+                                stopSim()
+                                startSim()
                             }
                             break
                         case "setstate":
@@ -165,8 +186,9 @@ function makeCodeRun(options) {
                     let stackTrace = brk.exceptionMessage + "\n"
                     for (let s of brk.stackframes) {
                         let fi = s.funcInfo
-                        stackTrace += `   at ${fi.functionName} (${fi.fileName
-                            }:${fi.line + 1}:${fi.column + 1})\n`
+                        stackTrace += `   at ${fi.functionName} (${
+                            fi.fileName
+                        }:${fi.line + 1}:${fi.column + 1})\n`
                     }
                     if (brk.exceptionMessage) console.error(stackTrace)
                 } else if (d.type === "messagepacket" && d.channel) {
@@ -208,12 +230,13 @@ function makeCodeRun(options) {
         .map(k => channelHandlers[k])
         .filter(ch => !!ch.init)
         .forEach(ch => {
-            const send = (msg) => postMessage({
-                type: "messagepacket",
-                channel: ch.channel,
-                data: msg
-            })
-            ch.init({ send });
+            const send = msg =>
+                postMessage({
+                    type: "messagepacket",
+                    channel: ch.channel,
+                    data: msg,
+                })
+            ch.init({ send })
         })
 
     // helpers
@@ -248,12 +271,14 @@ function makeCodeRun(options) {
     }
 
     function initFullScreen() {
-        var sim = document.getElementById("simframe");
-        var fs = document.getElementById("fullscreen");
+        var sim = document.getElementById("simframe")
+        var fs = document.getElementById("fullscreen")
         if (fs && sim.requestFullscreen) {
-            fs.onclick = function () { sim.requestFullscreen(); }
+            fs.onclick = function () {
+                sim.requestFullscreen()
+            }
         } else if (fs) {
-            fs.remove();
+            fs.remove()
         }
     }
 }
