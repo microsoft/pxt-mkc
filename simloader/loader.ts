@@ -79,7 +79,7 @@ function makeCodeRun(options) {
                         return ""
                     }
                 )
-
+                document.body.dataset.version = meta?.version
                 // force local sim
                 if (isLocalHost)
                     meta.simUrl = window.location.protocol + "//" + window.location.host + `/sim.html${window.location.search || ""}`
