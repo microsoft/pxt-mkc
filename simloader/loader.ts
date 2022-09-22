@@ -82,9 +82,9 @@ function makeCodeRun(options) {
 
                 // force local sim
                 if (isLocalHost)
-                    meta.simUrl = window.location.protocol + "//" + window.location.host + "/sim.html"
+                    meta.simUrl = window.location.protocol + "//" + window.location.host + `/sim.html${window.location.search || ""}`
 
-                var ap = document.getElementById("download-a") as HTMLAnchorElement
+                const ap = document.getElementById("download-a") as HTMLAnchorElement
                 if (meta.version && ap && ap.download)
                     ap.download = ap.download.replace(/VERSION/, meta.version)
 
