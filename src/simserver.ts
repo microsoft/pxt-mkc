@@ -9,7 +9,11 @@ const mime: pxt.Map<string> = {
     html: "text/html",
 }
 
-export function startSimServer(ed: mkc.DownloadedEditor, port = 7001) {
+export function startSimServer(
+    ed: mkc.DownloadedEditor,
+    port = 7001,
+    forceLocal = false
+) {
     http.createServer(async (request, response) => {
         let path = request.url
         if (path == "/") path = "/index.html"
@@ -21,15 +25,15 @@ export function startSimServer(ed: mkc.DownloadedEditor, port = 7001) {
         if (path == "binary.js") {
             try {
                 buf = fs.readFileSync("built/binary.js")
-            } catch { }
+            } catch {}
         } else if (simloaderFiles.hasOwnProperty(path)) {
-            if (path != 'loader.js')
+            if (forceLocal || path != "loader.js")
                 try {
                     buf = fs.readFileSync("assets/" + path)
                 } catch {
                     try {
                         buf = fs.readFileSync("assets/js/" + path)
-                    } catch { }
+                    } catch {}
                 }
             if (!buf) buf = Buffer.from(simloaderFiles[path], "utf-8")
         } else if (/^[\w\.\-]+$/.test(path)) {

@@ -10,15 +10,17 @@ development of MakeCode editors.
 
 Make sure to install [node.js](https://nodejs.org/).
 
-To install mkc globally, run
+To install `mkc` globally, run
 
-```
+```bash
 npm install -g makecode
 ```
 
+**Do not install the npm `mkc` package, it is another package.**
+
 To update mkc,
 
-```
+```bash
 npm install -u -g makecode
 ```
 
@@ -30,7 +32,7 @@ The command line tool can be invoked as **`makecode`** or **`mkc`** for short.
 
 To start a new [micro:bit](https://makecode.microbit.org) project in an empty folder:
 
-```
+```bash
 mkc init microbit
 ```
 
@@ -38,7 +40,7 @@ where `microbit` is the template name. To get the list of supported templates, d
 
 It is possible to specify a list of dependencies to be added to the template.
 
-```
+```bash
 mkc init microbit jacdac jacdac-button jacdac-led
 ```
 
@@ -49,7 +51,7 @@ Your project is ready to be edited. If you are a Visual Studio Code user, type `
 This command downloads the sources of extensions to the file system so that your TypeScript
 IDE can use them
 
-```
+```bash
 mkc install
 ```
 
@@ -57,13 +59,13 @@ mkc install
 
 In a folder with `pxt.json` file, run the build command.
 
-```
+```bash
 mkc build
 ```
 
 Build is also the default command, so you can just leave it out.
 
-```
+```bash
 mkc
 ```
 
@@ -72,14 +74,14 @@ Use `mkc -j` to build JavaScript (it defaults to native).
 
 To build and deploy to a device add `-d`.
 
-```
+```bash
 mkc -d
 ```
 
 The tool checks once a day if the MakeCode editor has been updated. However, you can force an update by using `--update`
 during a build.
 
-```
+```bash
 mkc --update
 ```
 
@@ -87,7 +89,7 @@ mkc --update
 
 Use `--watch`, or `-w`, with `mkc build` to automatically watch changes in source files and rebuild automatically.
 
-```
+```bash
 mkc -w
 ```
 
@@ -95,7 +97,7 @@ mkc -w
 
 Options can be passed to PXT compiler using `--compile-flags` (`-f`) option:
 
-```
+```bash
 mkc -f size            # generate .csv file with function sizes
 mkc -f asmdebug        # generate more comments in assembly listing
 mkc -f profile         # enable profiling counters
@@ -119,15 +121,27 @@ To access the build files from a remote machine,
 Use `mkc serve` to start a watch-build and localhost server with simulator.
 Defaults to http://127.0.0.1:7001
 
-```
+```bash
 mkc serve
+```
+
+You can change the port using `port`. 
+
+```bash
+mkc serve --port 7002
+```
+
+By default, the simulator ignores `loader.js`. If you have modifications in that file, use ``--force-local`` to use your `loader.js`.
+
+```bash
+mkc serve --force-local
 ```
 
 ### mkc clean
 
 Run the clean command to erase build artifacts and cached packages.
 
-```
+```bash
 mkc clean
 ```
 
@@ -135,7 +149,7 @@ mkc clean
 
 Search for extensions hosted on GitHub.
 
-```
+```bash
 mkc search jacdac
 ```
 
@@ -145,13 +159,13 @@ You can use the result with the `add` command to add extensions to your project.
 
 Adds a new dependency to the project. Pass a GitHub repository URL to the `add` command.
 
-```
+```bash
 mkc add https://github.com/microsoft/pxt-jacdac/button
 ```
 
 For Jacdac extensions, simply write `jacdac-servicename`
 
-```
+```bash
 mkc add jacdac-button
 ```
 
@@ -160,25 +174,25 @@ mkc add jacdac-button
 Interactive update of the version number of the current project
 and all nested projects in a mono-repo.
 
-```
+```bash
 mkc bump
 ```
 
 Use `--major`, `--minor`, `--patch` to automatically increment the version number.
 
-```
+```bash
 mkc bump --patch
 ```
 
 Adding `--version-file` will make `mkc` write a TypeScript file with the version number.
 
-```
+```bash
 mkc bump --version-file version.ts
 ```
 
 Add `--stage` to test the bump without pushing to git.
 
-```
+```bash
 mkc bump --stage
 ```
 
@@ -186,7 +200,7 @@ mkc bump --stage
 
 Downloads a shared MakeCode project to files and initializes the project.
 
-```
+```bash
 mkc download https://.....
 ```
 
@@ -221,7 +235,7 @@ All fields are optional.
 
 You can use `--config-path` or `-c` to build for a different configuration.
 
-```
+```bash
 mkc -c mkc-arcade.json
 ```
 

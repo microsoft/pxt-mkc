@@ -137,6 +137,7 @@ function applyGlobalOptions(opts: Options) {
 
 interface ServeOptions extends BuildOptions {
     port?: string
+    forceLocal?: boolean
 }
 async function serveCommand(opts: ServeOptions) {
     applyGlobalOptions(opts)
@@ -149,7 +150,7 @@ async function serveCommand(opts: ServeOptions) {
     const url = `http://127.0.0.1:${port}`
     msg(`simulator at ${url}`)
     msg(`Jacdac+simulator at https://microsoft.github.io/jacdac-docs/clients/javascript/devtools#${url}`)
-    startSimServer(prj.editor, port)
+    startSimServer(prj.editor, port, forceLocal)
 }
 
 interface DownloadOptions extends Options { }
@@ -916,6 +917,7 @@ async function mainCli() {
             "-c, --config-path <file>",
             'set configuration file path (default: "mkc.json")'
         )
+        .option("--force-local", "force using all local files")
         .action(serveCommand)
 
     createCommand("download")
