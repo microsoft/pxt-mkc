@@ -234,7 +234,7 @@ export async function downloadAsync(
         ? JSON.parse(infoBuf.toString("utf8"))
         : {}
 
-    if (useCached && info.manifest) {
+    if (useCached && info.manifest && info.webConfig) {
         let needsUpdate = false
         if (
             !info.updateCheckedAt ||
@@ -259,7 +259,7 @@ export async function downloadAsync(
     log("Download new webapp")
     const cfg = await parseWebConfigAsync(webAppUrl)
     if (!cfg.manifestUrl) cfg.manifestUrl = webAppUrl // use index.html if no manifest
-    if (info.manifestUrl != cfg.manifestUrl) {
+    if (info.manifestUrl != cfg.manifestUrl || !info.webConfig) {
         info.manifestUrl = cfg.manifestUrl
         info.manifestEtag = null
         info.cdnUrl = cfg.cdnUrl
