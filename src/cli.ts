@@ -20,7 +20,7 @@ import watch from "node-watch"
 import { cloudRoot, MkcJson } from "./mkc"
 import { startSimServer } from "./simserver"
 import { expandStackTrace } from "./stackresolver"
-import { monoRepoConfigs } from "./files"
+import { monoRepoConfigsAsync } from "./files"
 const fetch = require("node-fetch")
 
 interface Options {
@@ -175,14 +175,14 @@ async function cleanCommand(opts: CleanOptions) {
 }
 
 async function resolveProject(opts: ProjectOptions, quiet = false) {
-    const prjdir = files.findProjectDir()
+    const prjdir = await files.findProjectDirAsync()
     if (!prjdir) {
         error(`could not find "pxt.json" file`)
         process.exit(1)
     }
 
     if (!opts.configPath) {
-        const cfgFolder = files.findParentDirWith(prjdir, "mkc.json")
+        const cfgFolder = await files.findParentDirWithAsync(prjdir, "mkc.json")
         if (cfgFolder) opts.configPath = path.join(cfgFolder, "mkc.json")
     }
 
@@ -205,7 +205,7 @@ async function resolveProject(opts: ProjectOptions, quiet = false) {
     if (opts.debug) prj.service.runSync("(() => { pxt.options.debug = 1 })()")
 
     if (opts.compileFlags) {
-        prj.service.runSync(`(() => { 
+        prj.service.runSync(`(() => {
             pxt.setCompileSwitches(${JSON.stringify(opts.compileFlags)});
             if (pxt.appTarget.compile.switches.asmdebug)
                 ts.pxtc.assembler.debug = 1
@@ -381,13 +381,13 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     let success = !!compileRes
 
     if (success && opts.monoRepo) {
-        const dirs = monoRepoConfigs(".")
+        const dirs = await monoRepoConfigsAsync(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules")) continue
             const fulldir = path.dirname(fullpxtjson)
             info(`build ${fulldir}`)
-            const prj0 = prj.mkChildProject(fulldir)
+            const prj0 = await prj.mkChildProjectAsync(fulldir)
             const cfg = await prj0.readPxtConfig()
             if (
                 cfg.supportedTargets &&
@@ -494,13 +494,13 @@ async function installCommand(opts: InstallOptions) {
     const prj = await resolveProject(opts)
     prj.mainPkg = null
     if (opts.monoRepo) {
-        const dirs = monoRepoConfigs(".")
+        const dirs = await monoRepoConfigsAsync(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules")) continue
             const fulldir = path.dirname(fullpxtjson)
             info(`install ${fulldir}`)
-            const prj0 = prj.mkChildProject(fulldir)
+            const prj0 = await prj.mkChildProjectAsync(fulldir)
             await prj0.maybeWritePxtModulesAsync()
         }
     } else {
