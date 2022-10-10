@@ -6,7 +6,7 @@ import { host } from "./host";
 export async function findParentDirWithAsync(base: string, filename: string) {
     let s = base
     while (true) {
-        if (await host.existsAsync(path.join(s, filename))) return s
+        if (await host().existsAsync(path.join(s, filename))) return s
 
         const s2 = path.resolve(path.join(s, ".."))
         if (s == s2) return null
@@ -29,15 +29,15 @@ export function relativePath(currdir: string, target: string) {
 }
 
 export function fileExistsAsync(name: string) {
-    return host.existsAsync(name)
+    return host().existsAsync(name)
 }
 
 export function readPrjFileAsync(dir: string, filename: string) {
-    return host.readFileAsync(resolveFilename(dir, filename), "utf8")
+    return host().readFileAsync(resolveFilename(dir, filename), "utf8")
 }
 
 export async function readProjectAsync(dir: string) {
-    const pxtJson = await host.readFileAsync(path.join(dir, "pxt.json"), "utf8")
+    const pxtJson = await host().readFileAsync(path.join(dir, "pxt.json"), "utf8")
     const res: mkc.Package = {
         config: JSON.parse(pxtJson),
         mkcConfig: null, // JSON.parse(await readAsync(path.join(dir, "mkc.json"), "utf8").then(s => s, err => "{}")),
@@ -46,7 +46,7 @@ export async function readProjectAsync(dir: string) {
         },
     }
     for (const fn of res.config.files.concat(res.config.testFiles || [])) {
-        res.files[fn] = await host.readFileAsync(resolveFilename(dir, fn), "utf8")
+        res.files[fn] = await host().readFileAsync(resolveFilename(dir, fn), "utf8")
     }
     return res.files
 }
@@ -73,18 +73,18 @@ export async function mkHomeCacheAsync(dir?: string): Promise<mkc.Cache> {
         rootPath,
         expandKey,
         getAsync: key =>
-            host.readFileAsync(keyPath(key)).then(
+            host().readFileAsync(keyPath(key)).then(
                 buf => buf,
                 err => null
             ),
-        setAsync: (key, val) => host.writeFileAsync(keyPath(key), val),
+        setAsync: (key, val) => host().writeFileAsync(keyPath(key), val),
     }
 }
 
 async function mkdirpAsync(dirname: string, lev = 5) {
-    if (!await host.existsAsync(dirname)) {
+    if (!await host().existsAsync(dirname)) {
         if (lev > 0) await mkdirpAsync(path.resolve(dirname, ".."), lev - 1)
-        await host.mkdirAsync(dirname)
+        await host().mkdirAsync(dirname)
     }
 }
 
@@ -98,8 +98,8 @@ export async function writeFilesAsync(
         if (fn.indexOf("/") >= 0) continue
         if (log) mkc.log(`write ${built}/${fn}`)
         if (/\.(uf2|pxt64|elf)$/.test(fn))
-            await host.writeFileAsync(path.join(built, fn), outfiles[fn], "base64")
-        else await host.writeFileAsync(path.join(built, fn), outfiles[fn], "utf8")
+            await host().writeFileAsync(path.join(built, fn), outfiles[fn], "base64")
+        else await host().writeFileAsync(path.join(built, fn), outfiles[fn], "utf8")
     }
 }
 
@@ -121,20 +121,20 @@ export async function savePxtModulesAsync(
             const v = files[k]
             if (typeof v == "string") {
                 mkc.debug(`    write ${k}`)
-                await host.writeFileAsync(k, v)
+                await host().writeFileAsync(k, v)
             }
             else {
                 mkc.debug(`    link ${k}`)
                 try {
-                    await host.unlinkAsync(k)
+                    await host().unlinkAsync(k)
                 } catch { }
-                await host.symlinkAsync(v.symlink, k, "file")
+                await host().symlinkAsync(v.symlink, k, "file")
             }
         }
 }
 
 export async function monoRepoConfigsAsync(folder: string, includingSelf = true) {
-    const files = await host.listFilesAsync(folder, "pxt.json");
+    const files = await host().listFilesAsync(folder, "pxt.json");
     return files.filter(
         e =>
             e.indexOf("pxt_modules") < 0 &&
@@ -147,7 +147,7 @@ export async function monoRepoConfigsAsync(folder: string, includingSelf = true)
 export async function collectCurrentVersionAsync(configs: string[]) {
     let version = "0.0.0"
     for (const config of configs) {
-        const cfg = JSON.parse(await host.readFileAsync(config, "utf8"))
+        const cfg = JSON.parse(await host().readFileAsync(config, "utf8"))
         const v = clean(cfg.version || "")
         if (valid(v) && lt(version, v))
             version = v

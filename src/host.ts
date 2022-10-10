@@ -6,10 +6,33 @@ export interface Host {
     unlinkAsync(path: string): Promise<void>;
     symlinkAsync(target: string, path: string, type: "file"): Promise<void>;
     listFilesAsync(directory: string, filename: string): Promise<string[]>;
+    requestAsync(options: HttpRequestOptions, validate?: (protocol: string, method: string) => void): Promise<HttpResponse>;
 }
+
+export interface HttpRequestOptions {
+    url: string
+    method?: string // default to GET
+    data?: any
+    headers?: pxt.Map<string>
+    allowHttpErrors?: boolean // don't treat non-200 responses as errors
+    allowGzipPost?: boolean
+}
+
+export interface HttpResponse {
+    statusCode: number
+    headers: pxt.Map<string | string[]>
+    buffer?: any
+    text?: string
+    json?: any
+}
+
+let host_: Host;
 
 export function setHost(newHost: Host) {
-    host = newHost;
+    host_ = newHost;
 }
 
-export let host: Host;
+export function host() {
+    if (!host) throw new Error("setHost() not called!")
+    return host_;
+}

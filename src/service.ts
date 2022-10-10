@@ -2,6 +2,7 @@ import vm = require("vm")
 import mkc = require("./mkc")
 import downloader = require("./downloader")
 import { TextDecoder, TextEncoder } from "util"
+import { host } from "./host";
 
 const cdnUrl = "https://pxt.azureedge.net"
 
@@ -155,10 +156,10 @@ export class Ctx {
                     Buffer.from(val, "utf8")
                 ),
             httpRequestAsync: (options: downloader.HttpRequestOptions) =>
-                downloader.nodeHttpRequestAsync(options, u => {
-                    if (u.protocol != "https:")
+            host().requestAsync(options, (protocol, method) => {
+                    if (protocol != "https:")
                         throw new Error("only https: supported")
-                    if (u.method != "GET") throw new Error("only GET supported")
+                    if (method != "GET") throw new Error("only GET supported")
                     if (!options.url.startsWith(cdnUrl + "/") && !options.url.startsWith("https://www.makecode.com/api/"))
                         throw new Error("only CDN URLs and makecode.com/api support: " + cdnUrl + ", got " + options.url)
                     mkc.log("GET " + options.url)
@@ -170,7 +171,7 @@ export class Ctx {
             },
         }
         this.runFunctionSync("pxt.setupSimpleCompile", [callbacks])
-        // disable packages config for now; 
+        // disable packages config for now;
         // otherwise we do a HTTP request on every compile
         this.runSync(
             "pxt.packagesConfigAsync = () => Promise.resolve({})"
