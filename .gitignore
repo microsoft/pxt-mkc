@@ -5,3 +5,4 @@ node_modules
 pxt_modules
 *.vsix
 src/simloaderfiles.ts
+packages/mkc/src/simloaderfiles.ts
