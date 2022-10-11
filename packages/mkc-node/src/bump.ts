@@ -1,9 +1,9 @@
 import * as child_process from "child_process"
 import * as fs from "fs"
-import * as mkc from "./mkc"
-import { httpGetJsonAsync } from "./downloader"
+import * as mkc from "mkc-core/built/mkc"
+import { httpGetJsonAsync } from "mkc-core/built/downloader"
 import { inc } from "semver"
-import { collectCurrentVersionAsync, monoRepoConfigsAsync } from "./files"
+import { collectCurrentVersionAsync, monoRepoConfigsAsync } from "mkc-core/built/files"
 
 export interface SpawnOptions {
     cmd: string

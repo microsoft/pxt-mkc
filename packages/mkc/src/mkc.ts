@@ -4,7 +4,6 @@ export import downloader = require("./downloader")
 export import files = require("./files")
 export import service = require("./service")
 export import loader = require("./loader")
-export import simserver = require("./simserver")
 import { collectCurrentVersionAsync, monoRepoConfigsAsync } from "./files"
 
 export interface MkcJson {

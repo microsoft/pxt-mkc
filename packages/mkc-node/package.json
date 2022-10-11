@@ -1,6 +1,6 @@
 {
-  "name": "mkc-core",
-  "version": "0.0.1",
+  "name": "makecode",
+  "version": "0.34.6",
   "description": "MakeCode (PXT) - web-cached build tool",
   "keywords": [
     "TypeScript",
@@ -20,16 +20,20 @@
   "files": [
     "README.md",
     "built/*",
-    "external/*"
+    "external/*",
+    "makecode"
   ],
-  "bin": {},
+  "preferGlobal": true,
+  "bin": {
+    "makecode": "./makecode",
+    "mkc": "./makecode"
+  },
   "engines": {
     "node": ">= 11.0.0"
   },
   "scripts": {
-    "compile": "tsc -p simloader && node simloader/build.js && tsc -p ./",
-    "watch": "tsc -p simloader && node simloader/build.js && tsc -watch -p ./",
-    "sim": "tsc -p simloader && node simloader/build.js"
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
   },
   "main": "built/mkc.js",
   "devDependencies": {
@@ -45,7 +49,11 @@
   },
   "dependencies": {
     "chalk": "^4.1.2",
-    "semver": "^7.3.7"
+    "commander": "^8.2.0",
+    "glob": "^7.2.0",
+    "node-watch": "^0.7.2",
+    "semver": "^7.3.7",
+    "mkc-core": "^0.34.6"
   },
   "release": {
     "branch": "master",

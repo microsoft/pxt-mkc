@@ -1,7 +1,6 @@
 import vm = require("vm")
 import mkc = require("./mkc")
 import downloader = require("./downloader")
-import { TextDecoder, TextEncoder } from "util"
 import { host, LanguageService } from "./host";
 
 const cdnUrl = "https://pxt.azureedge.net"

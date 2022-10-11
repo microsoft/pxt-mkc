@@ -14,6 +14,7 @@ export interface Host {
     listFilesAsync(directory: string, filename: string): Promise<string[]>;
     requestAsync(options: HttpRequestOptions, validate?: (protocol: string, method: string) => void): Promise<HttpResponse>;
     createLanguageServiceAsync(editor: DownloadedEditor): Promise<LanguageService>;
+    getDeployDrivesAsync(compile: any): Promise<string[]>;
 }
 
 export interface HttpRequestOptions {
