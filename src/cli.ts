@@ -21,6 +21,8 @@ import { cloudRoot, MkcJson } from "./mkc"
 import { startSimServer } from "./simserver"
 import { expandStackTrace } from "./stackresolver"
 import { monoRepoConfigsAsync } from "./files"
+import { setHost } from "./host"
+import { createNodeHost } from "./nodeHost"
 const fetch = require("node-fetch")
 
 interface Options {
@@ -198,18 +200,15 @@ async function resolveProject(opts: ProjectOptions, quiet = false) {
 
     let version = "???"
     try {
-        version = prj.service.runSync("pxt.appTarget?.versions?.target")
+        const appTarget = await prj.service.languageService.getAppTargetAsync();
+        version = appTarget?.versions?.target;
     } catch { }
     log(`using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
-    if (opts.debug) prj.service.runSync("(() => { pxt.options.debug = 1 })()")
+    if (opts.debug) await prj.service.languageService.enableDebugAsync();
 
     if (opts.compileFlags) {
-        prj.service.runSync(`(() => {
-            pxt.setCompileSwitches(${JSON.stringify(opts.compileFlags)});
-            if (pxt.appTarget.compile.switches.asmdebug)
-                ts.pxtc.assembler.debug = 1
-        })()`)
+        await prj.service.languageService.setCompileSwitchesAsync(opts.compileFlags);
     }
 
     prj.writePxtModules = !!opts.pxtModules
@@ -316,11 +315,10 @@ function startWatch(opts: BuildOptions) {
 
 async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     const prj = await resolveProject(opts)
-    prj.service.runSync(
-        "(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()"
-    )
-    const hwVariants = prj.service.hwVariants
-    const targetId = prj.service.runSync("pxt.appTarget.id")
+    await prj.service.languageService.enableExperimentalHardwareAsync();
+    const hwVariants = await prj.service.getHardwareVariantsAsync()
+    const appTarget = await prj.service.languageService.getAppTargetAsync();
+    const targetId = appTarget.id;
     let moreHw: string[] = []
     const outputs: string[] = []
 
@@ -334,7 +332,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     else opts.native = false
 
     if (opts.native && hwVariants.length) {
-        prj.guessHwVariant()
+        await prj.guessHwVariantAsync()
         infoHW()
     }
 
@@ -352,7 +350,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
                 ).join(", ")})`
             )
         } else {
-            const compileInfo = prj.service.runSync("pxt.appTarget.compile")
+            const compileInfo = appTarget.compile;
             const drives = await getDeployDrives(compileInfo)
 
             if (drives.length == 0) {
@@ -873,6 +871,8 @@ function readCfg(cfgpath: string, quiet = false) {
 }
 
 async function mainCli() {
+    setHost(createNodeHost());
+
     mkc.setLogging({
         log: info,
         error: error,

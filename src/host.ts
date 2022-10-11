@@ -1,3 +1,7 @@
+import { WebConfig } from "./downloader";
+import { DownloadedEditor, Package } from "./mkc";
+import { CompileOptions } from "./service";
+
 export interface Host {
     readFileAsync(path: string, encoding?: "utf8"): Promise<string>;
     writeFileAsync(path: string, content: any, encoding?: "base64" | "utf8"): Promise<void>;
@@ -7,6 +11,7 @@ export interface Host {
     symlinkAsync(target: string, path: string, type: "file"): Promise<void>;
     listFilesAsync(directory: string, filename: string): Promise<string[]>;
     requestAsync(options: HttpRequestOptions, validate?: (protocol: string, method: string) => void): Promise<HttpResponse>;
+    createLanguageServiceAsync(editor: DownloadedEditor): Promise<LanguageService>;
 }
 
 export interface HttpRequestOptions {
@@ -24,6 +29,34 @@ export interface HttpResponse {
     buffer?: any
     text?: string
     json?: any
+}
+
+export interface SimpleDriverCallbacks {
+    cacheGet: (key: string) => Promise<string>
+    cacheSet: (key: string, val: string) => Promise<void>
+    httpRequestAsync?: (
+        options: HttpRequestOptions
+    ) => Promise<HttpResponse>
+    pkgOverrideAsync?: (id: string) => Promise<pxt.Map<string>>
+}
+
+export interface LanguageService {
+    registerDriverCallbacksAsync(callbacks: SimpleDriverCallbacks): Promise<void>
+    setWebConfigAsync(config: WebConfig): Promise<void>;
+    getWebConfigAsync(): Promise<WebConfig>;
+    getAppTargetAsync(): Promise<any>;
+    supportsGhPackagesAsync(): Promise<boolean>;
+    setHwVariantAsync(variant: string): Promise<void>;
+    getHardwareVariantsAsync(): Promise<pxt.PackageConfig[]>;
+    getBundledPackageConfigsAsync(): Promise<pxt.PackageConfig[]>;
+    getCompileOptionsAsync(prj: Package, simpleOpts?: any): Promise<CompileOptions>;
+    installGhPackagesAsync(projectFiles: pxt.Map<string>): Promise<any>;
+    setProjectTextAsync(projectFiles: pxt.Map<string>): Promise<void>;
+    performOperationAsync(op: string, options: any): Promise<any>;
+
+    enableExperimentalHardwareAsync(): Promise<void>;
+    enableDebugAsync(): Promise<void>;
+    setCompileSwitchesAsync(flags: string): Promise<void>
 }
 
 let host_: Host;

@@ -3,7 +3,7 @@ import * as fs from "fs"
 import * as mkc from "./mkc"
 import { httpGetJsonAsync } from "./downloader"
 import { inc } from "semver"
-import { collectCurrentVersion, monoRepoConfigs } from "./files"
+import { collectCurrentVersionAsync, monoRepoConfigsAsync } from "./files"
 
 export interface SpawnOptions {
     cmd: string
@@ -113,8 +113,8 @@ export async function bumpAsync(
         await needsGitCleanAsync()
         await runGitAsync("pull")
     }
-    const configs = monoRepoConfigs(prj.directory, true)
-    const currentVersion = collectCurrentVersion(configs)
+    const configs = await monoRepoConfigsAsync(prj.directory, true)
+    const currentVersion = await collectCurrentVersionAsync(configs)
     let newV: string
     if (release)
         newV = inc(currentVersion, release)

@@ -76,10 +76,10 @@ export class Project {
         if (this.mainPkg) this.mainPkg.mkcConfig.hwVariant = value
     }
 
-    guessHwVariant() {
+    async guessHwVariantAsync() {
         if (this.mainPkg.mkcConfig.hwVariant) return
 
-        const variants = this.service.hwVariants
+        const variants = await this.service.getHardwareVariantsAsync();
         const cfg = this.mainPkg.config
         for (const v of variants) {
             if (cfg.dependencies[v.name] || cfg.testDependencies?.[v.name]) {
@@ -259,7 +259,7 @@ export class Project {
         this.service.setUserAsync(this)
 
         if (this.service.supportsGhPkgs) {
-            await this.service.installGhPackages(this.mainPkg)
+            await this.service.installGhPackagesAsync(this.mainPkg)
         } else {
             await loader.loadDeps(this.editor, this.mainPkg)
         }
@@ -292,7 +292,7 @@ export class Project {
 
         const binjs = "binary.js"
         if (res.outfiles[binjs]) {
-            const appTarget = this.service.runSync("pxt.appTarget")
+            const appTarget = await this.service.languageService.getAppTargetAsync();
             const boardDef = appTarget.simulator?.boardDefinition
             if (boardDef) {
                 res.outfiles[binjs] =
@@ -300,7 +300,7 @@ export class Project {
                     res.outfiles[binjs]
             }
             const webConfig: downloader.WebConfig =
-                this.editor.webConfig || this.service.runSync("pxt.webConfig")
+                this.editor.webConfig || (await this.service.languageService.getWebConfigAsync())
             const configs = await monoRepoConfigsAsync(this.directory, true)
             const version = `v${await collectCurrentVersionAsync(configs) || "0"}`
             const meta: any = {
