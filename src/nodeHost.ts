@@ -18,6 +18,7 @@ export function createNodeHost(): Host {
         readFileAsync: util.promisify(fs.readFile),
         writeFileAsync: util.promisify(fs.writeFile),
         mkdirAsync: util.promisify(fs.mkdir),
+        rmdirAsync: util.promisify(fs.rmdir),
         existsAsync: util.promisify(fs.exists),
         unlinkAsync: util.promisify(fs.unlink),
         symlinkAsync: util.promisify(fs.symlink),

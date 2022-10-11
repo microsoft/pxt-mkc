@@ -3,9 +3,11 @@ import { DownloadedEditor, Package } from "./mkc";
 import { CompileOptions } from "./service";
 
 export interface Host {
-    readFileAsync(path: string, encoding?: "utf8"): Promise<string>;
+    readFileAsync(path: string, encoding: "utf8"): Promise<string>;
+    readFileAsync(path: string, encoding?: "utf8"): Promise<string | Uint8Array>;
     writeFileAsync(path: string, content: any, encoding?: "base64" | "utf8"): Promise<void>;
     mkdirAsync(path: string): Promise<void>;
+    rmdirAsync(path: string, options: any): Promise<void>;
     existsAsync(path: string): Promise<boolean>;
     unlinkAsync(path: string): Promise<void>;
     symlinkAsync(target: string, path: string, type: "file"): Promise<void>;

@@ -1,6 +1,4 @@
-import * as fs from "fs"
 import * as path from "path"
-import * as util from "util"
 
 import * as mkc from "./mkc"
 import * as files from "./files"
@@ -21,7 +19,7 @@ import { cloudRoot, MkcJson } from "./mkc"
 import { startSimServer } from "./simserver"
 import { expandStackTrace } from "./stackresolver"
 import { monoRepoConfigsAsync } from "./files"
-import { setHost } from "./host"
+import { host, setHost } from "./host"
 import { createNodeHost } from "./nodeHost"
 const fetch = require("node-fetch")
 
@@ -51,7 +49,7 @@ async function downloadProjectAsync(id: string) {
     const files = await downloader.httpGetJsonAsync(url)
     for (let fn of Object.keys(files)) {
         if (/\//.test(fn)) continue
-        fs.writeFileSync(fn, files[fn])
+        await host().writeFileAsync(fn, files[fn]);
     }
     msg("downloaded.")
 }
@@ -166,12 +164,12 @@ interface CleanOptions extends Options { }
 async function cleanCommand(opts: CleanOptions) {
     applyGlobalOptions(opts)
 
-        ;["built", "pxt_modules"]
-            .filter(d => fs.existsSync(d))
-            .forEach(d => {
-                msg(`deleting ${d} folder`)
-                fs.rmdirSync(d, { recursive: true, force: true } as any)
-            })
+    for (const dir of ["built", "pxt_modules"]) {
+        if (await host().existsAsync(dir)) {
+            msg(`deleting ${dir} folder`)
+            await host().rmdirAsync(dir, { recursive: true, force: true } as any)
+        }
+    }
 
     msg("run `mkc init` again to setup your project")
 }
@@ -193,7 +191,7 @@ async function resolveProject(opts: ProjectOptions, quiet = false) {
 
     if (opts.configPath) {
         log(`using config: ${opts.configPath}`)
-        prj.mkcConfig = readCfg(opts.configPath, quiet)
+        prj.mkcConfig = await readCfgAsync(opts.configPath, quiet)
     }
 
     await prj.loadEditorAsync(!!opts.update)
@@ -361,9 +359,8 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
                     firmwareName == "binary.hex" ? "utf8" : "base64"
 
                 msg(`copying ${firmwareName} to ` + drives.join(", "))
-                const writeFileAsync = util.promisify(fs.writeFile)
                 const writeHexFile = (drivename: string) => {
-                    return writeFileAsync(
+                    return host().writeFileAsync(
                         path.join(drivename, firmwareName),
                         firmware,
                         encoding
@@ -404,10 +401,10 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
             outputs.push(prj.outputPrefix)
             await buildOnePrj(opts, prj)
         }
-        const uf2s: Buffer[] = []
+        const uf2s: Uint8Array[] = []
         for (const folder of outputs) {
             try {
-                uf2s.push(fs.readFileSync(path.join(folder, "binary.uf2")))
+                uf2s.push((await host().readFileAsync(path.join(folder, "binary.uf2")) as Uint8Array))
             } catch { }
         }
         if (uf2s.length > 1) {
@@ -418,7 +415,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
                     total.length / 1024
                 )}kB)`
             )
-            fs.writeFileSync(fn, total)
+            await host().writeFileAsync(fn, total)
         }
     }
 
@@ -483,7 +480,7 @@ interface InstallOptions extends ProjectOptions {
 }
 async function installCommand(opts: InstallOptions) {
     applyGlobalOptions(opts)
-    if (!fs.existsSync("pxt.json")) {
+    if (!await host().existsAsync("pxt.json")) {
         error("missing pxt.json")
         process.exit(1)
     }
@@ -513,7 +510,7 @@ async function initCommand(
     opts: InitOptions
 ) {
     applyGlobalOptions(opts)
-    if (!fs.existsSync("pxt.json")) {
+    if (!await host().existsAsync("pxt.json")) {
         if (!template) {
             error("missing template")
             process.exit(1)
@@ -525,9 +522,9 @@ async function initCommand(
         }
         msg(`initializing project for ${target.name}`)
         msg("saving main.ts")
-        fs.writeFileSync("main.ts", "// add code here", { encoding: "utf-8" })
+        await host().writeFileAsync("main.ts", "// add code here", "utf8");
         msg("saving pxt.json")
-        fs.writeFileSync(
+        await host().writeFileAsync(
             "pxt.json",
             JSON.stringify(
                 {
@@ -545,7 +542,7 @@ async function initCommand(
                 4
             )
         )
-        fs.writeFileSync(
+        await host().writeFileAsync(
             "mkc.json",
             JSON.stringify(
                 <MkcJson>{
@@ -555,7 +552,7 @@ async function initCommand(
                 null,
                 4
             ),
-            { encoding: "utf-8" }
+            "utf8"
         )
     } else {
         if (template) {
@@ -564,9 +561,9 @@ async function initCommand(
         }
     }
 
-    if (!fs.existsSync("tsconfig.json")) {
+    if (!await host().existsAsync("tsconfig.json")) {
         msg("saving tsconfig.json")
-        fs.writeFileSync(
+        await host().writeFileAsync(
             "tsconfig.json",
             JSON.stringify(
                 {
@@ -582,14 +579,14 @@ async function initCommand(
                 null,
                 4
             ),
-            { encoding: "utf-8" }
+            "utf8"
         )
     }
 
     const prettierrc = ".prettierrc"
-    if (!fs.existsSync(prettierrc)) {
+    if (!await host().existsAsync(prettierrc)) {
         msg(`saving ${prettierrc}`)
-        fs.writeFileSync(
+        await host().writeFileAsync(
             prettierrc,
             JSON.stringify({
                 arrowParens: "avoid",
@@ -600,11 +597,11 @@ async function initCommand(
     }
 
     const gh = ".github/workflows/makecode.yml"
-    if (!fs.existsSync(gh)) {
-        if (!fs.existsSync(".github")) fs.mkdirSync(".github")
-        if (!fs.existsSync(".github/workflows")) fs.mkdirSync(".github/workflows")
+    if (!await host().existsAsync(gh)) {
+        if (!await host().existsAsync(".github")) await host().mkdirAsync(".github")
+        if (!await host().existsAsync(".github/workflows")) await host().mkdirAsync(".github/workflows")
         msg(`saving ${gh}`)
-        fs.writeFileSync(gh,
+        await host().writeFileAsync(gh,
             `name: MakeCode Build
 on:
   push:
@@ -623,14 +620,12 @@ jobs:
 
     opts.pxtModules = true
     const prj = await resolveProject(opts)
-    if (!fs.existsSync("mkc.json")) {
+    if (!await host().existsAsync("mkc.json")) {
         msg("saving mkc.json")
-        fs.writeFileSync(
+        await host().writeFileAsync(
             "mkc.json",
             mkc.stringifyConfig(prj.mainPkg.mkcConfig),
-            {
-                encoding: "utf-8",
-            }
+            "utf8"
         )
     }
 
@@ -766,8 +761,8 @@ async function searchCommand(query: string, opts: SearchOptions) {
 }
 
 async function stackCommand(opts: ProjectOptions) {
-    const srcmap = JSON.parse(fs.readFileSync("built/binary.srcmap", "utf8"))
-    console.log(expandStackTrace(srcmap, fs.readFileSync(0, "utf-8")))
+    const srcmap = JSON.parse(await host().readFileAsync("built/binary.srcmap", "utf8") as string)
+    console.log(expandStackTrace(srcmap, await host().readFileAsync(0 as any, "utf8") as string))
 }
 
 interface AddOptions extends ProjectOptions { }
@@ -809,9 +804,7 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
     pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch
         }`
     info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
-    fs.writeFileSync("pxt.json", JSON.stringify(pxtJson, null, 4), {
-        encoding: "utf-8",
-    })
+    await host().writeFileAsync("pxt.json", JSON.stringify(pxtJson, null, 4), "utf8")
 }
 
 function isKV(v: any) {
@@ -828,16 +821,16 @@ function jsonMergeFrom(trg: any, src: any) {
     })
 }
 
-function readCfg(cfgpath: string, quiet = false) {
+async function readCfgAsync(cfgpath: string, quiet = false) {
     const files: string[] = []
     return readCfgRec(cfgpath)
 
-    function readCfgRec(cfgpath: string) {
+    async function readCfgRec(cfgpath: string) {
         if (files.indexOf(cfgpath) >= 0) {
             error(`Config file loop: ${files.join(" -> ")} -> ${cfgpath}`)
             process.exit(1)
         }
-        const cfg = cfgFile(cfgpath)
+        const cfg = await cfgFile(cfgpath)
         const currCfg: mkc.MkcJson = {} as any
         files.push(cfgpath)
         for (const fn of cfg.include || []) {
@@ -850,10 +843,10 @@ function readCfg(cfgpath: string, quiet = false) {
         files.pop()
         return currCfg
 
-        function cfgFile(cfgpath: string) {
+        async function cfgFile(cfgpath: string) {
             let cfg: mkc.MkcJson
             try {
-                cfg = JSON.parse(fs.readFileSync(cfgpath, "utf8"))
+                cfg = JSON.parse(await host().readFileAsync(cfgpath, "utf8") as string)
             } catch (e) {
                 error(`Can't read config file: '${cfgpath}'; ` + e.message)
                 process.exit(1)
