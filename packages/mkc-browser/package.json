@@ -1,6 +1,6 @@
 {
-  "name": "makecode",
-  "version": "0.34.6",
+  "name": "mkc-browser",
+  "version": "0.0.1",
   "description": "MakeCode (PXT) - web-cached build tool",
   "keywords": [
     "TypeScript",
@@ -23,36 +23,24 @@
     "external/*",
     "makecode"
   ],
-  "preferGlobal": true,
-  "bin": {
-    "makecode": "./makecode",
-    "mkc": "./makecode"
-  },
+  "preferGlobal": false,
   "engines": {
     "node": ">= 11.0.0"
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "compile": "tsc -p worker && node worker/build.js && tsc -p ./",
+    "watch": "tsc -p worker && node worker/build.js && tsc -watch -p ./"
   },
-  "main": "built/cli.js",
+  "main": "built/mkc.js",
   "devDependencies": {
     "@semantic-release/git": "^10.0.0",
     "@semantic-release/github": "^8.0.1",
     "@semantic-release/npm": "^8.0.0",
     "@semantic-release/release-notes-generator": "^10.0.2",
-    "@types/glob": "^7.1.4",
-    "@types/node": "^16.10.3",
-    "@types/semver": "^7.3.9",
     "semantic-release": "^18.0.0",
     "typescript": "^4.4.3"
   },
   "dependencies": {
-    "chalk": "^4.1.2",
-    "commander": "^8.2.0",
-    "glob": "^7.2.0",
-    "node-watch": "^0.7.2",
-    "semver": "^7.3.7",
     "mkc-core": "^0.0.1"
   },
   "release": {

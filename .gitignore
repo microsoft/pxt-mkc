@@ -6,3 +6,4 @@ pxt_modules
 *.vsix
 src/simloaderfiles.ts
 packages/mkc/src/simloaderfiles.ts
+packages/mkc-browser/src/workerFiles.ts
