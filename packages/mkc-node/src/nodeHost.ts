@@ -24,7 +24,9 @@ export function createNodeHost(): Host {
             glob.sync(directory + "/**/" + filename),
         requestAsync: nodeHttpRequestAsync,
         createLanguageServiceAsync: async (editor) => new NodeLanguageService(editor),
-        getDeployDrivesAsync
+        getDeployDrivesAsync,
+        getEnvironmentVariable: key => process.env[key],
+        exitWithStatus: code => process.exit(code)
     }
 }
 

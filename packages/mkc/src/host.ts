@@ -5,6 +5,7 @@ import { CompileOptions } from "./service";
 export interface Host {
     readFileAsync(path: string, encoding: "utf8"): Promise<string>;
     readFileAsync(path: string, encoding?: "utf8"): Promise<string | Uint8Array>;
+
     writeFileAsync(path: string, content: any, encoding?: "base64" | "utf8"): Promise<void>;
     mkdirAsync(path: string): Promise<void>;
     rmdirAsync(path: string, options: any): Promise<void>;
@@ -15,6 +16,8 @@ export interface Host {
     requestAsync(options: HttpRequestOptions, validate?: (protocol: string, method: string) => void): Promise<HttpResponse>;
     createLanguageServiceAsync(editor: DownloadedEditor): Promise<LanguageService>;
     getDeployDrivesAsync(compile: any): Promise<string[]>;
+    exitWithStatus(code: number): never;
+    getEnvironmentVariable(key: string): string;
 }
 
 export interface HttpRequestOptions {

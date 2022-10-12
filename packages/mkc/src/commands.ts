@@ -102,7 +102,7 @@ function error(msg: string) {
 export function applyGlobalOptions(opts: Options) {
     if (opts.noColors) (chalk as any).level = 0
     else if (opts.colors && !chalk.level) (chalk as any).level = 1
-    else if (process.env["GITHUB_WORKFLOW"]) (chalk as any).level = 1
+    else if (host().getEnvironmentVariable("GITHUB_WORKFLOW")) (chalk as any).level = 1
 }
 
 interface DownloadOptions extends Options { }
@@ -129,7 +129,7 @@ export async function resolveProject(opts: ProjectOptions, quiet = false) {
     const prjdir = await files.findProjectDirAsync()
     if (!prjdir) {
         error(`could not find "pxt.json" file`)
-        process.exit(1)
+        host().exitWithStatus(1)
     }
 
     if (!opts.configPath) {
@@ -296,11 +296,11 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
     if (success) {
         msg("Build OK")
         if (opts.watch) return compileRes?.outfiles
-        else process.exit(0)
+        else host().exitWithStatus(0)
     } else {
         error("Build failed")
         if (opts.watch) return compileRes?.outfiles
-        else process.exit(1)
+        else host().exitWithStatus(1)
     }
 
     function hwid(cfg: pxt.PackageConfig) {
@@ -322,7 +322,7 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
             for (let cfg of hwVariants) {
                 msg(`${hwid(cfg)}, ${cfg.card.name} - ${cfg.card.description}`)
             }
-            process.exit(1)
+            host().exitWithStatus(1)
         }
         prj.hwVariant = hwid(selected[0])
     }
@@ -343,7 +343,7 @@ export async function installCommand(opts: InstallOptions) {
     applyGlobalOptions(opts)
     if (!await host().existsAsync("pxt.json")) {
         error("missing pxt.json")
-        process.exit(1)
+        host().exitWithStatus(1)
     }
 
     opts.pxtModules = true
@@ -374,12 +374,12 @@ export async function initCommand(
     if (!await host().existsAsync("pxt.json")) {
         if (!template) {
             error("missing template")
-            process.exit(1)
+            host().exitWithStatus(1)
         }
         const target = descriptors.find(t => t.id === template)
         if (!target) {
             error(`template not found`)
-            process.exit(1)
+            host().exitWithStatus(1)
         }
         msg(`initializing project for ${target.name}`)
         msg("saving main.ts")
@@ -418,7 +418,7 @@ export async function initCommand(
     } else {
         if (template) {
             error("directory is not empty, cannot apply template")
-            process.exit(1)
+            host().exitWithStatus(1)
         }
     }
 
@@ -569,7 +569,7 @@ async function fetchExtension(slug: string) {
     })
     if (req.statusCode !== 200) {
         error(`resolution of ${slug} failed (${req.statusCode})`)
-        process.exit(1)
+        host().exitWithStatus(1)
     }
     const script: {
         version: string
@@ -592,7 +592,7 @@ export async function searchCommand(query: string, opts: SearchOptions) {
     })
     if (res.statusCode !== 200) {
         error(`search request failed`)
-        process.exit(1)
+        host().exitWithStatus(1)
     }
     const payload: {
         items: {
@@ -656,7 +656,7 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
     const rid = parseRepoId(repo)
     if (!rid) {
         error("unkown repository format, try https://github.com/.../...")
-        process.exit(1)
+        host().exitWithStatus(1)
     }
 
     const d = await fetchExtension(rid.slug)
@@ -692,7 +692,7 @@ async function readCfgAsync(cfgpath: string, quiet = false) {
     async function readCfgRec(cfgpath: string) {
         if (files.indexOf(cfgpath) >= 0) {
             error(`Config file loop: ${files.join(" -> ")} -> ${cfgpath}`)
-            process.exit(1)
+            host().exitWithStatus(1)
         }
         const cfg = await cfgFile(cfgpath)
         const currCfg: mkc.MkcJson = {} as any
@@ -713,7 +713,7 @@ async function readCfgAsync(cfgpath: string, quiet = false) {
                 cfg = JSON.parse(await host().readFileAsync(cfgpath, "utf8") as string)
             } catch (e) {
                 error(`Can't read config file: '${cfgpath}'; ` + e.message)
-                process.exit(1)
+                host().exitWithStatus(1)
             }
             const lnk = cfg.links
             if (lnk) {
