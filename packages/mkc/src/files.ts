@@ -1,7 +1,7 @@
 import * as path from "path"
 import * as mkc from "./mkc"
-import { lt, valid, clean } from "semver"
 import { host } from "./host";
+import { cmp, stringify, tryParse } from "./semver";
 
 export async function findParentDirWithAsync(base: string, filename: string) {
     let s = base
@@ -14,8 +14,8 @@ export async function findParentDirWithAsync(base: string, filename: string) {
     }
 }
 
-export function findProjectDirAsync() {
-    return findParentDirWithAsync(process.cwd(), "pxt.json")
+export async function findProjectDirAsync() {
+    return findParentDirWithAsync(await host().cwdAsync(), "pxt.json")
 }
 
 function resolveFilename(dir: string, filename: string) {
@@ -52,7 +52,7 @@ export async function readProjectAsync(dir: string) {
 }
 
 function homePxtDir() {
-    return path.join(process.env["HOME"] || process.env["UserProfile"], ".pxt")
+    return path.join(host().getEnvironmentVariable("HOME") || host().getEnvironmentVariable("UserProfile"), ".pxt")
 }
 
 export async function mkHomeCacheAsync(dir?: string): Promise<mkc.Cache> {
@@ -145,12 +145,12 @@ export async function monoRepoConfigsAsync(folder: string, includingSelf = true)
 }
 
 export async function collectCurrentVersionAsync(configs: string[]) {
-    let version = "0.0.0"
+    let version = tryParse("0.0.0")
     for (const config of configs) {
         const cfg = JSON.parse(await host().readFileAsync(config, "utf8"))
-        const v = clean(cfg.version || "")
-        if (valid(v) && lt(version, v))
+        const v = tryParse(cfg.version);
+        if (v && cmp(version, v) < 0)
             version = v
     }
-    return version
+    return stringify(version);
 }

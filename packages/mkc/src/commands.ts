@@ -303,6 +303,8 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
         else host().exitWithStatus(1)
     }
 
+    return null;
+
     function hwid(cfg: pxt.PackageConfig) {
         return cfg.name.replace(/hw---/, "")
     }

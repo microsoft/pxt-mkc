@@ -17,7 +17,8 @@ export interface Host {
     createLanguageServiceAsync(editor: DownloadedEditor): Promise<LanguageService>;
     getDeployDrivesAsync(compile: any): Promise<string[]>;
     exitWithStatus(code: number): never;
-    getEnvironmentVariable(key: string): string;
+    getEnvironmentVariable(key: string): string | undefined;
+    cwdAsync(): Promise<string>;
 }
 
 export interface HttpRequestOptions {
