@@ -31,7 +31,15 @@ jobs:
       - name: Compile makecode-browser
         run: yarn compile
         working-directory: packages/makecode-browser
-      - run: npx semantic-release
+      - name: semantic-release makecode-core
+        run: npx semantic-release -e semantic-release-monorepo
+        working-directory: packages/makecode-core
+      - name: semantic-release makecode-node
+        run: npx semantic-release -e semantic-release-monorepo
+        working-directory: packages/makecode-node
+      - name: semantic-release makecode-browser
+        run: npx semantic-release -e semantic-release-monorepo
+        working-directory: packages/makecode-browser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
