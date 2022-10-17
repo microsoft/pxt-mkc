@@ -16,7 +16,7 @@
   },
   "author": "",
   "license": "MIT",
-  "homepage": "https://makecode.com/docs",
+  "homepage": "https://github.com/microsoft/pxt-mkc",
   "files": [
     "README.md",
     "built/*",
@@ -29,7 +29,7 @@
     "mkc": "./makecode"
   },
   "engines": {
-    "node": ">= 11.0.0"
+    "node": ">= 14.0.0"
   },
   "scripts": {
     "compile": "tsc -p ./",
