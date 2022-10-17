@@ -23,14 +23,11 @@ jobs:
         with:
           install-command: yarn install
       - run: yarn compile
-        with:
-          working-directory: packages/makecode-core
+        working-directory: packages/makecode-core
       - run: yarn compile
-        with:
-          working-directory: packages/makecode-node
+        working-directory: packages/makecode-node
       - run: yarn compile
-        with:
-          working-directory: packages/makecode-browser
+        working-directory: packages/makecode-browser
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
