@@ -1,7 +1,7 @@
 import http = require("http")
 import fs = require("fs")
-import { DownloadedEditor } from "mkc-core/built/mkc";
-import { simloaderFiles } from "mkc-core/built/simloaderfiles";
+import { DownloadedEditor } from "../../makecode-core/built/mkc";
+import { simloaderFiles } from "../../makecode-core/built/simloaderfiles";
 
 const mime: pxt.Map<string> = {
     js: "application/javascript",

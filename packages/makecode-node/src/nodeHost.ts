@@ -1,4 +1,4 @@
-import { Host, HttpRequestOptions, HttpResponse } from "mkc-core/built/host";
+import { Host, HttpRequestOptions, HttpResponse } from "../../makecode-core/built/host";
 import { glob } from "glob"
 import * as fs from "fs"
 import * as util from "util"
@@ -26,7 +26,8 @@ export function createNodeHost(): Host {
         createLanguageServiceAsync: async (editor) => new NodeLanguageService(editor),
         getDeployDrivesAsync,
         getEnvironmentVariable: key => process.env[key],
-        exitWithStatus: code => process.exit(code)
+        exitWithStatus: code => process.exit(code),
+        cwdAsync: async () => process.cwd()
     }
 }
 

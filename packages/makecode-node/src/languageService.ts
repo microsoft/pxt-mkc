@@ -1,10 +1,10 @@
 import * as vm from "vm";
 import * as util from "util";
 
-import * as mkc from "mkc-core/built/mkc";
-import { WebConfig } from "mkc-core/built/downloader";
-import { CompileOptions } from "mkc-core/built/service";
-import { LanguageService, SimpleDriverCallbacks } from "mkc-core/built/host";
+import * as mkc from "../../makecode-core/built/mkc";
+import { WebConfig } from "../../makecode-core/built/downloader";
+import { CompileOptions } from "../../makecode-core/built/service";
+import { LanguageService, SimpleDriverCallbacks } from "../../makecode-core/built/host";
 
 export class NodeLanguageService implements LanguageService {
     sandbox: vm.Context
