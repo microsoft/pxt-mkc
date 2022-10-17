@@ -22,11 +22,14 @@ jobs:
         uses: bahmutov/npm-install@v1
         with:
           install-command: yarn install
-      - run: yarn compile
+      - name: Compile makecode-core
+        run: yarn compile
         working-directory: packages/makecode-core
-      - run: yarn compile
+      - name: Compile makecode-node
+        run: yarn compile
         working-directory: packages/makecode-node
-      - run: yarn compile
+      - name: Compile makecode-browser
+        run: yarn compile
         working-directory: packages/makecode-browser
       - run: npx semantic-release
         env:

@@ -1,7 +1,7 @@
-import { WebConfig } from "mkc-core/built/downloader";
-import { CompileOptions } from "mkc-core/built/service";
-import { LanguageService, SimpleDriverCallbacks } from "mkc-core/built/host";
-import { DownloadedEditor, Package } from "mkc-core";
+import { WebConfig } from "makecode-core/built/downloader";
+import { CompileOptions } from "makecode-core/built/service";
+import { LanguageService, SimpleDriverCallbacks } from "makecode-core/built/host";
+import { DownloadedEditor, Package } from "makecode-core";
 import { workerJs } from "./workerFiles";
 
 export class BrowserLanguageService implements LanguageService {
