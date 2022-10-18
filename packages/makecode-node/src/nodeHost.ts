@@ -27,7 +27,9 @@ export function createNodeHost(): Host {
         getDeployDrivesAsync,
         getEnvironmentVariable: key => process.env[key],
         exitWithStatus: code => process.exit(code),
-        cwdAsync: async () => process.cwd()
+        cwdAsync: async () => process.cwd(),
+        bufferToString: buffer => new util.TextDecoder("utf8").decode(buffer),
+        stringToBuffer: (str, encoding) => Buffer.from(str, encoding)
     }
 }
 

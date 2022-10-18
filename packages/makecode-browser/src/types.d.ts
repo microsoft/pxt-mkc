@@ -94,7 +94,7 @@ interface InstallGhPackagesAsyncRequest extends WorkerMessage {
 
 interface InstallGhPackagesAsyncResponse extends BaseResponse {
     type: "installGhPackagesAsync";
-    result: any;
+    result: pxt.Map<string>;
 }
 
 interface PerformOperationRequest extends WorkerMessage {

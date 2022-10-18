@@ -15,8 +15,8 @@ export interface MkcJson {
 }
 
 export interface Cache {
-    getAsync(key: string): Promise<Buffer>
-    setAsync(key: string, val: Buffer): Promise<void>
+    getAsync(key: string): Promise<Uint8Array>
+    setAsync(key: string, val: Uint8Array): Promise<void>
     expandKey?(key: string): string
     rootPath?: string
 }

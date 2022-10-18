@@ -282,7 +282,7 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
             } catch { }
         }
         if (uf2s.length > 1) {
-            const total = Buffer.concat(uf2s)
+            const total = concatUint8Arrays(uf2s)
             const fn = "built/combined.uf2"
             info(
                 `combining ${uf2s.length} UF2 files into ${fn} (${Math.round(
@@ -729,3 +729,22 @@ async function readCfgAsync(cfgpath: string, quiet = false) {
     }
 }
 
+
+function concatUint8Arrays(bufs: Uint8Array[]) {
+    let size = 0;
+
+    for (const buf of bufs) {
+        size += buf.length;
+    }
+
+    const res = new Uint8Array(size);
+
+    let offset = 0;
+
+    for (const buf of bufs) {
+        res.set(buf, offset);
+        offset += buf.length;
+    }
+
+    return res;
+}
