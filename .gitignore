@@ -5,3 +5,5 @@ node_modules
 pxt_modules
 *.vsix
 src/simloaderfiles.ts
+packages/makecode-core/src/simloaderfiles.ts
+packages/makecode-browser/src/workerFiles.ts

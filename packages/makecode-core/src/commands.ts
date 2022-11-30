@@ -1,27 +1,15 @@
-import * as fs from "fs"
 import * as path from "path"
-import * as util from "util"
+import * as chalk from "chalk"
 
 import * as mkc from "./mkc"
 import * as files from "./files"
-import * as bump from "./bump"
 import * as downloader from "./downloader"
 import * as service from "./service"
-import {
-    program as commander,
-    CommandOptions,
-    Command,
-    Argument,
-} from "commander"
-import * as chalk from "chalk"
-import { getDeployDrives } from "./deploy"
 import { descriptors } from "./loader"
-import watch from "node-watch"
 import { cloudRoot, MkcJson } from "./mkc"
-import { startSimServer } from "./simserver"
 import { expandStackTrace } from "./stackresolver"
-import { monoRepoConfigs } from "./files"
-const fetch = require("node-fetch")
+import { monoRepoConfigsAsync } from "./files"
+import { host } from "./host"
 
 interface Options {
     colors?: boolean
@@ -30,7 +18,7 @@ interface Options {
     compileFlags?: string
 }
 
-interface ProjectOptions extends Options {
+export interface ProjectOptions extends Options {
     configPath?: string
     update?: boolean
 
@@ -39,17 +27,13 @@ interface ProjectOptions extends Options {
     symlinkPxtModules?: boolean
 }
 
-function clone<T>(v: T): T {
-    return JSON.parse(JSON.stringify(v))
-}
-
 async function downloadProjectAsync(id: string) {
     id = id.replace(/.*\//, "")
     const url = mkc.cloudRoot + id + "/text"
     const files = await downloader.httpGetJsonAsync(url)
     for (let fn of Object.keys(files)) {
         if (/\//.test(fn)) continue
-        fs.writeFileSync(fn, files[fn])
+        await host().writeFileAsync(fn, files[fn]);
     }
     msg("downloaded.")
 }
@@ -115,74 +99,41 @@ function error(msg: string) {
     console.error(chalk.red(msg))
 }
 
-function createCommand(name: string, opts?: CommandOptions) {
-    const cmd = commander
-        .command(name, opts)
-        .option("--colors", "force color output")
-        .option("--no-colors", "disable color output")
-        .option("--debug", "enable debug output from PXT")
-        .option("-f, --compile-flags <flag,...>",
-            "set PXT compiler options (?compile=... or PXT_COMPILE_SWITCHES=... in other tools)")
-    return cmd
-}
-
-let debugMode = false
-function applyGlobalOptions(opts: Options) {
-    if (opts.debug) debugMode = true
-
+export function applyGlobalOptions(opts: Options) {
     if (opts.noColors) (chalk as any).level = 0
     else if (opts.colors && !chalk.level) (chalk as any).level = 1
-    else if (process.env["GITHUB_WORKFLOW"]) (chalk as any).level = 1
-}
-
-interface ServeOptions extends BuildOptions {
-    port?: string
-    forceLocal?: boolean
-}
-async function serveCommand(opts: ServeOptions) {
-    applyGlobalOptions(opts)
-    opts.javaScript = true
-    if (opts.watch) startWatch(clone(opts))
-    opts = clone(opts)
-    opts.update = false
-    const prj = await resolveProject(opts, !!opts.watch)
-    const port = parseInt(opts.port) || 7001
-    const url = `http://127.0.0.1:${port}`
-    const forceLocal = !!opts.forceLocal
-    msg(`simulator at ${url}`)
-    msg(`Jacdac+simulator at https://microsoft.github.io/jacdac-docs/clients/javascript/devtools#${url}`)
-    startSimServer(prj.editor, port, forceLocal)
+    else if (host().getEnvironmentVariable("GITHUB_WORKFLOW")) (chalk as any).level = 1
 }
 
 interface DownloadOptions extends Options { }
-async function downloadCommand(URL: string, opts: DownloadOptions) {
+export async function downloadCommand(URL: string, opts: DownloadOptions) {
     applyGlobalOptions(opts)
     await downloadProjectAsync(URL)
 }
 
 interface CleanOptions extends Options { }
-async function cleanCommand(opts: CleanOptions) {
+export async function cleanCommand(opts: CleanOptions) {
     applyGlobalOptions(opts)
 
-        ;["built", "pxt_modules"]
-            .filter(d => fs.existsSync(d))
-            .forEach(d => {
-                msg(`deleting ${d} folder`)
-                fs.rmdirSync(d, { recursive: true, force: true } as any)
-            })
+    for (const dir of ["built", "pxt_modules"]) {
+        if (await host().existsAsync(dir)) {
+            msg(`deleting ${dir} folder`)
+            await host().rmdirAsync(dir, { recursive: true, force: true } as any)
+        }
+    }
 
     msg("run `mkc init` again to setup your project")
 }
 
-async function resolveProject(opts: ProjectOptions, quiet = false) {
-    const prjdir = files.findProjectDir()
+export async function resolveProject(opts: ProjectOptions, quiet = false) {
+    const prjdir = await files.findProjectDirAsync()
     if (!prjdir) {
         error(`could not find "pxt.json" file`)
-        process.exit(1)
+        host().exitWithStatus(1)
     }
 
     if (!opts.configPath) {
-        const cfgFolder = files.findParentDirWith(prjdir, "mkc.json")
+        const cfgFolder = await files.findParentDirWithAsync(prjdir, "mkc.json")
         if (cfgFolder) opts.configPath = path.join(cfgFolder, "mkc.json")
     }
 
@@ -191,25 +142,22 @@ async function resolveProject(opts: ProjectOptions, quiet = false) {
 
     if (opts.configPath) {
         log(`using config: ${opts.configPath}`)
-        prj.mkcConfig = readCfg(opts.configPath, quiet)
+        prj.mkcConfig = await readCfgAsync(opts.configPath, quiet)
     }
 
     await prj.loadEditorAsync(!!opts.update)
 
     let version = "???"
     try {
-        version = prj.service.runSync("pxt.appTarget?.versions?.target")
+        const appTarget = await prj.service.languageService.getAppTargetAsync();
+        version = appTarget?.versions?.target;
     } catch { }
     log(`using editor: ${prj.mkcConfig.targetWebsite} v${version}`)
 
-    if (opts.debug) prj.service.runSync("(() => { pxt.options.debug = 1 })()")
+    if (opts.debug) await prj.service.languageService.enableDebugAsync();
 
     if (opts.compileFlags) {
-        prj.service.runSync(`(() => { 
-            pxt.setCompileSwitches(${JSON.stringify(opts.compileFlags)});
-            if (pxt.appTarget.compile.switches.asmdebug)
-                ts.pxtc.assembler.debug = 1
-        })()`)
+        await prj.service.languageService.setCompileSwitchesAsync(opts.compileFlags);
     }
 
     prj.writePxtModules = !!opts.pxtModules
@@ -227,7 +175,7 @@ async function resolveProject(opts: ProjectOptions, quiet = false) {
     }
 }
 
-interface BuildOptions extends ProjectOptions {
+export interface BuildOptions extends ProjectOptions {
     hw?: string
     native?: boolean
     javaScript?: boolean
@@ -236,91 +184,13 @@ interface BuildOptions extends ProjectOptions {
     monoRepo?: boolean
     watch?: boolean
 }
-async function buildCommand(opts: BuildOptions, info: Command) {
-    if (info?.args?.length) {
-        error("invalid command")
-        process.exit(1)
-    }
-    applyGlobalOptions(opts)
-    if (opts.deploy && opts.monoRepo) {
-        error("--deploy and --mono-repo cannot be used together")
-        process.exit(1)
-    }
-    if (opts.deploy && opts.javaScript) {
-        error("--deploy and --java-script cannot be used together")
-        process.exit(1)
-    }
-    if (opts.watch) {
-        startWatch(opts)
-    } else await buildCommandOnce(opts)
-}
 
-function delay(ms: number) {
-    return new Promise<void>(resolve => setTimeout(resolve, ms))
-}
-
-function startWatch(opts: BuildOptions) {
-    const binaries: Record<string, Buffer | string> = {}
-    const watcher = watch("./", {
-        recursive: true,
-        delay: 200,
-        filter(f, skip) {
-            // skip node_modules, pxt_modules, built, .git
-            if (/\/?((node|pxt)_modules|built|\.git)/i.test(f)) return skip
-            // only watch for js files
-            return /\.(json|ts|asm|cpp|c|h|hpp)$/i.test(f)
-        },
-    })
-
-    let building = false
-    let buildPending = false
-    const build = async (ev: string, filename: string) => {
-        if (ev) msg(`detected ${ev} ${filename}`)
-
-        buildPending = true
-
-        await delay(100) // wait for other change events, that might have piled-up to arrive
-
-        // don't trigger 2 build, wait and do it again
-        if (building) {
-            msg(` build in progress, waiting...`)
-            return
-        }
-
-        // start a build
-        try {
-            building = true
-            while (buildPending) {
-                buildPending = false
-                const opts0 = clone(opts)
-                if (ev)
-                    // if not first time, don't update
-                    opts0.update = false
-                const files = await buildCommandOnce(opts0)
-                if (files)
-                    Object.entries(files).forEach(([key, value]) => {
-                        if (/\.(hex|json|asm)$/.test(key)) binaries[key] = value
-                        else binaries[key] = Buffer.from(value, "base64")
-                    })
-            }
-        } catch (e) {
-            error(e)
-        } finally {
-            building = false
-        }
-    }
-    watcher.on("change", build)
-    msg(`start watching for file changes`)
-    build(undefined, undefined)
-}
-
-async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
+export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     const prj = await resolveProject(opts)
-    prj.service.runSync(
-        "(() => { pxt.savedAppTheme().experimentalHw = true; pxt.reloadAppTargetVariant() })()"
-    )
-    const hwVariants = prj.service.hwVariants
-    const targetId = prj.service.runSync("pxt.appTarget.id")
+    await prj.service.languageService.enableExperimentalHardwareAsync();
+    const hwVariants = await prj.service.getHardwareVariantsAsync()
+    const appTarget = await prj.service.languageService.getAppTargetAsync();
+    const targetId = appTarget.id;
     let moreHw: string[] = []
     const outputs: string[] = []
 
@@ -334,7 +204,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     else opts.native = false
 
     if (opts.native && hwVariants.length) {
-        prj.guessHwVariant()
+        await prj.guessHwVariantAsync()
         infoHW()
     }
 
@@ -352,8 +222,8 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
                 ).join(", ")})`
             )
         } else {
-            const compileInfo = prj.service.runSync("pxt.appTarget.compile")
-            const drives = await getDeployDrives(compileInfo)
+            const compileInfo = appTarget.compile;
+            const drives = await host().getDeployDrivesAsync(compileInfo)
 
             if (drives.length == 0) {
                 msg("cannot find any drives to deploy to")
@@ -363,9 +233,8 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
                     firmwareName == "binary.hex" ? "utf8" : "base64"
 
                 msg(`copying ${firmwareName} to ` + drives.join(", "))
-                const writeFileAsync = util.promisify(fs.writeFile)
                 const writeHexFile = (drivename: string) => {
-                    return writeFileAsync(
+                    return host().writeFileAsync(
                         path.join(drivename, firmwareName),
                         firmware,
                         encoding
@@ -381,13 +250,13 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     let success = !!compileRes
 
     if (success && opts.monoRepo) {
-        const dirs = monoRepoConfigs(".")
+        const dirs = await monoRepoConfigsAsync(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules")) continue
             const fulldir = path.dirname(fullpxtjson)
             info(`build ${fulldir}`)
-            const prj0 = prj.mkChildProject(fulldir)
+            const prj0 = await prj.mkChildProjectAsync(fulldir)
             const cfg = await prj0.readPxtConfig()
             if (
                 cfg.supportedTargets &&
@@ -406,10 +275,10 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
             outputs.push(prj.outputPrefix)
             await buildOnePrj(opts, prj)
         }
-        const uf2s: Buffer[] = []
+        const uf2s: Uint8Array[] = []
         for (const folder of outputs) {
             try {
-                uf2s.push(fs.readFileSync(path.join(folder, "binary.uf2")))
+                uf2s.push((await host().readFileAsync(path.join(folder, "binary.uf2")) as Uint8Array))
             } catch { }
         }
         if (uf2s.length > 1) {
@@ -420,19 +289,21 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
                     total.length / 1024
                 )}kB)`
             )
-            fs.writeFileSync(fn, total)
+            await host().writeFileAsync(fn, total)
         }
     }
 
     if (success) {
         msg("Build OK")
         if (opts.watch) return compileRes?.outfiles
-        else process.exit(0)
+        else host().exitWithStatus(0)
     } else {
         error("Build failed")
         if (opts.watch) return compileRes?.outfiles
-        else process.exit(1)
+        else host().exitWithStatus(1)
     }
+
+    return null;
 
     function hwid(cfg: pxt.PackageConfig) {
         return cfg.name.replace(/hw---/, "")
@@ -453,7 +324,7 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
             for (let cfg of hwVariants) {
                 msg(`${hwid(cfg)}, ${cfg.card.name} - ${cfg.card.description}`)
             }
-            process.exit(1)
+            host().exitWithStatus(1)
         }
         prj.hwVariant = hwid(selected[0])
     }
@@ -467,40 +338,27 @@ async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
     }
 }
 
-interface BumpOptions extends ProjectOptions {
-    versionFile?: string
-    stage?: boolean
-    patch?: boolean
-    minor?: boolean
-    major?: boolean
-}
-async function bumpCommand(opts: BumpOptions) {
-    applyGlobalOptions(opts)
-    const prj = await resolveProject(opts)
-    await bump.bumpAsync(prj, opts?.versionFile, opts?.stage, opts?.major ? "major" : opts?.minor ? "minor" : opts?.patch ? "patch" : undefined)
-}
-
 interface InstallOptions extends ProjectOptions {
     monoRepo?: boolean
 }
-async function installCommand(opts: InstallOptions) {
+export async function installCommand(opts: InstallOptions) {
     applyGlobalOptions(opts)
-    if (!fs.existsSync("pxt.json")) {
+    if (!await host().existsAsync("pxt.json")) {
         error("missing pxt.json")
-        process.exit(1)
+        host().exitWithStatus(1)
     }
 
     opts.pxtModules = true
     const prj = await resolveProject(opts)
     prj.mainPkg = null
     if (opts.monoRepo) {
-        const dirs = monoRepoConfigs(".")
+        const dirs = await monoRepoConfigsAsync(".")
         info(`mono-repo: building ${dirs.length} projects`)
         for (const fullpxtjson of dirs) {
             if (fullpxtjson.startsWith("pxt_modules")) continue
             const fulldir = path.dirname(fullpxtjson)
             info(`install ${fulldir}`)
-            const prj0 = prj.mkChildProject(fulldir)
+            const prj0 = await prj.mkChildProjectAsync(fulldir)
             await prj0.maybeWritePxtModulesAsync()
         }
     } else {
@@ -509,27 +367,27 @@ async function installCommand(opts: InstallOptions) {
 }
 
 interface InitOptions extends ProjectOptions { }
-async function initCommand(
+export async function initCommand(
     template: string,
     deps: string[],
     opts: InitOptions
 ) {
     applyGlobalOptions(opts)
-    if (!fs.existsSync("pxt.json")) {
+    if (!await host().existsAsync("pxt.json")) {
         if (!template) {
             error("missing template")
-            process.exit(1)
+            host().exitWithStatus(1)
         }
         const target = descriptors.find(t => t.id === template)
         if (!target) {
             error(`template not found`)
-            process.exit(1)
+            host().exitWithStatus(1)
         }
         msg(`initializing project for ${target.name}`)
         msg("saving main.ts")
-        fs.writeFileSync("main.ts", "// add code here", { encoding: "utf-8" })
+        await host().writeFileAsync("main.ts", "// add code here", "utf8");
         msg("saving pxt.json")
-        fs.writeFileSync(
+        await host().writeFileAsync(
             "pxt.json",
             JSON.stringify(
                 {
@@ -547,7 +405,7 @@ async function initCommand(
                 4
             )
         )
-        fs.writeFileSync(
+        await host().writeFileAsync(
             "mkc.json",
             JSON.stringify(
                 <MkcJson>{
@@ -557,18 +415,18 @@ async function initCommand(
                 null,
                 4
             ),
-            { encoding: "utf-8" }
+            "utf8"
         )
     } else {
         if (template) {
             error("directory is not empty, cannot apply template")
-            process.exit(1)
+            host().exitWithStatus(1)
         }
     }
 
-    if (!fs.existsSync("tsconfig.json")) {
+    if (!await host().existsAsync("tsconfig.json")) {
         msg("saving tsconfig.json")
-        fs.writeFileSync(
+        await host().writeFileAsync(
             "tsconfig.json",
             JSON.stringify(
                 {
@@ -584,14 +442,14 @@ async function initCommand(
                 null,
                 4
             ),
-            { encoding: "utf-8" }
+            "utf8"
         )
     }
 
     const prettierrc = ".prettierrc"
-    if (!fs.existsSync(prettierrc)) {
+    if (!await host().existsAsync(prettierrc)) {
         msg(`saving ${prettierrc}`)
-        fs.writeFileSync(
+        await host().writeFileAsync(
             prettierrc,
             JSON.stringify({
                 arrowParens: "avoid",
@@ -602,11 +460,11 @@ async function initCommand(
     }
 
     const gh = ".github/workflows/makecode.yml"
-    if (!fs.existsSync(gh)) {
-        if (!fs.existsSync(".github")) fs.mkdirSync(".github")
-        if (!fs.existsSync(".github/workflows")) fs.mkdirSync(".github/workflows")
+    if (!await host().existsAsync(gh)) {
+        if (!await host().existsAsync(".github")) await host().mkdirAsync(".github")
+        if (!await host().existsAsync(".github/workflows")) await host().mkdirAsync(".github/workflows")
         msg(`saving ${gh}`)
-        fs.writeFileSync(gh,
+        await host().writeFileAsync(gh,
             `name: MakeCode Build
 on:
   push:
@@ -625,14 +483,12 @@ jobs:
 
     opts.pxtModules = true
     const prj = await resolveProject(opts)
-    if (!fs.existsSync("mkc.json")) {
+    if (!await host().existsAsync("mkc.json")) {
         msg("saving mkc.json")
-        fs.writeFileSync(
+        await host().writeFileAsync(
             "mkc.json",
             mkc.stringifyConfig(prj.mainPkg.mkcConfig),
-            {
-                encoding: "utf-8",
-            }
+            "utf8"
         )
     }
 
@@ -655,10 +511,11 @@ async function jacdacMakeCodeExtensions() {
         }
     }[] = []
     try {
-        const r = await fetch(
-            "https://raw.githubusercontent.com/microsoft/jacdac/main/services/makecode-extensions.json"
-        )
-        data = (await r.json()) as any
+        const r = await host().requestAsync({
+            url: "https://raw.githubusercontent.com/microsoft/jacdac/main/services/makecode-extensions.json"
+        });
+
+        data = JSON.parse(r.text)
     } catch (e) { }
     return data
 }
@@ -709,33 +566,35 @@ function parseRepoId(repo: string) {
 
 async function fetchExtension(slug: string) {
     const url = `https://pxt.azureedge.net/api/gh/${slug}`
-    const req = await fetch(url)
-    if (req.status !== 200) {
-        error(`resolution of ${slug} failed (${req.status})`)
-        process.exit(1)
+    const req = await host().requestAsync({
+        url
+    })
+    if (req.statusCode !== 200) {
+        error(`resolution of ${slug} failed (${req.statusCode})`)
+        host().exitWithStatus(1)
     }
     const script: {
         version: string
         defaultBranch: string
-    } = (await req.json()) as any
+    } = JSON.parse(req.text)
     return script
 }
 
 interface SearchOptions extends ProjectOptions { }
-async function searchCommand(query: string, opts: SearchOptions) {
+export async function searchCommand(query: string, opts: SearchOptions) {
     applyGlobalOptions(opts)
     query = query.trim().toLowerCase()
     msg(`searching for ${query}`)
     const prj = await resolveProject(opts)
     const targetid = prj.editor.targetJson.id
-    const res = await fetch(
-        `${cloudRoot}ghsearch/${targetid}/${targetid}?q=${encodeURIComponent(
+    const res = await host().requestAsync({
+        url: `${cloudRoot}ghsearch/${targetid}/${targetid}?q=${encodeURIComponent(
             query
         )}`
-    )
-    if (res.status !== 200) {
+    })
+    if (res.statusCode !== 200) {
         error(`search request failed`)
-        process.exit(1)
+        host().exitWithStatus(1)
     }
     const payload: {
         items: {
@@ -746,7 +605,7 @@ async function searchCommand(query: string, opts: SearchOptions) {
             default_branch: string
             owner: { login: string }
         }[]
-    } = await res.json()
+    } = JSON.parse(res.text);
     const { items } = payload
     items?.forEach(({ full_name, description, owner }) => {
         msg(`  ${full_name}`)
@@ -767,13 +626,13 @@ async function searchCommand(query: string, opts: SearchOptions) {
     }
 }
 
-async function stackCommand(opts: ProjectOptions) {
-    const srcmap = JSON.parse(fs.readFileSync("built/binary.srcmap", "utf8"))
-    console.log(expandStackTrace(srcmap, fs.readFileSync(0, "utf-8")))
+export async function stackCommand(opts: ProjectOptions) {
+    const srcmap = JSON.parse(await host().readFileAsync("built/binary.srcmap", "utf8") as string)
+    console.log(expandStackTrace(srcmap, await host().readFileAsync(0 as any, "utf8") as string))
 }
 
 interface AddOptions extends ProjectOptions { }
-async function addCommand(repo: string, name: string, opts: AddOptions) {
+export async function addCommand(repo: string, name: string, opts: AddOptions) {
     applyGlobalOptions(opts)
     opts.pxtModules = true
 
@@ -799,7 +658,7 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
     const rid = parseRepoId(repo)
     if (!rid) {
         error("unkown repository format, try https://github.com/.../...")
-        process.exit(1)
+        host().exitWithStatus(1)
     }
 
     const d = await fetchExtension(rid.slug)
@@ -811,9 +670,7 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
     pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch
         }`
     info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
-    fs.writeFileSync("pxt.json", JSON.stringify(pxtJson, null, 4), {
-        encoding: "utf-8",
-    })
+    await host().writeFileAsync("pxt.json", JSON.stringify(pxtJson, null, 4), "utf8")
 }
 
 function isKV(v: any) {
@@ -830,16 +687,16 @@ function jsonMergeFrom(trg: any, src: any) {
     })
 }
 
-function readCfg(cfgpath: string, quiet = false) {
+async function readCfgAsync(cfgpath: string, quiet = false) {
     const files: string[] = []
     return readCfgRec(cfgpath)
 
-    function readCfgRec(cfgpath: string) {
+    async function readCfgRec(cfgpath: string) {
         if (files.indexOf(cfgpath) >= 0) {
             error(`Config file loop: ${files.join(" -> ")} -> ${cfgpath}`)
-            process.exit(1)
+            host().exitWithStatus(1)
         }
-        const cfg = cfgFile(cfgpath)
+        const cfg = await cfgFile(cfgpath)
         const currCfg: mkc.MkcJson = {} as any
         files.push(cfgpath)
         for (const fn of cfg.include || []) {
@@ -852,13 +709,13 @@ function readCfg(cfgpath: string, quiet = false) {
         files.pop()
         return currCfg
 
-        function cfgFile(cfgpath: string) {
+        async function cfgFile(cfgpath: string) {
             let cfg: mkc.MkcJson
             try {
-                cfg = JSON.parse(fs.readFileSync(cfgpath, "utf8"))
+                cfg = JSON.parse(await host().readFileAsync(cfgpath, "utf8") as string)
             } catch (e) {
                 error(`Can't read config file: '${cfgpath}'; ` + e.message)
-                process.exit(1)
+                host().exitWithStatus(1)
             }
             const lnk = cfg.links
             if (lnk) {
@@ -872,151 +729,3 @@ function readCfg(cfgpath: string, quiet = false) {
     }
 }
 
-async function mainCli() {
-    mkc.setLogging({
-        log: info,
-        error: error,
-        debug: s => {
-            if (debugMode)
-                console.debug(chalk.gray(s))
-        },
-    })
-
-    commander.version(require("../package.json").version)
-
-    createCommand("build", { isDefault: true })
-        .description("build project")
-        .option("-w, --watch", "watch source files and rebuild on changes")
-        .option("-n, --native", "compile native (default)")
-        .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
-        .option(
-            "-h, --hw <id,...>",
-            "set hardware(s) for which to compile (implies -n)"
-        )
-        .option("-j, --java-script", "compile to JavaScript")
-        .option("-u, --update", "check for web-app updates")
-        .option(
-            "-c, --config-path <file>",
-            'set configuration file path (default: "mkc.json")'
-        )
-        .option(
-            "-r, --mono-repo",
-            "also build all subfolders with 'pxt.json' in them"
-        )
-        .option(
-            "--always-built",
-            "always generate files in built/ folder (and not built/hw-variant/)"
-        )
-        .action(buildCommand)
-
-    createCommand("serve")
-        .description("start local simulator web server")
-        .option("--no-watch", "do not watch source files")
-        .option("-p, --port <number>", "port to listen at, default to 7001")
-        .option("-u, --update", "check for web-app updates")
-        .option(
-            "-c, --config-path <file>",
-            'set configuration file path (default: "mkc.json")'
-        )
-        .option("--force-local", "force using all local files")
-        .action(serveCommand)
-
-    createCommand("download")
-        .argument(
-            "<url>",
-            "url to the shared project from your makecode editor"
-        )
-        .description("download project from share URL")
-        .action(downloadCommand)
-
-    createCommand("bump")
-        .description(
-            "interactive version incrementer for a project or mono-repo"
-        )
-        .option(
-            "--version-file <file>",
-            "write generated version number into the file"
-        )
-        .option("--stage", "skip git commit and push operations")
-        .option("--patch", "auto-increment patch version number")
-        .option("--minor", "auto-increment minor version number")
-        .option("--major", "auto-increment major version number")
-        .action(bumpCommand)
-
-    createCommand("init")
-        .addArgument(
-            new Argument("[template]", "project template name").choices(
-                descriptors.map(d => d.id)
-            )
-        )
-        .argument("[repo...]", "dependencies to be added to the project")
-        .description(
-            "initializes the project, downloads the dependencies, optionally for a particular editor"
-        )
-        .option(
-            "--symlink-pxt-modules",
-            "symlink files in pxt_modules/* for auto-completion"
-        )
-        .option(
-            "--link-pxt-modules",
-            "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)"
-        )
-        .action(initCommand)
-
-    createCommand("install")
-        .description("downloads the dependencies")
-        .option(
-            "-r, --mono-repo",
-            "also install in all subfolders with 'pxt.json' in them"
-        )
-        .option(
-            "--symlink-pxt-modules",
-            "symlink files in pxt_modules/* for auto-completion"
-        )
-        .option(
-            "--link-pxt-modules",
-            "write pxt_modules/* adhering to 'links' field in mkc.json (for pxt cli build)"
-        )
-        .action(installCommand)
-
-    createCommand("clean")
-        .description("deletes built artifacts")
-        .action(cleanCommand)
-
-    createCommand("add")
-        .argument("<repo>", "url to the github repository")
-        .argument("[name]", "name of the dependency")
-        .description("add new dependencies")
-        .option(
-            "-c, --config-path <file>",
-            'set configuration file path (default: "mkc.json")'
-        )
-        .action(addCommand)
-
-    createCommand("search")
-        .argument("<query>", "extension to search for")
-        .description("search for an extension")
-        .option(
-            "-c, --config-path <file>",
-            'set configuration file path (default: "mkc.json")'
-        )
-        .action(searchCommand)
-
-    createCommand("stack", { hidden: true })
-        .description("expand stack trace")
-        .action(stackCommand)
-
-    await commander.parseAsync(process.argv)
-}
-
-async function mainWrapper() {
-    try {
-        await mainCli()
-    } catch (e) {
-        error("Exception: " + e.stack)
-        error("Build failed")
-        process.exit(1)
-    }
-}
-
-mainWrapper()

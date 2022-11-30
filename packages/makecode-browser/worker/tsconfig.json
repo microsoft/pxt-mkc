@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "noImplicitReturns": true,
+        "target": "es6",
+        "outDir": "built",
+        "lib": ["es6", "dom"],
+        "sourceMap": false,
+        "rootDir": "."
+    },
+    "exclude": ["node_modules", ".vscode-test"],
+    "include": [
+        "*.ts"
+    ]
+}
+

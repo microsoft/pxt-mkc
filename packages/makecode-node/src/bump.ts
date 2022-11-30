@@ -1,9 +1,9 @@
 import * as child_process from "child_process"
 import * as fs from "fs"
-import * as mkc from "./mkc"
-import { httpGetJsonAsync } from "./downloader"
+import * as mkc from "../../makecode-core/built/mkc"
+import { httpGetJsonAsync } from "../../makecode-core/built/downloader"
 import { inc } from "semver"
-import { collectCurrentVersion, monoRepoConfigs } from "./files"
+import { collectCurrentVersionAsync, monoRepoConfigsAsync } from "../../makecode-core/built/files"
 
 export interface SpawnOptions {
     cmd: string
@@ -113,8 +113,8 @@ export async function bumpAsync(
         await needsGitCleanAsync()
         await runGitAsync("pull")
     }
-    const configs = monoRepoConfigs(prj.directory, true)
-    const currentVersion = collectCurrentVersion(configs)
+    const configs = await monoRepoConfigsAsync(prj.directory, true)
+    const currentVersion = await collectCurrentVersionAsync(configs)
     let newV: string
     if (release)
         newV = inc(currentVersion, release)

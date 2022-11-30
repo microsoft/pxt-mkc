@@ -1,7 +1,7 @@
 import vm = require("vm")
 import mkc = require("./mkc")
 import downloader = require("./downloader")
-import { TextDecoder, TextEncoder } from "util"
+import { host, LanguageService } from "./host";
 
 const cdnUrl = "https://pxt.azureedge.net"
 
@@ -99,66 +99,35 @@ interface SimpleDriverCallbacks {
 }
 
 export class Ctx {
-    sandbox: vm.Context
     lastUser: ServiceUser
     private makerHw = false
     supportsGhPkgs = false
+    languageService: LanguageService;
 
     constructor(public editor: mkc.DownloadedEditor) {
+        this.initAsync();
+    }
+
+    async initAsync() {
+        this.languageService = await host().createLanguageServiceAsync(this.editor);
+
         const cachePref = "c-" // TODO should this be editor-dependent?
-        this.sandbox = {
-            eval: (str: string) =>
-                vm.runInContext(str, this.sandbox, {
-                    filename: "eval",
-                }),
-            Function: undefined,
-            setTimeout: setTimeout,
-            clearInterval: clearInterval,
-            clearTimeout: clearTimeout,
-            setInterval: setInterval,
-            clearImmediate: clearImmediate,
-            setImmediate: setImmediate,
-            TextEncoder: TextEncoder,
-            TextDecoder: TextDecoder,
-            Buffer: Buffer,
-            pxtTargetBundle: {},
-            scriptText: {},
-            global: null,
-            console: {
-                log: (s: string) => mkc.log(s),
-                debug: (s: string) => mkc.debug(s),
-                warn: (s: string) => mkc.error(s),
-            },
-        }
 
-        this.sandbox.global = this.sandbox
-        vm.createContext(this.sandbox, {
-            codeGeneration: {
-                strings: false,
-                wasm: false,
-            },
-        })
-
-        const ed = this.editor
-        ed.targetJson.compile.keepCppFiles = true
-        this.sandbox.pxtTargetBundle = ed.targetJson
-        this.runScript(ed.pxtWorkerJs, ed.website + "/pxtworker.js")
-        this.runScript(prep, "prep")
         const callbacks: SimpleDriverCallbacks = {
             cacheGet: (key: string) =>
-                editor.cache
+                this.editor.cache
                     .getAsync(cachePref + key)
                     .then(buf => (buf ? buf.toString("utf8") : null)),
             cacheSet: (key: string, val: string) =>
-                editor.cache.setAsync(
+                this.editor.cache.setAsync(
                     cachePref + key,
                     Buffer.from(val, "utf8")
                 ),
             httpRequestAsync: (options: downloader.HttpRequestOptions) =>
-                downloader.nodeHttpRequestAsync(options, u => {
-                    if (u.protocol != "https:")
+            host().requestAsync(options, (protocol, method) => {
+                    if (protocol != "https:")
                         throw new Error("only https: supported")
-                    if (u.method != "GET") throw new Error("only GET supported")
+                    if (method != "GET") throw new Error("only GET supported")
                     if (!options.url.startsWith(cdnUrl + "/") && !options.url.startsWith("https://www.makecode.com/api/"))
                         throw new Error("only CDN URLs and makecode.com/api support: " + cdnUrl + ", got " + options.url)
                     mkc.log("GET " + options.url)
@@ -169,62 +138,18 @@ export class Ctx {
                 else return Promise.resolve(null)
             },
         }
-        this.runFunctionSync("pxt.setupSimpleCompile", [callbacks])
-        // disable packages config for now; 
-        // otherwise we do a HTTP request on every compile
-        this.runSync(
-            "pxt.packagesConfigAsync = () => Promise.resolve({})"
-        )
-        this.runFunctionSync("pxt.setupWebConfig", [
-            {
-                cdnUrl: "https://pxt.azureedge.net",
-            },
-        ])
-        this.supportsGhPkgs = !!this.runSync("pxt.simpleInstallPackagesAsync")
-    }
 
-    runScript(content: string, filename: string) {
-        const scr = new vm.Script(content, {
-            filename: filename,
-        })
-        scr.runInContext(this.sandbox)
-    }
-
-    private runWithCb(code: string, cb: (err: any, res: any) => void) {
-        this.sandbox._gcb = cb
-        const src = "(() => { const _cb = _gcb; _gcb = null; " + code + " })()"
-        const scr = new vm.Script(src)
-        scr.runInContext(this.sandbox)
-    }
-
-    runAsync(code: string) {
-        const src =
-            `Promise.resolve().then(() => ${code})` +
-            `.then(v => _cb(null, v), err => _cb(err.stack || "" + err, null))`
-        return new Promise<any>((resolve, reject) =>
-            this.runWithCb(src, (err, res) =>
-                err ? reject(new Error(err)) : resolve(res)
-            )
-        )
-    }
-
-    runSync(code: string): any {
-        const src =
-            `try { _cb(null, ${code}) } ` +
-            `catch (err) { _cb(err.stack || "" + err, null) }`
-        let errRes = null
-        let normRes = null
-        this.runWithCb(src, (err, res) =>
-            err ? (errRes = err) : (normRes = res)
-        )
-        if (errRes) throw new Error(errRes)
-        return normRes
+        await this.languageService.registerDriverCallbacksAsync(callbacks);
+        await this.languageService.setWebConfigAsync({
+            cdnUrl: "https://pxt.azureedge.net",
+        } as downloader.WebConfig);
+        this.supportsGhPkgs = await this.languageService.supportsGhPackagesAsync();
     }
 
     async setUserAsync(user: ServiceUser) {
         if (this.lastUser !== user) {
             this.lastUser = user
-            if (user) this.serviceOp("reset", {})
+            if (user) await this.languageService.performOperationAsync("reset", {})
         }
     }
 
@@ -296,7 +221,7 @@ export class Ctx {
         prj: mkc.Package,
         simpleOpts: any = {}
     ): Promise<CompileResult> {
-        const opts = await this.getOptions(prj, simpleOpts)
+        const opts = await this.getOptionsAsync(prj, simpleOpts)
 
         if (simpleOpts.native && opts?.extinfo?.sha) {
             const infos = [opts.extinfo].concat(
@@ -306,75 +231,40 @@ export class Ctx {
         }
 
         // opts.breakpoints = true
-        return this.serviceOp("compile", { options: opts })
+        return this.languageService.performOperationAsync("compile", { options: opts })
     }
 
-    private setHwVariant(prj: mkc.Package) {
+    private async setHwVariantAsync(prj: mkc.Package) {
         if (this.makerHw) {
             const tmp = Object.assign({}, prj.files)
             const cfg: pxt.PackageConfig = JSON.parse(tmp["pxt.json"])
             if (prj.mkcConfig.hwVariant)
                 cfg.dependencies[prj.mkcConfig.hwVariant] = "*"
             tmp["pxt.json"] = mkc.stringifyConfig(cfg)
-            this.sandbox._scriptText = tmp
+            await this.languageService.setProjectTextAsync(tmp);
         } else {
-            this.sandbox._scriptText = prj.files
-            this.runFunctionSync("pxt.setHwVariant", [
-                prj.mkcConfig.hwVariant || "",
-            ])
+            await this.languageService.setProjectTextAsync(prj.files);
+            await this.languageService.setHwVariantAsync(prj.mkcConfig.hwVariant || "");
         }
     }
 
-    getOptions(
-        prj: mkc.Package,
-        simpleOpts: any = {}
-    ): Promise<CompileOptions> {
-        this.sandbox._opts = simpleOpts
-        this.setHwVariant(prj)
-        return this.runAsync(
-            "pxt.simpleGetCompileOptionsAsync(_scriptText, _opts)"
+   async getOptionsAsync(prj: mkc.Package, simpleOpts: any = {}) {
+        await this.setHwVariantAsync(prj);
+        return this.languageService.getCompileOptionsAsync(
+            prj,
+            simpleOpts
         )
     }
 
-    installGhPackages(prj: mkc.Package) {
-        this.setHwVariant(prj)
-        return this.runFunctionAsync("pxt.simpleInstallPackagesAsync", [
-            prj.files,
-        ])
+    async installGhPackagesAsync(prj: mkc.Package) {
+        await this.setHwVariantAsync(prj);
+        return this.languageService.installGhPackagesAsync(prj.files);
     }
 
-    private runFunctionCore(name: string, args: any[]) {
-        let argString = ""
-        for (let i = 0; i < args.length; ++i) {
-            const arg = "_arg" + i
-            this.sandbox[arg] = args[i]
-            if (argString) argString += ", "
-            argString += arg
-        }
-        return `${name}(${argString})`
-    }
-
-    runFunctionSync(name: string, args: any[]) {
-        return this.runSync(this.runFunctionCore(name, args))
-    }
-
-    runFunctionAsync(name: string, args: any[]) {
-        return this.runAsync(this.runFunctionCore(name, args))
-    }
-
-    serviceOp(op: string, data: any) {
-        return this.runFunctionSync("pxtc.service.performOperation", [op, data])
-    }
-
-    get hwVariants() {
-        let hwVariants: pxt.PackageConfig[] = this.runSync(
-            "pxt.getHwVariants()"
-        )
-
+    async getHardwareVariantsAsync() {
+        let hwVariants = await this.languageService.getHardwareVariantsAsync();
         if (hwVariants.length == 0) {
-            hwVariants = this.runSync(
-                "Object.values(pxt.appTarget.bundledpkgs).map(pkg => JSON.parse(pkg['pxt.json']))"
-            )
+            hwVariants = await this.languageService.getBundledPackageConfigsAsync();
             hwVariants = hwVariants.filter(
                 pkg => !/prj/.test(pkg.name) && !!pkg.core
             )

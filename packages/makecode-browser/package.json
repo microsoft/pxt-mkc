@@ -1,0 +1,71 @@
+{
+  "name": "makecode-browser",
+  "version": "0.0.1",
+  "description": "MakeCode (PXT) - web-cached build tool",
+  "keywords": [
+    "TypeScript",
+    "JavaScript",
+    "education",
+    "microbit",
+    "arcade",
+    "makecode"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/pxt-mkc"
+  },
+  "author": "",
+  "license": "MIT",
+  "homepage": "https://github.com/microsoft/pxt-mkc",
+  "files": [
+    "README.md",
+    "built/*",
+    "external/*",
+    "makecode"
+  ],
+  "preferGlobal": false,
+  "engines": {
+    "node": ">= 14.0.0"
+  },
+  "scripts": {
+    "compile": "tsc -p worker && node worker/build.js && tsc -p ./",
+    "watch": "tsc -p worker && node worker/build.js && tsc -watch -p ./"
+  },
+  "main": "built/mkc.js",
+  "devDependencies": {
+    "@semantic-release/git": "^10.0.0",
+    "@semantic-release/github": "^8.0.1",
+    "@semantic-release/npm": "^8.0.0",
+    "@semantic-release/release-notes-generator": "^10.0.2",
+    "semantic-release": "^18.0.0",
+    "semantic-release-monorepo": "^7.0.5",
+    "typescript": "^4.4.3"
+  },
+  "dependencies": {
+    "makecode-core": "^0.0.1"
+  },
+  "release": {
+    "branch": "master",
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/github",
+        {
+          "successComment": false,
+          "failComment": false
+        }
+      ],
+      "@semantic-release/npm",
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "package.json",
+            "package-lock.json"
+          ]
+        }
+      ]
+    ]
+  }
+}

@@ -243,10 +243,21 @@ mkc -c mkc-arcade.json
 
 This section describes how to build mkc itself.
 
+mkc is split into three packages:
+
+1. makecode-core - which contains most of the functionality/shared code
+2. makecode-node - which contains the node CLI (this is the package that is installed via `npm install makecode`)
+3. makecode-browser - which contains a browser implementation of the mkc language service
+
+### Building
+ 
 -   install node.js
--   run `yarn install`
--   start the build: `yarn watch`
--   run `node path/to/pxt-mkc/makecode` in your project folder
+-   run `yarn install` from the root of this repo (this will also link the local packages)
+-   start the build watch in makecode-core and makecode-node:
+    - (run these in separate terminals) 
+    - `cd packages/makecode-core && yarn watch`
+    - `cd packages/makecode-node && yarn watch`
+-   run `node path/to/pxt-mkc/packages/makecode-node/makecode` in your project folder
 
 If you want to test out changes in pxt, first run the build as usual, and then replace
 `$HOME/.pxt/mkc-cache/https_58__47__47_<your-editor>-pxtworker.js`

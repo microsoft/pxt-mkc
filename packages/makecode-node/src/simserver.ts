@@ -1,7 +1,7 @@
 import http = require("http")
 import fs = require("fs")
-import mkc = require("./mkc")
-import { simloaderFiles } from "./simloaderfiles"
+import { DownloadedEditor } from "../../makecode-core/built/mkc";
+import { simloaderFiles } from "../../makecode-core/built/simloaderfiles";
 
 const mime: pxt.Map<string> = {
     js: "application/javascript",
@@ -10,7 +10,7 @@ const mime: pxt.Map<string> = {
 }
 
 export function startSimServer(
-    ed: mkc.DownloadedEditor,
+    ed: DownloadedEditor,
     port = 7001,
     forceLocal = false
 ) {

@@ -4,8 +4,7 @@ export import downloader = require("./downloader")
 export import files = require("./files")
 export import service = require("./service")
 export import loader = require("./loader")
-export import simserver = require("./simserver")
-import { collectCurrentVersion, monoRepoConfigs } from "./files"
+import { collectCurrentVersionAsync, monoRepoConfigsAsync } from "./files"
 
 export interface MkcJson {
     targetWebsite: string
@@ -65,8 +64,7 @@ export class Project {
     outputPrefix = "built"
     mkcConfig: MkcJson
 
-    constructor(public directory: string, public cache: Cache = null) {
-        if (!this.cache) this.cache = files.mkHomeCache()
+    constructor(public directory: string, protected cache: Cache = null) {
     }
 
     get hwVariant() {
@@ -77,10 +75,10 @@ export class Project {
         if (this.mainPkg) this.mainPkg.mkcConfig.hwVariant = value
     }
 
-    guessHwVariant() {
+    async guessHwVariantAsync() {
         if (this.mainPkg.mkcConfig.hwVariant) return
 
-        const variants = this.service.hwVariants
+        const variants = await this.service.getHardwareVariantsAsync();
         const cfg = this.mainPkg.config
         for (const v of variants) {
             if (cfg.dependencies[v.name] || cfg.testDependencies?.[v.name]) {
@@ -106,10 +104,10 @@ export class Project {
         return files.saveBuiltFilesAsync(this.directory, res, this.outputPrefix)
     }
 
-    protected savePxtModulesAsync(filesmap0: pxt.Map<string>) {
+    protected async savePxtModulesAsync(filesmap0: pxt.Map<string>) {
         let filesmap: pxt.Map<string | { symlink: string }> = filesmap0
         if (this.linkPxtModules || this.symlinkPxtModules) {
-            let libsPath = files.findParentDirWith("..", "pxtarget.json")
+            let libsPath = await files.findParentDirWithAsync("..", "pxtarget.json")
             if (libsPath)
                 libsPath =
                     files.relativePath(".", libsPath).replace(/\\/g, "/") +
@@ -133,7 +131,7 @@ export class Project {
                         this.directory + "/pxt_modules/foobar",
                         lnk
                     )
-                else if (files.fileExists(`${libsPath}/${id}/pxt.json`)) {
+                else if (await files.fileExistsAsync(`${libsPath}/${id}/pxt.json`)) {
                     lnk = `${libsPath}/${id}`
                     rel = `../../${lnk}`
                 }
@@ -158,7 +156,7 @@ export class Project {
                 } else if (lnk && this.symlinkPxtModules) {
                     for (const fn of filesByPkg[id]) {
                         const bn = fn.replace(/.*\//, "")
-                        if (files.fileExists(`${lnk}/${bn}`)) {
+                        if (await files.fileExistsAsync(`${lnk}/${bn}`)) {
                             filesmap[fn] = { symlink: `${rel}/${bn}` }
                             // log(`symlink ${fn} -> ${rel}/${bn}`)
                         } else {
@@ -229,7 +227,7 @@ export class Project {
         await this.loadPkgAsync()
 
         const newEditor = await downloader.downloadAsync(
-            this.cache,
+            await this.getCacheAsync(),
             this.mainPkg.mkcConfig.targetWebsite,
             !forceUpdate
         )
@@ -246,6 +244,11 @@ export class Project {
         }
     }
 
+    async getCacheAsync() {
+        if (!this.cache) this.cache = await files.mkHomeCacheAsync();
+        return this.cache;
+    }
+
     async maybeWritePxtModulesAsync() {
         await this.loadEditorAsync()
         await this.loadPkgAsync()
@@ -255,7 +258,7 @@ export class Project {
         this.service.setUserAsync(this)
 
         if (this.service.supportsGhPkgs) {
-            await this.service.installGhPackages(this.mainPkg)
+            await this.service.installGhPackagesAsync(this.mainPkg)
         } else {
             await loader.loadDeps(this.editor, this.mainPkg)
         }
@@ -288,7 +291,7 @@ export class Project {
 
         const binjs = "binary.js"
         if (res.outfiles[binjs]) {
-            const appTarget = this.service.runSync("pxt.appTarget")
+            const appTarget = await this.service.languageService.getAppTargetAsync();
             const boardDef = appTarget.simulator?.boardDefinition
             if (boardDef) {
                 res.outfiles[binjs] =
@@ -296,9 +299,9 @@ export class Project {
                     res.outfiles[binjs]
             }
             const webConfig: downloader.WebConfig =
-                this.editor.webConfig || this.service.runSync("pxt.webConfig")
-            const configs = monoRepoConfigs(this.directory, true)
-            const version = `v${collectCurrentVersion(configs) || "0"}`
+                this.editor.webConfig || (await this.service.languageService.getWebConfigAsync())
+            const configs = await monoRepoConfigsAsync(this.directory, true)
+            const version = `v${await collectCurrentVersionAsync(configs) || "0"}`
             const meta: any = {
                 simUrl: webConfig.simUrl,
                 cdnUrl: webConfig.cdnUrl,
@@ -320,8 +323,8 @@ export class Project {
         return res
     }
 
-    mkChildProject(folder: string) {
-        const prj = new Project(folder, this.cache)
+    async mkChildProjectAsync(folder: string) {
+        const prj = new Project(folder, await this.getCacheAsync())
         prj.service = this.service
         prj.mkcConfig = this.mkcConfig
         if (this._hwVariant) prj.hwVariant = this._hwVariant

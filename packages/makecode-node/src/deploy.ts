@@ -51,7 +51,7 @@ function filteredDrives(compile: any, drives: string[]): string[] {
     })
 }
 
-export async function getDeployDrives(compile: any) {
+export async function getDeployDrivesAsync(compile: any) {
     const drives = await getBoardDrivesAsync(compile)
     return filteredDrives(compile, drives)
 }
