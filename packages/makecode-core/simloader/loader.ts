@@ -146,7 +146,6 @@ function makeCodeRun(options) {
         function (ev) {
             let d = ev.data
             // console.debug(ev.origin, d)
-            debugger;
             if (ev.origin == simOrigin) {
                 if (d.type == "ready") {
                     let loader = document.getElementById("loader")
