@@ -142,7 +142,7 @@ function startWatch(opts: BuildOptions) {
                 if (ev)
                     // if not first time, don't update
                     opts0.update = false
-                const files = await buildCommandOnce(opts0)
+                const files = (await buildCommandOnce(opts0)).outfiles
                 if (files)
                     Object.entries(files).forEach(([key, value]) => {
                         if (/\.(hex|json|asm)$/.test(key)) binaries[key] = value
