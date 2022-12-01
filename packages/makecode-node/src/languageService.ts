@@ -101,10 +101,11 @@ export class NodeLanguageService implements LanguageService {
         )
     }
 
-    installGhPackagesAsync(projectFiles: pxt.Map<string>): Promise<any> {
-        return this.runFunctionAsync("pxt.simpleInstallPackagesAsync", [
+    async installGhPackagesAsync(projectFiles: pxt.Map<string>): Promise<pxt.Map<string>> {
+        await this.runFunctionAsync("pxt.simpleInstallPackagesAsync", [
             projectFiles,
         ])
+        return projectFiles;
     }
 
     performOperationAsync(op: string, data: any): Promise<any> {

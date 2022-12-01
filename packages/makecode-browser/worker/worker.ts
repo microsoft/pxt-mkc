@@ -171,9 +171,10 @@ async function onRequestReceivedAsync(request: ClientToWorkerRequest) {
             });
             break;
         case "installGhPackagesAsync":
+            await installGhPackagesAsync(request.files)
             sendResponse({
                 ...request,
-                result: await installGhPackagesAsync(request.files),
+                result: request.files,
                 response: true
             });
             break;
@@ -238,6 +239,6 @@ function onResponseReceived(message: WorkerToClientRequestResponse) {
     }
 }
 
-window.addEventListener("message", ev => {
+addEventListener("message", ev => {
     onMessageReceived(ev.data);
 });

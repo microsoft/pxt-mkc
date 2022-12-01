@@ -1,5 +1,6 @@
 import * as mkc from "./mkc"
 import * as downloader from "./downloader"
+import { host } from "./host"
 
 export interface TargetDescriptor {
     id: string
@@ -150,7 +151,7 @@ async function recLoadAsync(
                     curr = res.buffer
                     await ed.cache.setAsync("gh-" + path, curr)
                 }
-                text = JSON.parse(curr.toString("utf8"))
+                text = JSON.parse(host().bufferToString(curr))
             } else {
                 throw new Error(`Unsupported package version: ${pkgid}: ${ver}`)
             }

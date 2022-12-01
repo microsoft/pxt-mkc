@@ -19,6 +19,9 @@ export interface Host {
     exitWithStatus(code: number): never;
     getEnvironmentVariable(key: string): string | undefined;
     cwdAsync(): Promise<string>;
+
+    bufferToString(buffer: Uint8Array): string;
+    stringToBuffer (str: string, encoding?: "utf8" | "base64"): Uint8Array;
 }
 
 export interface HttpRequestOptions {
@@ -57,7 +60,7 @@ export interface LanguageService {
     getHardwareVariantsAsync(): Promise<pxt.PackageConfig[]>;
     getBundledPackageConfigsAsync(): Promise<pxt.PackageConfig[]>;
     getCompileOptionsAsync(prj: Package, simpleOpts?: any): Promise<CompileOptions>;
-    installGhPackagesAsync(projectFiles: pxt.Map<string>): Promise<any>;
+    installGhPackagesAsync(projectFiles: pxt.Map<string>): Promise<pxt.Map<string>>;
     setProjectTextAsync(projectFiles: pxt.Map<string>): Promise<void>;
     performOperationAsync(op: string, options: any): Promise<any>;
 

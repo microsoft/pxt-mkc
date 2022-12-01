@@ -20,7 +20,7 @@ export function startSimServer(
         path = path.replace(/.*\//, "")
         path = path.replace(/\?.*/, "")
 
-        let buf: Buffer = null
+        let buf: Uint8Array = null
 
         if (path == "binary.js") {
             try {

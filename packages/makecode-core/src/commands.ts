@@ -80,7 +80,7 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
 
         if (output) console.log(output.replace(/\n$/, ""))
 
-        return res.success ? res : null
+        return res
     } catch (e) {
         error("Exception: " + e.stack)
         return null
@@ -185,7 +185,7 @@ export interface BuildOptions extends ProjectOptions {
     watch?: boolean
 }
 
-export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<string>> {
+export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.CompileResult> {
     const prj = await resolveProject(opts)
     await prj.service.languageService.enableExperimentalHardwareAsync();
     const hwVariants = await prj.service.getHardwareVariantsAsync()
@@ -210,7 +210,7 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
 
     outputs.push(prj.outputPrefix)
     const compileRes = await buildOnePrj(opts, prj)
-    if (compileRes && opts.deploy) {
+    if (compileRes.success && opts.deploy) {
         const firmwareName = ["binary.uf2", "binary.hex", "binary.elf"].filter(
             f => !!compileRes.outfiles[f]
         )[0]
@@ -247,7 +247,7 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
         }
     }
 
-    let success = !!compileRes
+    let success = compileRes.success
 
     if (success && opts.monoRepo) {
         const dirs = await monoRepoConfigsAsync(".")
@@ -265,8 +265,8 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
                 info(`skipping due to supportedTargets`)
                 continue
             }
-            const ok = await buildOnePrj(opts, prj0)
-            if (!ok) success = false
+            const res = await buildOnePrj(opts, prj0)
+            if (!res.success) success = false
         }
     } else if (success && moreHw.length) {
         for (const hw of moreHw) {
@@ -282,7 +282,7 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
             } catch { }
         }
         if (uf2s.length > 1) {
-            const total = Buffer.concat(uf2s)
+            const total = concatUint8Arrays(uf2s)
             const fn = "built/combined.uf2"
             info(
                 `combining ${uf2s.length} UF2 files into ${fn} (${Math.round(
@@ -295,11 +295,11 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<pxt.Map<stri
 
     if (success) {
         msg("Build OK")
-        if (opts.watch) return compileRes?.outfiles
+        if (opts.watch) return compileRes;
         else host().exitWithStatus(0)
     } else {
         error("Build failed")
-        if (opts.watch) return compileRes?.outfiles
+        if (opts.watch) return compileRes;
         else host().exitWithStatus(1)
     }
 
@@ -729,3 +729,22 @@ async function readCfgAsync(cfgpath: string, quiet = false) {
     }
 }
 
+
+function concatUint8Arrays(bufs: Uint8Array[]) {
+    let size = 0;
+
+    for (const buf of bufs) {
+        size += buf.length;
+    }
+
+    const res = new Uint8Array(size);
+
+    let offset = 0;
+
+    for (const buf of bufs) {
+        res.set(buf, offset);
+        offset += buf.length;
+    }
+
+    return res;
+}

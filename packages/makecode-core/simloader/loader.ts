@@ -6,6 +6,7 @@ type HandlerFn = {
 }
 
 let channelHandlers: { [name: string]: HandlerFn } = {}
+let _vsapi: any
 
 function addSimMessageHandler(
     channel: string,
@@ -18,6 +19,10 @@ function addSimMessageHandler(
         handler: handler,
     }
 }
+
+
+const pendingMessages: {[index: string]: (result: string) => void} = {};
+let nextMessageId = 0;
 
 function makeCodeRun(options) {
     let code = ""
@@ -48,6 +53,11 @@ function makeCodeRun(options) {
         autoReload()
 
     function fetchSourceCode() {
+        if (options.usePostMessage) {
+            return postMessageToParentAsync({
+                type: "fetch-js"
+            });
+        }
         return fetch(options.js)
             .then(resp => resp.status == 200 ? resp.text() : undefined)
     }
@@ -169,6 +179,7 @@ function makeCodeRun(options) {
                             }:${fi.line + 1}:${fi.column + 1})\n`
                     }
                     if (brk.exceptionMessage) console.error(stackTrace)
+                    postMessageToParentAsync(d);
                 } else if (d.type === "messagepacket" && d.channel) {
                     if (
                         d.channel == "jacdac" &&
@@ -188,6 +199,9 @@ function makeCodeRun(options) {
                         }
                     }
                 }
+                else if (d.type === "bulkserial") {
+                    postMessageToParentAsync(d);
+                }
             } else {
                 if (
                     d.type == "messagepacket" &&
@@ -197,6 +211,10 @@ function makeCodeRun(options) {
                     postMessage(d)
                 } else if (d.type == "reload") {
                     window.location.reload()
+                }
+                else if (d.type == "fetch-js") {
+                    pendingMessages[d.id](d.text);
+                    delete pendingMessages[d.id];
                 }
             }
         },
@@ -255,5 +273,21 @@ function makeCodeRun(options) {
         } else if (fs) {
             fs.remove();
         }
+    }
+
+    function postMessageToParentAsync(message: any) {
+        return new Promise<string>(resolve => {
+            message.id = nextMessageId++;
+            pendingMessages[message.id] = resolve;
+            if ((window as any).acquireVsCodeApi) {
+                if (!_vsapi) {
+                    _vsapi = (window as any).acquireVsCodeApi();
+                }
+                _vsapi.postMessage(message);
+            }
+            else {
+                window.postMessage(message);
+            }
+        });
     }
 }

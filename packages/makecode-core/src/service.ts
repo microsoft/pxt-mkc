@@ -117,11 +117,11 @@ export class Ctx {
             cacheGet: (key: string) =>
                 this.editor.cache
                     .getAsync(cachePref + key)
-                    .then(buf => (buf ? buf.toString("utf8") : null)),
+                    .then(buf => (buf ? host().bufferToString(buf) : null)),
             cacheSet: (key: string, val: string) =>
                 this.editor.cache.setAsync(
                     cachePref + key,
-                    Buffer.from(val, "utf8")
+                    host().stringToBuffer(val)
                 ),
             httpRequestAsync: (options: downloader.HttpRequestOptions) =>
             host().requestAsync(options, (protocol, method) => {
@@ -165,7 +165,7 @@ export class Ctx {
                 mkc.log(`compiling C++; this can take a while`)
                 const cdata = extinfo.compileData
                 const cdataObj: any = JSON.parse(
-                    Buffer.from(cdata, "base64").toString()
+                    host().bufferToString(host().stringToBuffer(cdata, "base64"))
                 )
                 if (!cdataObj.config)
                     throw new Error(
@@ -214,7 +214,7 @@ export class Ctx {
             }
             await this.editor.cache.setAsync("cpp-" + extinfo.sha, existing)
         }
-        extinfo.hexinfo = { hex: existing.toString("utf8").split(/\r?\n/) }
+        extinfo.hexinfo = { hex: host().bufferToString(existing).split(/\r?\n/) }
     }
 
     async simpleCompileAsync(
@@ -258,7 +258,8 @@ export class Ctx {
 
     async installGhPackagesAsync(prj: mkc.Package) {
         await this.setHwVariantAsync(prj);
-        return this.languageService.installGhPackagesAsync(prj.files);
+        const pkg = await this.languageService.installGhPackagesAsync(prj.files);
+        prj.files = pkg;
     }
 
     async getHardwareVariantsAsync() {

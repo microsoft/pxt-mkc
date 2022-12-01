@@ -101,7 +101,7 @@ export class BrowserLanguageService implements LanguageService {
         return res.result;
     }
 
-    async installGhPackagesAsync(projectFiles: pxt.Map<string>): Promise<any> {
+    async installGhPackagesAsync(projectFiles: pxt.Map<string>): Promise<pxt.Map<string>> {
         const res = await this.sendWorkerRequestAsync({
             type: "installGhPackagesAsync",
             files: projectFiles

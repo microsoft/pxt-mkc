@@ -125,7 +125,7 @@ export async function downloadAsync(
 ) {
     const infoBuf = await cache.getAsync(webAppUrl + "-info")
     const info: DownloadInfo = infoBuf
-        ? JSON.parse(infoBuf.toString("utf8"))
+        ? JSON.parse(host().bufferToString(infoBuf))
         : {}
 
     if (useCached && info.manifest && info.webConfig) {
@@ -184,7 +184,7 @@ export async function downloadAsync(
 
         info.simKey = webAppUrl + "-sim.html"
 
-        await cache.setAsync(info.simKey, Buffer.from(simTxt, "utf8"))
+        await cache.setAsync(info.simKey, host().stringToBuffer(simTxt))
         for (let url of simurls) {
             const resp = await requestAsync({ url })
             await cache.setAsync(simkey[url], resp.buffer)
@@ -196,7 +196,7 @@ export async function downloadAsync(
     function saveInfoAsync() {
         return cache.setAsync(
             webAppUrl + "-info",
-            Buffer.from(JSON.stringify(info), "utf8")
+            host().stringToBuffer(JSON.stringify(info))
         )
     }
 
@@ -210,13 +210,11 @@ export async function downloadAsync(
             simUrl: info.simKey
                 ? cache.rootPath + "/" + cache.expandKey(info.simKey)
                 : null,
-            pxtWorkerJs: (
+            pxtWorkerJs: host().bufferToString(
                 await cache.getAsync(webAppUrl + "-pxtworker.js")
-            ).toString("utf8"),
+            ),
             targetJson: JSON.parse(
-                (await cache.getAsync(webAppUrl + "-target.json")).toString(
-                    "utf8"
-                )
+                host().bufferToString(await cache.getAsync(webAppUrl + "-target.json"))
             ),
             webConfig: info.webConfig,
         }
