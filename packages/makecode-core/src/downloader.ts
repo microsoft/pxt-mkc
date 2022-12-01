@@ -42,7 +42,7 @@ export function requestAsync(
         )
             resp.json = JSON.parse(resp.text)
         return resp
-    })
+    });
 }
 
 export function httpGetTextAsync(url: string) {
