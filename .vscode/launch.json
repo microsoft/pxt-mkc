@@ -14,26 +14,26 @@
             "preLaunchTask": "npm"
         },
         {
-			"name": "init",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceRoot}/packages/makecode-node/built/cli.js",
-			"stopOnEntry": false,
-			"args": [
-				"init",
-				"arcade"
-			],
-			"cwd": "${workspaceRoot}/../vscode-test2",
-			"runtimeExecutable": null,
-			"runtimeArgs": [
-				"--nolazy"
-			],
-			"env": {
-				"NODE_ENV": "development"
-			},
-			"console": "integratedTerminal",
-			"sourceMaps": false,
-			"outFiles": []
-		},
+            "name": "init",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/packages/makecode-node/built/cli.js",
+            "stopOnEntry": false,
+            "args": [
+                "init",
+                "arcade"
+            ],
+            "cwd": "${workspaceRoot}/../vscode-test2",
+            "runtimeExecutable": null,
+            "runtimeArgs": [
+                "--nolazy"
+            ],
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": false,
+            "outFiles": []
+        },
     ]
 }
