@@ -1,6 +1,6 @@
 {
   "name": "makecode-core",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "MakeCode (PXT) - web-cached build tool",
   "keywords": [
     "TypeScript",
@@ -33,14 +33,8 @@
   },
   "main": "built/mkc.js",
   "devDependencies": {
-    "@semantic-release/git": "^10.0.0",
-    "@semantic-release/github": "^8.0.1",
-    "@semantic-release/npm": "^8.0.0",
-    "@semantic-release/release-notes-generator": "^10.0.2",
     "@types/node": "^16.10.3",
     "@types/semver": "^7.3.9",
-    "semantic-release": "^18.0.0",
-    "semantic-release-monorepo": "^7.0.5",
     "typescript": "^4.4.3"
   },
   "dependencies": {
