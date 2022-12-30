@@ -500,6 +500,17 @@ jobs:
     msg(`project ready, run "makecode -d" to build and deploy`)
 }
 
+export async function listHardwareVariantsAsync(opts: ProjectOptions) {
+    const prj = await resolveProject(opts)
+    await prj.service.languageService.enableExperimentalHardwareAsync();
+    return await prj.service.getHardwareVariantsAsync()
+}
+
+export async function getAppTargetAsync(opts: ProjectOptions) {
+    const prj = await resolveProject(opts)
+    return await prj.service.languageService.getAppTargetAsync();
+}
+
 async function jacdacMakeCodeExtensions() {
     let data: {
         service: string
