@@ -591,7 +591,7 @@ async function fetchExtension(slug: string) {
     return script
 }
 
-interface SearchOptions extends ProjectOptions { }
+interface SearchOptions extends ProjectOptions {}
 export async function searchCommand(query: string, opts: SearchOptions) {
     applyGlobalOptions(opts)
     query = query.trim().toLowerCase()
@@ -667,20 +667,41 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
     }
 
     const rid = parseRepoId(repo)
+    const pxtJson = await prj.readPxtConfig()
     if (!rid) {
-        error("unkown repository format, try https://github.com/.../...")
-        host().exitWithStatus(1)
+        const appTarget = await prj.service.languageService.getAppTargetAsync();
+        const bundledPkgs: string[] = appTarget
+            ?.bundleddirs
+            ?.map((dir: string) => /^libs\/(.+)/.exec(dir)?.[1])
+            ?.filter((dir: string) => !!dir);
+            // ?.filter((dir: string) => !/---.+$/.test(dir))
+            // filter out hw variants? does it matter for e.g. game---light?
+        const builtInPkg = bundledPkgs?.find(dir => dir === repo);
+
+        if (!builtInPkg) {
+            error("unknown package, try https://github.com/.../... for github extensions");
+            const possiblyMeant = bundledPkgs
+                ?.filter(el => el?.toLowerCase().indexOf(repo) !== -1);
+            if (possiblyMeant?.length) {
+                error(`Did you mean ${possiblyMeant?.join(", ")}?`);
+            }
+            host().exitWithStatus(1)
+        }
+
+        pxtJson.dependencies[builtInPkg] = "*";
+        info(`adding builtin dependency ${builtInPkg}=*`)
+
+    } else {
+        const d = await fetchExtension(rid.slug)
+        const dname =
+            name ||
+            join(rid.project, rid.fileName).replace(/^pxt-/, "").replace("/", "-")
+
+        pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch
+            }`
+        info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
     }
 
-    const d = await fetchExtension(rid.slug)
-    const pxtJson = await prj.readPxtConfig()
-    const dname =
-        name ||
-        join(rid.project, rid.fileName).replace(/^pxt-/, "").replace("/", "-")
-
-    pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch
-        }`
-    info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
     await host().writeFileAsync("pxt.json", JSON.stringify(pxtJson, null, 4), "utf8")
 }
 
