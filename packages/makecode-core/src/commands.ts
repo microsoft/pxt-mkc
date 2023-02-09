@@ -643,30 +643,30 @@ export async function stackCommand(opts: ProjectOptions) {
 }
 
 interface AddOptions extends ProjectOptions { }
-export async function addCommand(repo: string, name: string, opts: AddOptions) {
+export async function addCommand(pkg: string, name: string, opts: AddOptions) {
     applyGlobalOptions(opts)
     opts.pxtModules = true
 
-    msg(`adding ${repo}`)
+    msg(`adding ${pkg}`)
     const prj = await resolveProject(opts)
-    await addDependency(prj, repo, name)
+    await addDependency(prj, pkg, name)
     prj.mainPkg = null
     await prj.maybeWritePxtModulesAsync()
 }
 
-async function addDependency(prj: mkc.Project, repo: string, name: string) {
-    repo = repo.toLowerCase().trim()
-    if (repo === "jacdac") repo = "https://github.com/microsoft/pxt-jacdac"
-    else if (/^jacdac-/.test(repo)) {
+async function addDependency(prj: mkc.Project, pkg: string, name: string) {
+    pkg = pkg.toLowerCase().trim()
+    if (pkg === "jacdac") pkg = "https://github.com/microsoft/pxt-jacdac"
+    else if (/^jacdac-/.test(pkg)) {
         const exts = await jacdacMakeCodeExtensions()
-        const ext = exts.find(ext => ext.client.name === repo)
+        const ext = exts.find(ext => ext.client.name === pkg)
         if (ext) {
             info(`found jacdac ${ext.client.repo}`)
-            repo = ext.client.repo
+            pkg = ext.client.repo
         }
     }
 
-    const rid = parseRepoId(repo);
+    const rid = parseRepoId(pkg);
     const pxtJson = await prj.readPxtConfig();
     if (rid) {
         const d = await fetchExtension(rid.slug);
@@ -682,11 +682,11 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
             ?.bundleddirs
             ?.map((dir: string) => /^libs\/(.+)/.exec(dir)?.[1])
             ?.filter((dir: string) => !!dir);
-        const builtInPkg = bundledPkgs?.find(dir => dir === repo);
+        const builtInPkg = bundledPkgs?.find(dir => dir === pkg);
 
         if (!builtInPkg) {
             const possiblyMeant = bundledPkgs
-                ?.filter(el => el?.toLowerCase().indexOf(repo) !== -1);
+                ?.filter(el => el?.toLowerCase().indexOf(pkg) !== -1);
             if (possiblyMeant?.length) {
                 error(`Did you mean ${possiblyMeant?.join(", ")}?`);
             } else {
@@ -696,7 +696,7 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
         }
 
         const collidingHwVariant = Object.keys(pxtJson.dependencies)
-            .find(dep => dep.toLowerCase().replace(/---.+$/, "") === repo.replace(/---.+$/, "")
+            .find(dep => dep.toLowerCase().replace(/---.+$/, "") === pkg.replace(/---.+$/, "")
                 && pxtJson.dependencies[dep] === "*");
 
         if (collidingHwVariant) {
