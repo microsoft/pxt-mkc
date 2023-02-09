@@ -697,6 +697,13 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
             host().exitWithStatus(1)
         }
 
+        const collidingHwVariant = Object.keys(pxtJson.dependencies)
+            .find(dep => dep.toLowerCase().replace(/---.+$/, "") === repo.replace(/---.+$/, "")
+                && pxtJson.dependencies[dep] === "*");
+        if (collidingHwVariant) {
+            delete pxtJson.dependencies[collidingHwVariant];
+        }
+
         pxtJson.dependencies[builtInPkg] = "*";
         info(`adding builtin dependency ${builtInPkg}=*`)
     }
