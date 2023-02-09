@@ -679,11 +679,12 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
         const builtInPkg = bundledPkgs?.find(dir => dir === repo);
 
         if (!builtInPkg) {
-            error("unknown package, try https://github.com/.../... for github extensions");
             const possiblyMeant = bundledPkgs
                 ?.filter(el => el?.toLowerCase().indexOf(repo) !== -1);
             if (possiblyMeant?.length) {
                 error(`Did you mean ${possiblyMeant?.join(", ")}?`);
+            } else {
+                error("unknown package, try https://github.com/.../... for github extensions");
             }
             host().exitWithStatus(1)
         }
