@@ -682,8 +682,6 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
             ?.bundleddirs
             ?.map((dir: string) => /^libs\/(.+)/.exec(dir)?.[1])
             ?.filter((dir: string) => !!dir);
-            // ?.filter((dir: string) => !/---.+$/.test(dir))
-            // filter out hw variants? does it matter for e.g. game---light?
         const builtInPkg = bundledPkgs?.find(dir => dir === repo);
 
         if (!builtInPkg) {
