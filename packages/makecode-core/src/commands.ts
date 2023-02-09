@@ -668,7 +668,15 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
 
     const rid = parseRepoId(repo)
     const pxtJson = await prj.readPxtConfig()
-    if (!rid) {
+    if (rid) {
+        const d = await fetchExtension(rid.slug)
+        const dname =
+            name ||
+            join(rid.project, rid.fileName).replace(/^pxt-/, "").replace("/", "-")
+
+        pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch}`
+        info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
+    } else {
         const appTarget = await prj.service.languageService.getAppTargetAsync();
         const bundledPkgs: string[] = appTarget
             ?.bundleddirs
@@ -691,16 +699,6 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
 
         pxtJson.dependencies[builtInPkg] = "*";
         info(`adding builtin dependency ${builtInPkg}=*`)
-
-    } else {
-        const d = await fetchExtension(rid.slug)
-        const dname =
-            name ||
-            join(rid.project, rid.fileName).replace(/^pxt-/, "").replace("/", "-")
-
-        pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch
-            }`
-        info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
     }
 
     await host().writeFileAsync("pxt.json", JSON.stringify(pxtJson, null, 4), "utf8")
