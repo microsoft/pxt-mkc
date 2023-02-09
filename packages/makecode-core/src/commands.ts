@@ -666,16 +666,16 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
         }
     }
 
-    const rid = parseRepoId(repo)
-    const pxtJson = await prj.readPxtConfig()
+    const rid = parseRepoId(repo);
+    const pxtJson = await prj.readPxtConfig();
     if (rid) {
-        const d = await fetchExtension(rid.slug)
+        const d = await fetchExtension(rid.slug);
         const dname =
             name ||
-            join(rid.project, rid.fileName).replace(/^pxt-/, "").replace("/", "-")
+            join(rid.project, rid.fileName).replace(/^pxt-/, "").replace("/", "-");
 
-        pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch}`
-        info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`)
+        pxtJson.dependencies[dname] = `github:${rid.fullName}#${d.version ? `v${d.version}` : d.defaultBranch}`;
+        info(`adding dependency ${dname}=${pxtJson.dependencies[dname]}`);
     } else {
         const appTarget = await prj.service.languageService.getAppTargetAsync();
         const bundledPkgs: string[] = appTarget
@@ -692,18 +692,19 @@ async function addDependency(prj: mkc.Project, repo: string, name: string) {
             } else {
                 error("unknown package, try https://github.com/.../... for github extensions");
             }
-            host().exitWithStatus(1)
+            host().exitWithStatus(1);
         }
 
         const collidingHwVariant = Object.keys(pxtJson.dependencies)
             .find(dep => dep.toLowerCase().replace(/---.+$/, "") === repo.replace(/---.+$/, "")
                 && pxtJson.dependencies[dep] === "*");
+
         if (collidingHwVariant) {
             delete pxtJson.dependencies[collidingHwVariant];
         }
 
         pxtJson.dependencies[builtInPkg] = "*";
-        info(`adding builtin dependency ${builtInPkg}=*`)
+        info(`adding builtin dependency ${builtInPkg}=*`);
     }
 
     await host().writeFileAsync("pxt.json", JSON.stringify(pxtJson, null, 4), "utf8")
