@@ -61,6 +61,10 @@ export class BrowserLanguageService implements LanguageService {
         return res.appTarget;
     }
 
+    async getTargetConfigAsync(): Promise<any> {
+        return this.editor.targetConfig;
+    }
+
     async supportsGhPackagesAsync(): Promise<boolean> {
         const res = await this.sendWorkerRequestAsync({
             type: "supportsGhPackages"

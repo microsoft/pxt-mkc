@@ -112,6 +112,8 @@ export interface DownloadInfo {
     versionNumber?: number
     updateCheckedAt?: number
     webConfig?: WebConfig
+    targetVersion?: string
+    targetConfig?: any //  see pxt/localtypings/pxtarget.d.ts interface TargetConfig
 }
 
 function log(msg: string) {
@@ -127,6 +129,18 @@ export async function downloadAsync(
     const info: DownloadInfo = infoBuf
         ? JSON.parse(host().bufferToString(infoBuf))
         : {}
+    const fetchTargetConfig = async (cdnUrl: string, target: string, version: string) => {
+        const currentDate = new Date();
+        const year = currentDate.getUTCFullYear();
+        const month = `${currentDate.getUTCMonth()}`.padStart(2, "0");
+        const day = `${currentDate.getUTCDay()}`.padStart(2, "0");
+        const cacheBustId = `${year}${month}${day}`;
+        return await requestAsync({
+            url: `${cdnUrl}/api/config/${target}/targetconfig${version ? `/v${version}`: ""}?cdn=${cacheBustId}`
+        }).then(trgCfg => {
+            return JSON.parse(trgCfg.text);
+        });
+    }
 
     if (useCached && info.manifest && info.webConfig) {
         let needsUpdate = false
@@ -139,6 +153,18 @@ export async function downloadAsync(
             try {
                 log("Checking for updates (only happens once daily)...")
                 needsUpdate = await hasNewManifestAsync()
+                if (!needsUpdate) {
+                    // fetch new target config as that is 'live'
+                    const targetConfig = await fetchTargetConfig(
+                        info.webConfig.cdnUrl,
+                        info.webConfig.targetId,
+                        info.targetVersion
+                    );
+                    if (targetConfig) {
+                        info.targetConfig = targetConfig;
+                        await saveInfoAsync();
+                    }
+                }
             } catch (e) {
                 log(
                     `Error checking for updates; will try again tomorrow (use -u flag to force); ${e.message}`
@@ -146,7 +172,7 @@ export async function downloadAsync(
             }
         }
         if (!needsUpdate) return loadFromCacheAsync()
-    } else {
+    } else if (useCached) {
         if (!(await hasNewManifestAsync())) return loadFromCacheAsync()
     }
 
@@ -163,9 +189,19 @@ export async function downloadAsync(
     info.versionNumber = (info.versionNumber || 0) + 1
     info.updateCheckedAt = Date.now()
 
-    for (let fn of ["pxtworker.js", "target.json"]) {
-        await saveFileAsync(fn)
-    }
+    await saveFileAsync("pxtworker.js")
+    const targetJsonBuf = await saveFileAsync("target.json");
+    const targetJson = JSON.parse(
+        host().bufferToString(targetJsonBuf)
+    );
+    info.targetVersion = targetJson?.versions?.target;
+
+    const targetConfig = await fetchTargetConfig(
+        cfg.cdnUrl,
+        cfg.targetId,
+        info.targetVersion
+    );
+    info.targetConfig = targetConfig;
 
     if (cache.rootPath) {
         let simTxt = await httpGetTextAsync(cfg.simUrl)
@@ -217,6 +253,7 @@ export async function downloadAsync(
                 host().bufferToString(await cache.getAsync(webAppUrl + "-target.json"))
             ),
             webConfig: info.webConfig,
+            targetConfig: info.targetConfig
         }
         return res
     }
@@ -224,6 +261,7 @@ export async function downloadAsync(
     async function saveFileAsync(name: string) {
         const resp = await requestAsync({ url: cfg.pxtCdnUrl + name })
         await cache.setAsync(webAppUrl + "-" + name, resp.buffer)
+        return resp.buffer;
     }
 
     async function hasNewManifestAsync() {

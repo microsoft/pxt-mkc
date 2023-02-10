@@ -29,7 +29,8 @@ export interface DownloadedEditor {
     website: string
     pxtWorkerJs: string
     targetJson: any
-    webConfig: downloader.WebConfig
+    webConfig: downloader.WebConfig,
+    targetConfig: any
 }
 
 export interface Package {

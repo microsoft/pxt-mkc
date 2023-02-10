@@ -55,6 +55,7 @@ export interface LanguageService {
     setWebConfigAsync(config: WebConfig): Promise<void>;
     getWebConfigAsync(): Promise<WebConfig>;
     getAppTargetAsync(): Promise<any>;
+    getTargetConfigAsync(): Promise<any>;
     supportsGhPackagesAsync(): Promise<boolean>;
     setHwVariantAsync(variant: string): Promise<void>;
     getHardwareVariantsAsync(): Promise<pxt.PackageConfig[]>;
