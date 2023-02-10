@@ -369,6 +369,7 @@ export async function installCommand(opts: InstallOptions) {
 interface InitOptions extends ProjectOptions {
     vscodeProject?: boolean;
     gitIgnore?: boolean;
+    importUrl?: string;
 }
 export async function initCommand(
     template: string,
@@ -376,50 +377,54 @@ export async function initCommand(
     opts: InitOptions
 ) {
     applyGlobalOptions(opts)
-    if (!await host().existsAsync("pxt.json")) {
+    if (!await host().existsAsync("pxt.json") || opts.importUrl) {
         if (!template) {
             error("missing template")
             host().exitWithStatus(1)
         }
-        const target = descriptors.find(t => t.id === template)
-        if (!target) {
-            error(`template not found`)
-            host().exitWithStatus(1)
-        }
-        msg(`initializing project for ${target.name}`)
-        msg("saving main.ts")
-        await host().writeFileAsync("main.ts", "// add code here", "utf8");
-        msg("saving pxt.json")
-        await host().writeFileAsync(
-            "pxt.json",
-            JSON.stringify(
-                {
-                    name: "my-project",
-                    version: "0.0.0",
-                    files: ["main.ts"],
-                    supportedTargets: [target.targetId],
-                    dependencies:
-                        target.dependencies ||
-                        (target.corepkg && { [target.corepkg]: "*" }) ||
-                        {},
-                    testDependencies: target.testDependencies || {},
-                },
-                null,
-                4
+        if (opts.importUrl) {
+            await downloadProjectAsync(opts.importUrl);
+        } else {
+            const target = descriptors.find(t => t.id === template)
+            if (!target) {
+                error(`template not found`)
+                host().exitWithStatus(1)
+            }
+            msg(`initializing project for ${target.name}`)
+            msg("saving main.ts")
+            await host().writeFileAsync("main.ts", "// add code here", "utf8");
+            msg("saving pxt.json")
+            await host().writeFileAsync(
+                "pxt.json",
+                JSON.stringify(
+                    {
+                        name: "my-project",
+                        version: "0.0.0",
+                        files: ["main.ts"],
+                        supportedTargets: [target.targetId],
+                        dependencies:
+                            target.dependencies ||
+                            (target.corepkg && { [target.corepkg]: "*" }) ||
+                            {},
+                        testDependencies: target.testDependencies || {},
+                    },
+                    null,
+                    4
+                )
             )
-        )
-        await host().writeFileAsync(
-            "mkc.json",
-            JSON.stringify(
-                <MkcJson>{
-                    targetWebsite: target.website,
-                    links: {},
-                },
-                null,
-                4
-            ),
-            "utf8"
-        )
+            await host().writeFileAsync(
+                "mkc.json",
+                JSON.stringify(
+                    <MkcJson>{
+                        targetWebsite: target.website,
+                        links: {},
+                    },
+                    null,
+                    4
+                ),
+                "utf8"
+            )
+        }
     } else {
         if (template) {
             error("directory is not empty, cannot apply template")
@@ -428,7 +433,7 @@ export async function initCommand(
     }
 
     const vscodeSettings = ".vscode/settings.json";
-    if (opts?.vscodeProject && !await host().existsAsync(vscodeSettings)) {
+    if (opts.vscodeProject && !await host().existsAsync(vscodeSettings)) {
         if (!await host().existsAsync(".vscode")) await host().mkdirAsync(".vscode");
         await host().writeFileAsync(
             vscodeSettings,
@@ -465,7 +470,7 @@ export async function initCommand(
     }
 
     const gitignore = ".gitignore";
-    if (opts?.gitIgnore && !await host().existsAsync(gitignore)) {
+    if (opts.gitIgnore && !await host().existsAsync(gitignore)) {
         msg(`saving ${gitignore}`);
         await host().writeFileAsync(
             gitignore,
