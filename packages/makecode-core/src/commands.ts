@@ -366,7 +366,10 @@ export async function installCommand(opts: InstallOptions) {
     }
 }
 
-interface InitOptions extends ProjectOptions { }
+interface InitOptions extends ProjectOptions {
+    vscodeProject?: boolean;
+    gitIgnore?: boolean;
+}
 export async function initCommand(
     template: string,
     deps: string[],
@@ -422,6 +425,63 @@ export async function initCommand(
             error("directory is not empty, cannot apply template")
             host().exitWithStatus(1)
         }
+    }
+
+    const vscodeSettings = ".vscode/settings.json";
+    if (opts?.vscodeProject && !await host().existsAsync(vscodeSettings)) {
+        if (!await host().existsAsync(".vscode")) await host().mkdirAsync(".vscode");
+        await host().writeFileAsync(
+            vscodeSettings,
+            JSON.stringify({
+                "editor.formatOnType": true,
+                "files.autoSave": "afterDelay",
+                "files.watcherExclude": {
+                    "**/.git/objects/**": true,
+                    "**/built/**": true,
+                    "**/node_modules/**": true,
+                    "**/yotta_modules/**": true,
+                    "**/yotta_targets": true,
+                    "**/pxt_modules/**": true,
+                    "**/.pxt/**": true
+                },
+                "files.associations": {
+                    "*.blocks": "html",
+                    "*.jres": "json"
+                },
+                "search.exclude": {
+                    "**/built": true,
+                    "**/node_modules": true,
+                    "**/yotta_modules": true,
+                    "**/yotta_targets": true,
+                    "**/pxt_modules": true,
+                    "**/.pxt": true
+                },
+                "files.exclude": {
+                    "**/pxt_modules": true,
+                    "**/.pxt": true
+                }
+            }, null, 4)
+        );
+    }
+
+    const gitignore = ".gitignore";
+    if (opts?.gitIgnore && !await host().existsAsync(gitignore)) {
+        msg(`saving ${gitignore}`);
+        await host().writeFileAsync(
+            gitignore,
+            `# MakeCode
+built
+node_modules
+yotta_modules
+yotta_targets
+pxt_modules
+.pxt
+_site
+*.db
+*.tgz
+.header.json
+.simstate.json`
+        );
     }
 
     if (!await host().existsAsync("tsconfig.json")) {
