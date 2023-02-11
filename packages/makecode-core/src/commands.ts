@@ -377,14 +377,14 @@ export async function initCommand(
     opts: InitOptions
 ) {
     applyGlobalOptions(opts)
-    if (!await host().existsAsync("pxt.json") || opts.importUrl) {
-        if (!template) {
-            error("missing template")
-            host().exitWithStatus(1)
-        }
+    if (!await host().existsAsync("pxt.json")) {
         if (opts.importUrl) {
             await downloadProjectAsync(opts.importUrl);
         } else {
+            if (!template) {
+                error("missing template")
+                host().exitWithStatus(1)
+            }
             const target = descriptors.find(t => t.id === template)
             if (!target) {
                 error(`template not found`)
@@ -426,7 +426,7 @@ export async function initCommand(
             )
         }
     } else {
-        if (template) {
+        if (template || opts.importUrl) {
             error("directory is not empty, cannot apply template")
             host().exitWithStatus(1)
         }
