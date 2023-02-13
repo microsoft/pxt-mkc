@@ -135,11 +135,10 @@ export async function downloadAsync(
         const month = `${currentDate.getUTCMonth()}`.padStart(2, "0");
         const day = `${currentDate.getUTCDay()}`.padStart(2, "0");
         const cacheBustId = `${year}${month}${day}`;
-        return await requestAsync({
+        const resp = await requestAsync({
             url: `${cdnUrl}/api/config/${target}/targetconfig${version ? `/v${version}`: ""}?cdn=${cacheBustId}`
-        }).then(trgCfg => {
-            return JSON.parse(trgCfg.text);
         });
+        return JSON.parse(resp.text);
     }
 
     if (useCached && info.manifest && info.webConfig) {
@@ -189,7 +188,7 @@ export async function downloadAsync(
     info.versionNumber = (info.versionNumber || 0) + 1
     info.updateCheckedAt = Date.now()
 
-    await saveFileAsync("pxtworker.js")
+    await saveFileAsync("pxtworker.js");
     const targetJsonBuf = await saveFileAsync("target.json");
     const targetJson = JSON.parse(
         host().bufferToString(targetJsonBuf)
