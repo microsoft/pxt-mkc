@@ -511,6 +511,11 @@ export async function getAppTargetAsync(opts: ProjectOptions) {
     return await prj.service.languageService.getAppTargetAsync();
 }
 
+export async function getTargetConfigAsync(opts: ProjectOptions) {
+    const prj = await resolveProject(opts)
+    return await prj.service.languageService.getTargetConfigAsync();
+}
+
 async function jacdacMakeCodeExtensions() {
     let data: {
         service: string

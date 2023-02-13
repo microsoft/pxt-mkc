@@ -72,6 +72,10 @@ export class NodeLanguageService implements LanguageService {
         return this.runSync("pxt.appTarget");
     }
 
+    async getTargetConfigAsync(): Promise<any> {
+        return this.editor.targetConfig;
+    }
+
     async supportsGhPackagesAsync(): Promise<boolean> {
         return !!this.runSync("pxt.simpleInstallPackagesAsync")
     }
