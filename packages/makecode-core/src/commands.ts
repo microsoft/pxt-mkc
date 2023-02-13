@@ -366,7 +366,11 @@ export async function installCommand(opts: InstallOptions) {
     }
 }
 
-interface InitOptions extends ProjectOptions { }
+interface InitOptions extends ProjectOptions {
+    vscodeProject?: boolean;
+    gitIgnore?: boolean;
+    importUrl?: string;
+}
 export async function initCommand(
     template: string,
     deps: string[],
@@ -374,54 +378,115 @@ export async function initCommand(
 ) {
     applyGlobalOptions(opts)
     if (!await host().existsAsync("pxt.json")) {
-        if (!template) {
-            error("missing template")
-            host().exitWithStatus(1)
-        }
-        const target = descriptors.find(t => t.id === template)
-        if (!target) {
-            error(`template not found`)
-            host().exitWithStatus(1)
-        }
-        msg(`initializing project for ${target.name}`)
-        msg("saving main.ts")
-        await host().writeFileAsync("main.ts", "// add code here", "utf8");
-        msg("saving pxt.json")
-        await host().writeFileAsync(
-            "pxt.json",
-            JSON.stringify(
-                {
-                    name: "my-project",
-                    version: "0.0.0",
-                    files: ["main.ts"],
-                    supportedTargets: [target.targetId],
-                    dependencies:
-                        target.dependencies ||
-                        (target.corepkg && { [target.corepkg]: "*" }) ||
-                        {},
-                    testDependencies: target.testDependencies || {},
-                },
-                null,
-                4
+        if (opts.importUrl) {
+            await downloadProjectAsync(opts.importUrl);
+        } else {
+            if (!template) {
+                error("missing template")
+                host().exitWithStatus(1)
+            }
+            const target = descriptors.find(t => t.id === template)
+            if (!target) {
+                error(`template not found`)
+                host().exitWithStatus(1)
+            }
+            msg(`initializing project for ${target.name}`)
+            msg("saving main.ts")
+            await host().writeFileAsync("main.ts", "// add code here", "utf8");
+            msg("saving pxt.json")
+            await host().writeFileAsync(
+                "pxt.json",
+                JSON.stringify(
+                    {
+                        name: "my-project",
+                        version: "0.0.0",
+                        files: ["main.ts"],
+                        supportedTargets: [target.targetId],
+                        dependencies:
+                            target.dependencies ||
+                            (target.corepkg && { [target.corepkg]: "*" }) ||
+                            {},
+                        testDependencies: target.testDependencies || {},
+                    },
+                    null,
+                    4
+                )
             )
-        )
-        await host().writeFileAsync(
-            "mkc.json",
-            JSON.stringify(
-                <MkcJson>{
-                    targetWebsite: target.website,
-                    links: {},
-                },
-                null,
-                4
-            ),
-            "utf8"
-        )
+            await host().writeFileAsync(
+                "mkc.json",
+                JSON.stringify(
+                    <MkcJson>{
+                        targetWebsite: target.website,
+                        links: {},
+                    },
+                    null,
+                    4
+                ),
+                "utf8"
+            )
+        }
     } else {
-        if (template) {
+        if (template || opts.importUrl) {
             error("directory is not empty, cannot apply template")
             host().exitWithStatus(1)
         }
+    }
+
+    const vscodeSettings = ".vscode/settings.json";
+    if (opts.vscodeProject && !await host().existsAsync(vscodeSettings)) {
+        if (!await host().existsAsync(".vscode")) await host().mkdirAsync(".vscode");
+        await host().writeFileAsync(
+            vscodeSettings,
+            JSON.stringify({
+                "editor.formatOnType": true,
+                "files.autoSave": "afterDelay",
+                "files.watcherExclude": {
+                    "**/.git/objects/**": true,
+                    "**/built/**": true,
+                    "**/node_modules/**": true,
+                    "**/yotta_modules/**": true,
+                    "**/yotta_targets": true,
+                    "**/pxt_modules/**": true,
+                    "**/.pxt/**": true
+                },
+                "files.associations": {
+                    "*.blocks": "html",
+                    "*.jres": "json"
+                },
+                "search.exclude": {
+                    "**/built": true,
+                    "**/node_modules": true,
+                    "**/yotta_modules": true,
+                    "**/yotta_targets": true,
+                    "**/pxt_modules": true,
+                    "**/.pxt": true
+                },
+                "files.exclude": {
+                    "**/pxt_modules": true,
+                    "**/.pxt": true
+                }
+            }, null, 4)
+        );
+    }
+
+    const gitignore = ".gitignore";
+    if (opts.gitIgnore && !await host().existsAsync(gitignore)) {
+        msg(`saving ${gitignore}`);
+        await host().writeFileAsync(
+            gitignore,
+            `# MakeCode
+built
+node_modules
+yotta_modules
+yotta_targets
+pxt_modules
+.pxt
+_site
+*.db
+*.tgz
+.header.json
+.simstate.json`
+        );
     }
 
     if (!await host().existsAsync("tsconfig.json")) {
