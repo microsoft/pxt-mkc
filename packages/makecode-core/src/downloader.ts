@@ -123,7 +123,7 @@ function log(msg: string) {
 export async function downloadAsync(
     cache: mkc.Cache,
     webAppUrl: string,
-    useCached = false
+    forceCheckUpdates = false
 ) {
     const infoBuf = await cache.getAsync(webAppUrl + "-info")
     const info: DownloadInfo = infoBuf
@@ -141,7 +141,7 @@ export async function downloadAsync(
         return JSON.parse(resp.text);
     }
 
-    if (useCached && info.manifest && info.webConfig) {
+    if (forceCheckUpdates && info.manifest && info.webConfig) {
         let needsUpdate = false
         if (
             !info.updateCheckedAt ||
@@ -171,8 +171,8 @@ export async function downloadAsync(
             }
         }
         if (!needsUpdate) return loadFromCacheAsync()
-    } else if (useCached) {
-        if (!(await hasNewManifestAsync())) return loadFromCacheAsync()
+    } else {
+        if (!(await hasNewManifestAsync())) return loadFromCacheAsync();
     }
 
     log("Download new webapp")
