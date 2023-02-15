@@ -111,6 +111,8 @@ function makeCodeRun(options) {
     function startSim() {
         if (!code || !isReady || started) return;
         setState("run");
+        const frame = document.getElementById("simframe");
+        frame.classList.remove("grayscale");
         started = true;
         const runMsg = {
             type: "run",
@@ -135,6 +137,8 @@ function makeCodeRun(options) {
 
     function stopSim() {
         setState("stopped");
+        const frame = document.getElementById("simframe");
+        frame.classList.add("grayscale");
         postMessage({
             type: "stop",
         });
@@ -215,6 +219,8 @@ function makeCodeRun(options) {
                 else if (d.type == "fetch-js") {
                     pendingMessages[d.id](d.text);
                     delete pendingMessages[d.id];
+                } else if (d.type === "stop-sim") {
+                    stopSim();
                 }
             }
         },
