@@ -142,18 +142,39 @@ interface SetCompileSwitchesResponse extends BaseResponse {
     type: "setCompileSwitches";
 }
 
-type ClientToWorkerRequest = RegisterDriverCallbacksRequest | SetWebConfigRequest | GetWebConfigRequest
-| GetAppTargetRequest | SupportsGhPackagesRequest | SetHwVariantRequest | GetHardwareVariantsRequest
-| GetBundledPackageConfigsRequest | GetCompileOptionsAsyncRequest | InstallGhPackagesAsyncRequest
-| PerformOperationRequest | SetProjectTextRequest | EnableExperimentalHardwareRequest
-| EnableDebugRequest | SetCompileSwitchesRequest;
+type ClientToWorkerRequest =
+    | RegisterDriverCallbacksRequest
+    | SetWebConfigRequest
+    | GetWebConfigRequest
+    | GetAppTargetRequest
+    | SupportsGhPackagesRequest
+    | SetHwVariantRequest
+    | GetHardwareVariantsRequest
+    | GetBundledPackageConfigsRequest
+    | GetCompileOptionsAsyncRequest
+    | InstallGhPackagesAsyncRequest
+    | PerformOperationRequest
+    | SetProjectTextRequest
+    | EnableExperimentalHardwareRequest
+    | EnableDebugRequest
+    | SetCompileSwitchesRequest
 
-type ClientToWorkerRequestResponse = RegisterDriverCallbacksResponse | SetWebConfigResponse | GetWebConfigResponse
-| GetAppTargetResponse | SupportsGhPackagesResponse | SetHwVariantResponse | GetHardwareVariantsResponse
-| GetBundledPackageConfigsResponse | GetCompileOptionsAsyncResponse | InstallGhPackagesAsyncResponse
-| PerformOperationResponse | SetProjectTextResponse | EnableExperimentalHardwareResponse
-| EnableDebugResponse | SetCompileSwitchesResponse;
-
+type ClientToWorkerRequestResponse =
+    | RegisterDriverCallbacksResponse
+    | SetWebConfigResponse
+    | GetWebConfigResponse
+    | GetAppTargetResponse
+    | SupportsGhPackagesResponse
+    | SetHwVariantResponse
+    | GetHardwareVariantsResponse
+    | GetBundledPackageConfigsResponse
+    | GetCompileOptionsAsyncResponse
+    | InstallGhPackagesAsyncResponse
+    | PerformOperationResponse
+    | SetProjectTextResponse
+    | EnableExperimentalHardwareResponse
+    | EnableDebugResponse
+    | SetCompileSwitchesResponse
 
 interface BaseWorkerToClientRequest extends WorkerMessage {
     kind: "worker-to-client";
