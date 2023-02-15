@@ -18,7 +18,7 @@ export interface SpawnOptions {
 
 export function spawnAsync(opts: SpawnOptions) {
     opts.pipe = false
-    return spawnWithPipeAsync(opts).then(() => { })
+    return spawnWithPipeAsync(opts).then(() => {})
 }
 
 export function spawnWithPipeAsync(opts: SpawnOptions) {
