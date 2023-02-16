@@ -210,10 +210,10 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
 
     outputs.push(prj.outputPrefix)
     const compileRes = await buildOnePrj(opts, prj)
+    const firmwareName = compileRes.success && ["binary.uf2", "binary.hex", "binary.elf"].filter(
+        f => !!compileRes.outfiles[f]
+    )[0];
     if (compileRes.success && opts.deploy) {
-        const firmwareName = ["binary.uf2", "binary.hex", "binary.elf"].filter(
-            f => !!compileRes.outfiles[f]
-        )[0]
         if (!firmwareName) {
             // something went wrong here
             error(
@@ -291,6 +291,10 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
             )
             await host().writeFileAsync(fn, total)
         }
+    }
+
+    if (compileRes && outputs.length && firmwareName) {
+        compileRes.binaryPath = outputs[0] + "/" + firmwareName;
     }
 
     if (success) {

@@ -83,6 +83,7 @@ export interface CompileResult {
     times: pxt.Map<number>
     // breakpoints?: Breakpoint[];
     usedArguments?: pxt.Map<string[]>
+    binaryPath?: string;
 }
 
 export interface ServiceUser {
