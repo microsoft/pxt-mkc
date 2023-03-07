@@ -282,4 +282,8 @@ export class Ctx {
 
         return hwVariants
     }
+
+    dispose() {
+        this.languageService?.dispose?.();
+    }
 }

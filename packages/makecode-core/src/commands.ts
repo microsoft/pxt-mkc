@@ -125,6 +125,23 @@ export async function cleanCommand(opts: CleanOptions) {
     msg("run `mkc init` again to setup your project")
 }
 
+let prjCache: pxt.Map<mkc.Project> = {};
+
+export async function clearProjectCache() {
+    for (const prjdir of Object.keys(prjCache)) {
+        const prj = prjCache[prjdir];
+        prj.service?.dispose?.();
+    }
+    prjCache = {};
+}
+
+function getCachedProject(prjdir: string) {
+    if (!prjCache[prjdir]) {
+        prjCache[prjdir] = new mkc.Project(prjdir);
+    }
+    return prjCache[prjdir];
+}
+
 export async function resolveProject(opts: ProjectOptions, quiet = false) {
     const prjdir = await files.findProjectDirAsync()
     if (!prjdir) {
@@ -137,8 +154,8 @@ export async function resolveProject(opts: ProjectOptions, quiet = false) {
         if (cfgFolder) opts.configPath = path.join(cfgFolder, "mkc.json")
     }
 
-    log(`using project: ${prjdir}/pxt.json`)
-    const prj = new mkc.Project(prjdir)
+    log(`using project: ${prjdir}/pxt.json`);
+    const prj = getCachedProject(prjdir);
 
     if (opts.configPath) {
         log(`using config: ${opts.configPath}`)

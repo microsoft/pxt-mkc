@@ -238,6 +238,9 @@ export class Project {
             newEditor.versionNumber != this.editor.versionNumber
         ) {
             this.editor = newEditor
+            if (this.service) {
+                this.service.dispose();
+            }
             this.service = new service.Ctx(this.editor)
             return true
         } else {

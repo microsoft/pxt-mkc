@@ -68,6 +68,8 @@ export interface LanguageService {
     enableExperimentalHardwareAsync(): Promise<void>;
     enableDebugAsync(): Promise<void>;
     setCompileSwitchesAsync(flags: string): Promise<void>
+
+    dispose?: () => void;
 }
 
 let host_: Host;
