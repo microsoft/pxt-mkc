@@ -20,7 +20,7 @@ export const descriptors: TargetDescriptor[] = [
         targetId: "arcade",
         name: "MakeCode Arcade",
         description: "Old school games",
-        website: "https://arcade.makecode.com/beta",
+        website: "https://arcade.makecode.com/",
         corepkg: "device",
     },
     {
