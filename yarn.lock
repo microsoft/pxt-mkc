@@ -122,13 +122,6 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-makecode-core@^0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/makecode-core/-/makecode-core-0.0.1.tgz#5e029a0ef0197bde23336769a56d773f24a08a26"
-  integrity sha512-1UK49MeeGJyjAnmvqqGXKrYN36Ssy1sstHwKbvMowMHJ1LrczHCorFzvhtoSw5q8rqeMeRpIZoE32f4HG/eDWQ==
-  dependencies:
-    chalk "^4.1.2"
-
 minimatch@^3.1.1:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-3.1.2.tgz#19cd194bfd3e428f049a70817c038d89ab4be35b"
