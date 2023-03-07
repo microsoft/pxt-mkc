@@ -21,11 +21,11 @@ import {
     searchCommand,
     stackCommand,
     buildCommandOnce
-} from "../../makecode-core/built/commands";
+} from "makecode-core/built/commands";
 
-import { descriptors } from "../../makecode-core/built/loader";
-import { setHost } from "../../makecode-core/built/host";
-import { setLogging } from "../../makecode-core/built/mkc";
+import { descriptors } from "makecode-core/built/loader";
+import { setHost } from "makecode-core/built/host";
+import { setLogging } from "makecode-core/built/mkc";
 
 import { createNodeHost } from "./nodeHost";
 import { bumpAsync } from "./bump";

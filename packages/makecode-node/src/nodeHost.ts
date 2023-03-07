@@ -1,4 +1,4 @@
-import { Host, HttpRequestOptions, HttpResponse } from "../../makecode-core/built/host";
+import { Host, HttpRequestOptions, HttpResponse } from "makecode-core/built/host";
 import { glob } from "glob"
 import * as fs from "fs"
 import * as util from "util"
