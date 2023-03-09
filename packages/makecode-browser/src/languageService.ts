@@ -20,7 +20,7 @@ export class BrowserLanguageService implements LanguageService {
         const workerBlob = new Blob([workerSource], { type: "application/javascript" });
 
         this.worker = new Worker(URL.createObjectURL(workerBlob));
-        this.worker.onmessage = ev => {
+        this.worker.onmessage = (ev) => {
             if (ev.data.kind) {
                 this.onWorkerRequestReceived(ev.data);
             }
@@ -28,6 +28,10 @@ export class BrowserLanguageService implements LanguageService {
                 this.onWorkerResponseReceived(ev.data);
             }
         }
+    }
+
+    dispose() {
+        this.worker.terminate();
     }
 
     async registerDriverCallbacksAsync(callbacks: SimpleDriverCallbacks): Promise<void> {
