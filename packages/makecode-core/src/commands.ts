@@ -484,8 +484,20 @@ export async function initCommand(
                 },
                 "files.exclude": {
                     "**/pxt_modules": true,
-                    "**/.pxt": true
+                    "**/.pxt": true,
+                    "**/mkc.json": true
                 }
+            }, null, 4)
+        );
+    }
+
+    const vscodeExtensions = ".vscode/extensions.json";
+    if (opts.vscodeProject && !await host().existsAsync(vscodeExtensions)) {
+        if (!await host().existsAsync(".vscode")) await host().mkdirAsync(".vscode");
+        await host().writeFileAsync(
+            vscodeExtensions,
+            JSON.stringify({
+                recommendations: ["ms-edu.pxt-vscode-web"]
             }, null, 4)
         );
     }
