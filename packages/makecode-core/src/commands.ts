@@ -497,7 +497,9 @@ export async function initCommand(
         await host().writeFileAsync(
             vscodeExtensions,
             JSON.stringify({
-                recommendations: ["ms-edu.pxt-vscode-web"]
+                recommendations: [
+                    "ms-edu.pxt-vscode-web"
+                ]
             }, null, 4)
         );
     }
