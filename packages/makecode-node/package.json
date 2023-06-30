@@ -47,7 +47,7 @@
     "commander": "^8.2.0",
     "glob": "^7.2.0",
     "node-watch": "^0.7.2",
-    "semver": "^7.3.7",
+    "semver": "^7.5.2",
     "makecode-core": "^1.4.1"
   },
   "release": {
