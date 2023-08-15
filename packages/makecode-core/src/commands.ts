@@ -42,6 +42,7 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
     try {
         const simpleOpts = {
             native: opts.native,
+            breakpoints: opts.debug
         }
 
         const res = await prj.buildAsync(simpleOpts)
@@ -195,6 +196,7 @@ export async function resolveProject(opts: ProjectOptions, quiet = false) {
 export interface BuildOptions extends ProjectOptions {
     hw?: string
     native?: boolean
+    debug?: boolean
     javaScript?: boolean
     deploy?: boolean
     alwaysBuilt?: boolean
