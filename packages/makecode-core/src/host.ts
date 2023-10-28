@@ -1,6 +1,6 @@
 import { WebConfig } from "./downloader";
 import { DownloadedEditor, Package } from "./mkc";
-import { CompileOptions } from "./service";
+import { BuiltSimJsInfo, CompileOptions, CompileResult } from "./service";
 
 export interface Host {
     readFileAsync(path: string, encoding: "utf8"): Promise<string>;
@@ -68,7 +68,8 @@ export interface LanguageService {
     enableExperimentalHardwareAsync(): Promise<void>;
     enableDebugAsync(): Promise<void>;
     setCompileSwitchesAsync(flags: string): Promise<void>
-
+    buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo>
+    
     dispose?: () => void;
 }
 

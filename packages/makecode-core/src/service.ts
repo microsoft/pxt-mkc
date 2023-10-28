@@ -50,6 +50,16 @@ export interface CompileOptions {
     otherMultiVariants?: ExtensionTarget[]
 }
 
+export interface BuiltSimJsInfo {
+    js: string
+    targetVersion: string
+    fnArgs?: pxt.Map<String[]>
+    parts?: string[]
+    usedBuiltinParts?: string[]
+    allParts?: string[]
+    breakpoints?: number[]
+}
+
 export enum DiagnosticCategory {
     Warning = 0,
     Error = 1,
@@ -76,7 +86,7 @@ export interface KsDiagnostic extends LocationInfo {
     messageText: string | DiagnosticMessageChain
 }
 
-export interface CompileResult {
+export interface CompileResult extends Partial<BuiltSimJsInfo> {
     outfiles: pxt.Map<string>
     diagnostics: KsDiagnostic[]
     success: boolean

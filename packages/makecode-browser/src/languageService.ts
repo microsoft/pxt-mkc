@@ -1,5 +1,5 @@
 import { WebConfig } from "makecode-core/built/downloader";
-import { CompileOptions } from "makecode-core/built/service";
+import { BuiltSimJsInfo, CompileOptions, CompileResult } from "makecode-core/built/service";
 import { LanguageService, SimpleDriverCallbacks } from "makecode-core/built/host";
 import { DownloadedEditor, Package } from "makecode-core";
 import { workerJs } from "./workerFiles";
@@ -152,6 +152,11 @@ export class BrowserLanguageService implements LanguageService {
             type: "setCompileSwitches",
             flags
         });
+    }
+
+    async buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo> {
+        // no-op
+        return {js: "", targetVersion: ""};
     }
 
     protected sendWorkerRequestAsync(message: ClientToWorkerRequest): Promise<ClientToWorkerRequestResponse> {
