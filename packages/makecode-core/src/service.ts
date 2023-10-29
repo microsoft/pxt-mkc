@@ -243,7 +243,8 @@ export class Ctx {
             )
             for (const info of infos) await this.compileExtInfo(info)
         }
-        
+
+        // Manually set this option for now
         if (simpleOpts.computeUsedParts) opts.computeUsedParts = true
 
         // opts.breakpoints = true

@@ -69,7 +69,7 @@ export interface LanguageService {
     enableDebugAsync(): Promise<void>;
     setCompileSwitchesAsync(flags: string): Promise<void>
     buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo>
-    
+
     dispose?: () => void;
 }
 
