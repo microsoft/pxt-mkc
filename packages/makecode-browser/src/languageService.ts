@@ -155,8 +155,7 @@ export class BrowserLanguageService implements LanguageService {
     }
 
     async buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo> {
-        // no-op
-        return {js: "", targetVersion: ""};
+        throw new Error('Not implemented');
     }
 
     protected sendWorkerRequestAsync(message: ClientToWorkerRequest): Promise<ClientToWorkerRequestResponse> {
