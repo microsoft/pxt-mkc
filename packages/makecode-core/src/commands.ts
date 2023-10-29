@@ -318,6 +318,7 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
 
     if (compileRes && opts.javaScript) {
         compileRes.simJsInfo = await prj.buildSimJsInfoAsync(compileRes)
+        compileRes.simJsInfo.parts = compileRes.usedParts 
     }
 
     if (success) {

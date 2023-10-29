@@ -94,6 +94,7 @@ export interface CompileResult {
     times: pxt.Map<number>
     // breakpoints?: Breakpoint[];
     usedArguments?: pxt.Map<string[]>
+    usedParts?: string[]
     binaryPath?: string;
     simJsInfo?: BuiltSimJsInfo
 }
