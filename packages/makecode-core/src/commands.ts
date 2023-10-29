@@ -42,6 +42,7 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
     try {
         const simpleOpts = {
             native: opts.native,
+            computeUsedParts: opts.computeUsedParts
         }
 
         const res = await prj.buildAsync(simpleOpts)
@@ -200,6 +201,7 @@ export interface BuildOptions extends ProjectOptions {
     alwaysBuilt?: boolean
     monoRepo?: boolean
     watch?: boolean
+    computeUsedParts?: boolean
 }
 
 export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.CompileResult> {
@@ -312,6 +314,10 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
 
     if (compileRes && outputs.length && firmwareName) {
         compileRes.binaryPath = outputs[0] + "/" + firmwareName;
+    }
+
+    if (compileRes && opts.javaScript) {
+        compileRes.simJsInfo = await prj.buildSimJsInfoAsync(compileRes)
     }
 
     if (success) {

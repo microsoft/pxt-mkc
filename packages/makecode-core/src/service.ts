@@ -38,6 +38,7 @@ export interface CompileOptions {
     trace?: boolean
     justMyCode?: boolean
     computeUsedSymbols?: boolean
+    computeUsedParts?: boolean
     name?: string
     warnDiv?: boolean // warn when emitting division operator
     bannedCategories?: string[]
@@ -94,6 +95,7 @@ export interface CompileResult {
     // breakpoints?: Breakpoint[];
     usedArguments?: pxt.Map<string[]>
     binaryPath?: string;
+    simJsInfo?: BuiltSimJsInfo
 }
 
 export interface ServiceUser {
@@ -232,7 +234,7 @@ export class Ctx {
         prj: mkc.Package,
         simpleOpts: any = {}
     ): Promise<CompileResult> {
-        const opts = await this.getOptionsAsync(prj, simpleOpts)
+        let opts = await this.getOptionsAsync(prj, simpleOpts)
 
         if (simpleOpts.native && opts?.extinfo?.sha) {
             const infos = [opts.extinfo].concat(
@@ -240,6 +242,8 @@ export class Ctx {
             )
             for (const info of infos) await this.compileExtInfo(info)
         }
+        
+        if (simpleOpts.computeUsedParts) opts.computeUsedParts = true
 
         // opts.breakpoints = true
         return this.languageService.performOperationAsync("compile", { options: opts })
