@@ -86,7 +86,7 @@ export interface KsDiagnostic extends LocationInfo {
     messageText: string | DiagnosticMessageChain
 }
 
-export interface CompileResult extends Partial<BuiltSimJsInfo> {
+export interface CompileResult {
     outfiles: pxt.Map<string>
     diagnostics: KsDiagnostic[]
     success: boolean
@@ -243,6 +243,10 @@ export class Ctx {
 
         // opts.breakpoints = true
         return this.languageService.performOperationAsync("compile", { options: opts })
+    }
+
+    async buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo> {
+        return await this.languageService.buildSimJsInfoAsync(result);
     }
 
     private async setHwVariantAsync(prj: mkc.Package) {

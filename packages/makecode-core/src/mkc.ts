@@ -318,15 +318,17 @@ export class Project {
                 `// meta=${JSON.stringify(meta)}\n` + res.outfiles[binjs]
         }
 
-        const info = await this.service.languageService.buildSimJsInfoAsync(res)
-        const updatedResult: service.CompileResult = { ...res, ...info}
-        await this.saveBuiltFilesAsync(updatedResult)
+        await this.saveBuiltFilesAsync(res)
 
         //delete res.outfiles
         //delete (res as any).procDebugInfo
         //console.log(res)
 
-        return updatedResult
+        return res
+    }
+
+    async buildSimJsInfoAsync(result: service.CompileResult) {
+        return await this.service.buildSimJsInfoAsync(result)
     }
 
     async mkChildProjectAsync(folder: string) {
