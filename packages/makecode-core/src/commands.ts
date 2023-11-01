@@ -42,7 +42,7 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
     try {
         const simpleOpts = {
             native: opts.native,
-            computeUsedParts: opts.simulatorJavaScript,
+            computeUsedParts: opts.buildSimJsInfo,
         }
 
         const res = await prj.buildAsync(simpleOpts)
@@ -197,7 +197,7 @@ export interface BuildOptions extends ProjectOptions {
     hw?: string
     native?: boolean
     javaScript?: boolean
-    simulatorJavaScript?: boolean
+    buildSimJsInfo?: boolean
     deploy?: boolean
     alwaysBuilt?: boolean
     monoRepo?: boolean
@@ -213,7 +213,7 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
     let moreHw: string[] = []
     const outputs: string[] = []
 
-    if (opts.simulatorJavaScript) {
+    if (opts.buildSimJsInfo) {
         opts.javaScript = true
     }
 
@@ -320,7 +320,7 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
         compileRes.binaryPath = outputs[0] + "/" + firmwareName;
     }
 
-    if (compileRes && opts.simulatorJavaScript) {
+    if (compileRes && opts.buildSimJsInfo) {
         compileRes.simJsInfo = await prj.buildSimJsInfoAsync(compileRes)
         compileRes.simJsInfo.parts = compileRes.usedParts
     }
