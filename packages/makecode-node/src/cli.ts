@@ -63,8 +63,10 @@ export async function buildCommand(opts: BuildOptions, info: Command) {
         error("--deploy and --mono-repo cannot be used together")
         process.exit(1)
     }
-    if (opts.deploy && opts.javaScript) {
-        error("--deploy and --java-script cannot be used together")
+    if (opts.deploy && (opts.javaScript || opts.simulatorJavaScript)) {
+        error(
+            "--deploy and (--java-script or --simulator-java-script) cannot be used together"
+        )
         process.exit(1)
     }
     if (opts.watch) {
@@ -195,6 +197,10 @@ async function mainCli() {
             "set hardware(s) for which to compile (implies -n)"
         )
         .option("-j, --java-script", "compile to JavaScript")
+        .option(
+            "-s, --simulator-java-script",
+            "compile to JavaScript and include simulator JS info (implies -j)"
+        )
         .option("-u, --update", "check for web-app updates")
         .option(
             "-c, --config-path <file>",
