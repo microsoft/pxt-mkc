@@ -197,10 +197,6 @@ async function mainCli() {
             "set hardware(s) for which to compile (implies -n)"
         )
         .option("-j, --java-script", "compile to JavaScript")
-        .option(
-            "-s, --simulator-java-script",
-            "compile to JavaScript and include simulator JS info (implies -j)"
-        )
         .option("-u, --update", "check for web-app updates")
         .option(
             "-c, --config-path <file>",
