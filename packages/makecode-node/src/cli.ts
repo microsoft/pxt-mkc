@@ -63,10 +63,8 @@ export async function buildCommand(opts: BuildOptions, info: Command) {
         error("--deploy and --mono-repo cannot be used together")
         process.exit(1)
     }
-    if (opts.deploy && (opts.javaScript || opts.simulatorJavaScript)) {
-        error(
-            "--deploy and (--java-script or --simulator-java-script) cannot be used together"
-        )
+    if (opts.deploy && opts.javaScript) {
+        error("--deploy and --java-script cannot be used together")
         process.exit(1)
     }
     if (opts.watch) {
