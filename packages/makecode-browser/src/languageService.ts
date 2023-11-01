@@ -155,7 +155,8 @@ export class BrowserLanguageService implements LanguageService {
     }
 
     async buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo> {
-        throw new Error('Not implemented');
+        // If you want to implement this, figure out how to get the worker to run the pxtc.buildSimJsInfo function
+        throw new Error("Not implemented")
     }
 
     protected sendWorkerRequestAsync(message: ClientToWorkerRequest): Promise<ClientToWorkerRequestResponse> {
