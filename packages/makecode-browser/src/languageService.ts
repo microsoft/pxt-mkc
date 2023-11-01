@@ -1,5 +1,5 @@
 import { WebConfig } from "makecode-core/built/downloader";
-import { CompileOptions } from "makecode-core/built/service";
+import { BuiltSimJsInfo, CompileOptions, CompileResult } from "makecode-core/built/service";
 import { LanguageService, SimpleDriverCallbacks } from "makecode-core/built/host";
 import { DownloadedEditor, Package } from "makecode-core";
 import { workerJs } from "./workerFiles";
@@ -152,6 +152,11 @@ export class BrowserLanguageService implements LanguageService {
             type: "setCompileSwitches",
             flags
         });
+    }
+
+    async buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo> {
+        // If you want to implement this, figure out how to get the worker to run the pxtc.buildSimJsInfo function
+        throw new Error("Not implemented")
     }
 
     protected sendWorkerRequestAsync(message: ClientToWorkerRequest): Promise<ClientToWorkerRequestResponse> {

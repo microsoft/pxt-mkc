@@ -38,6 +38,7 @@ export interface CompileOptions {
     trace?: boolean
     justMyCode?: boolean
     computeUsedSymbols?: boolean
+    computeUsedParts?: boolean
     name?: string
     warnDiv?: boolean // warn when emitting division operator
     bannedCategories?: string[]
@@ -48,6 +49,16 @@ export interface CompileOptions {
 
     extinfo?: ExtensionInfo
     otherMultiVariants?: ExtensionTarget[]
+}
+
+export interface BuiltSimJsInfo {
+    js: string
+    targetVersion: string
+    fnArgs?: pxt.Map<String[]>
+    parts?: string[]
+    usedBuiltinParts?: string[]
+    allParts?: string[]
+    breakpoints?: number[]
 }
 
 export enum DiagnosticCategory {
@@ -83,7 +94,9 @@ export interface CompileResult {
     times: pxt.Map<number>
     // breakpoints?: Breakpoint[];
     usedArguments?: pxt.Map<string[]>
+    usedParts?: string[]
     binaryPath?: string;
+    simJsInfo?: BuiltSimJsInfo
 }
 
 export interface ServiceUser {
@@ -222,7 +235,7 @@ export class Ctx {
         prj: mkc.Package,
         simpleOpts: any = {}
     ): Promise<CompileResult> {
-        const opts = await this.getOptionsAsync(prj, simpleOpts)
+        let opts = await this.getOptionsAsync(prj, simpleOpts)
 
         if (simpleOpts.native && opts?.extinfo?.sha) {
             const infos = [opts.extinfo].concat(
@@ -231,8 +244,15 @@ export class Ctx {
             for (const info of infos) await this.compileExtInfo(info)
         }
 
+        // Manually set this option for now
+        if (simpleOpts.computeUsedParts) opts.computeUsedParts = true
+
         // opts.breakpoints = true
         return this.languageService.performOperationAsync("compile", { options: opts })
+    }
+
+    async buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo> {
+        return await this.languageService.buildSimJsInfoAsync(result);
     }
 
     private async setHwVariantAsync(prj: mkc.Package) {

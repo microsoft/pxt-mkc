@@ -3,7 +3,7 @@ import * as util from "util";
 
 import * as mkc from "makecode-core/built/mkc";
 import { WebConfig } from "makecode-core/built/downloader";
-import { CompileOptions } from "makecode-core/built/service";
+import { BuiltSimJsInfo, CompileOptions, CompileResult } from "makecode-core/built/service";
 import { LanguageService, SimpleDriverCallbacks } from "makecode-core/built/host";
 
 export class NodeLanguageService implements LanguageService {
@@ -136,6 +136,10 @@ export class NodeLanguageService implements LanguageService {
             if (pxt.appTarget.compile.switches.asmdebug)
                 ts.pxtc.assembler.debug = 1
         })()`)
+    }
+
+    async buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo> {
+        return this.runFunctionSync("pxtc.buildSimJsInfo", [result])
     }
 
     private runScript(content: string, filename: string) {

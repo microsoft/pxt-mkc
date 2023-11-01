@@ -327,6 +327,10 @@ export class Project {
         return res
     }
 
+    async buildSimJsInfoAsync(result: service.CompileResult) {
+        return await this.service.buildSimJsInfoAsync(result)
+    }
+
     async mkChildProjectAsync(folder: string) {
         const prj = new Project(folder, await this.getCacheAsync())
         prj.service = this.service
