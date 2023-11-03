@@ -1,10 +1,11 @@
+
 {
-  "private": true,
-  "scripts": {},
-  "devDependencies": {
-    "semantic-release": "^21.0.0"
-  },
-  "workspaces": [
-    "packages/*"
-  ]
-}
+    "private": true,
+    "scripts": {
+    },
+    "devDependencies": {
+    },
+    "workspaces": [
+      "packages/*"
+    ]
+  }
