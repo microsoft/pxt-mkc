@@ -32,19 +32,19 @@ jobs:
         run: yarn compile
         working-directory: packages/makecode-browser
       - name: semantic-release makecode-core
-        run: npx -p=semantic-release@20 -p=@semantic-release/git -p=@semantic-release/npm -p=@semantic-release/github -p=@semantic-release/release-notes-generator -p=semantic-release-monorepo semantic-release -e semantic-release-monorepo
+        run: npx -p=semantic-release@19 -p=@semantic-release/git -p=@semantic-release/npm@v9 -p=@semantic-release/github@v8 -p=@semantic-release/release-notes-generator@10 -p=semantic-release-monorepo semantic-release -e semantic-release-monorepo
         working-directory: packages/makecode-core
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: semantic-release makecode-node
-        run: npx -p=semantic-release@20 -p=@semantic-release/git -p=@semantic-release/npm -p=@semantic-release/github -p=@semantic-release/release-notes-generator -p=semantic-release-monorepo semantic-release -e semantic-release-monorepo
+        run: npx -p=semantic-release@19 -p=@semantic-release/git -p=@semantic-release/npm@v9 -p=@semantic-release/github@v8 -p=@semantic-release/release-notes-generator@10 -p=semantic-release-monorepo semantic-release -e semantic-release-monorepo
         working-directory: packages/makecode-node
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: semantic-release makecode-browser
-        run: npx -p=semantic-release@20 -p=@semantic-release/git -p=@semantic-release/npm -p=@semantic-release/github -p=@semantic-release/release-notes-generator -p=semantic-release-monorepo semantic-release -e semantic-release-monorepo
+        run: npx -p=semantic-release@19 -p=@semantic-release/git -p=@semantic-release/npm@v9 -p=@semantic-release/github@v8 -p=@semantic-release/release-notes-generator@10 -p=semantic-release-monorepo semantic-release -e semantic-release-monorepo
         working-directory: packages/makecode-browser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
