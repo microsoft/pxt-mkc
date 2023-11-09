@@ -3,6 +3,8 @@ import * as path from "path"
 import { host } from "./host";
 import { ProjectOptions, resolveProject } from "./commands";
 
+
+// This is copied from pxt. Should be kept up to date with that version
 interface InstallHeader {
     name: string; // script name, should always be in sync with pxt.json name
     meta: any; // script meta data
