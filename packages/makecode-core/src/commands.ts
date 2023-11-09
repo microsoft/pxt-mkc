@@ -10,6 +10,7 @@ import { cloudRoot, MkcJson } from "./mkc"
 import { expandStackTrace } from "./stackresolver"
 import { monoRepoConfigsAsync } from "./files"
 import { host } from "./host"
+import { shareProjectAsync } from "./share"
 
 interface Options {
     colors?: boolean
@@ -900,4 +901,16 @@ function concatUint8Arrays(bufs: Uint8Array[]) {
     }
 
     return res;
+}
+
+export async function shareCommand(opts: ProjectOptions) {
+    const shareLink = await shareProjectAsync(opts);
+
+    if (shareLink) {
+        info(`Success! Project shared to ${shareLink}`)
+    }
+    else {
+        error("Unable to share project");
+    }
+
 }

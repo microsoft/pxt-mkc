@@ -7,6 +7,7 @@ import * as https from "https"
 import * as url from "url"
 import * as zlib from "zlib"
 import * as events from "events"
+import * as crypto from "crypto";
 
 import { NodeLanguageService } from "./languageService";
 import { getDeployDrivesAsync } from "./deploy";
@@ -29,7 +30,8 @@ export function createNodeHost(): Host {
         exitWithStatus: code => process.exit(code),
         cwdAsync: async () => process.cwd(),
         bufferToString: buffer => new util.TextDecoder("utf8").decode(buffer),
-        stringToBuffer: (str, encoding) => Buffer.from(str, encoding)
+        stringToBuffer: (str, encoding) => Buffer.from(str, encoding),
+        guidGen: () => crypto.randomUUID()
     }
 }
 
