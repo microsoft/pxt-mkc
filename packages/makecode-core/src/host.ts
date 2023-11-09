@@ -22,6 +22,8 @@ export interface Host {
 
     bufferToString(buffer: Uint8Array): string;
     stringToBuffer (str: string, encoding?: "utf8" | "base64"): Uint8Array;
+
+    guidGen?(): string;
 }
 
 export interface HttpRequestOptions {

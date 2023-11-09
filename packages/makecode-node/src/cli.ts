@@ -20,7 +20,8 @@ import {
     addCommand,
     searchCommand,
     stackCommand,
-    buildCommandOnce
+    buildCommandOnce,
+    shareCommand
 } from "makecode-core/built/commands";
 
 import { descriptors } from "makecode-core/built/loader";
@@ -302,6 +303,10 @@ async function mainCli() {
             'set configuration file path (default: "mkc.json")'
         )
         .action(searchCommand)
+
+    createCommand("share")
+        .description("creates a public share link for the project")
+        .action(shareCommand)
 
     createCommand("stack", { hidden: true })
         .description("expand stack trace")

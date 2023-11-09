@@ -5,9 +5,6 @@ import { host, LanguageService } from "./host";
 
 const cdnUrl = "https://pxt.azureedge.net"
 
-const prep = `
-`
-
 export interface HexInfo {
     hex: string[]
 }
