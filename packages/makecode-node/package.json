@@ -1,6 +1,6 @@
 {
   "name": "makecode",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "MakeCode (PXT) - web-cached build tool",
   "keywords": [
     "TypeScript",
