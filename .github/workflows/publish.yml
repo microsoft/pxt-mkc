@@ -1,7 +1,13 @@
-name: build
+name: publish
 
 on:
   push:
+    branches:
+      - 'master'
+      - 'main'
+    tags:
+      - '**'
+
 
 jobs:
   build:
@@ -25,3 +31,8 @@ jobs:
 
       - name: build packages
         run: npm run build --workspaces
+
+      - name: run publish script
+        run: node ./scripts/release.js publish
+        env:
+          NPM_ACCESS_TOKEN: ${{ secrets.NPM_TOKEN }}
