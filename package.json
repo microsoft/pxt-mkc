@@ -6,6 +6,8 @@
     "devDependencies": {
     },
     "workspaces": [
-      "packages/*"
+      "packages/makecode-core",
+      "packages/makecode-browser",
+      "packages/makecode-node"
     ]
   }

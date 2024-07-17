@@ -32,8 +32,10 @@
     "node": ">= 14.0.0"
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "build": "tsc --build",
+    "compile": "npm run build",
+    "watch": "tsc --build --watch",
+    "clean": "tsc --build --clean"
   },
   "main": "built/cli.js",
   "devDependencies": {
