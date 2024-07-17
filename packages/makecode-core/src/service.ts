@@ -234,6 +234,10 @@ export class Ctx {
     ): Promise<CompileResult> {
         let opts = await this.getOptionsAsync(prj, simpleOpts)
 
+        if (simpleOpts.emitBreakpoints) {
+            opts.breakpoints = true;
+        }
+
         if (simpleOpts.native && opts?.extinfo?.sha) {
             const infos = [opts.extinfo].concat(
                 (opts.otherMultiVariants || []).map(x => x.extinfo)

@@ -149,8 +149,13 @@ function makeCodeRun(options) {
         "message",
         function (ev) {
             let d = ev.data;
-            // console.debug(ev.origin, d)
+            console.log(ev.origin, d)
             if (ev.origin == simOrigin) {
+                if (d.req_seq) {
+                    postMessageToParentAsync(d);
+                    return;
+                }
+
                 if (d.type == "ready") {
                     let loader = document.getElementById("loader");
                     if (loader) loader.remove();
@@ -221,6 +226,9 @@ function makeCodeRun(options) {
                     delete pendingMessages[d.id];
                 } else if (d.type === "stop-sim") {
                     stopSim();
+                }
+                else if (d.source === "pxtdriver") {
+                    postMessage(d);
                 }
             }
         },
