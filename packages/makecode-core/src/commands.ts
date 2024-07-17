@@ -44,6 +44,7 @@ async function buildOnePrj(opts: BuildOptions, prj: mkc.Project) {
         const simpleOpts = {
             native: opts.native,
             computeUsedParts: opts.buildSimJsInfo,
+            emitBreakpoints: opts.emitBreakpoints
         }
 
         const res = await prj.buildAsync(simpleOpts)
@@ -203,6 +204,7 @@ export interface BuildOptions extends ProjectOptions {
     alwaysBuilt?: boolean
     monoRepo?: boolean
     watch?: boolean
+    emitBreakpoints?: boolean
 }
 
 export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.CompileResult> {
