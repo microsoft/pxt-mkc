@@ -55,7 +55,7 @@ function bump(packageDirectory) {
     exec(`git commit -am ${tagName}`, root);
     exec(`git tag ${tagName}`, root);
     exec(`git push origin master`, root);
-    exec(`git push tag ${tagName}`, root);
+    exec(`git push origin tag ${tagName}`, root);
 }
 
 function publish() {
