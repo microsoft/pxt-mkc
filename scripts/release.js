@@ -1,6 +1,6 @@
-import * as path from "path";
-import * as child_process from "child_process";
-import * as fs from "fs";
+const path = require("path");
+const child_process = require("child_process");
+const fs = require("fs");
 
 const packages = {
     "makecode-core": {
@@ -55,7 +55,7 @@ function bump(packageDirectory) {
     exec(`git commit -am ${tagName}`, root);
     exec(`git tag ${tagName}`, root);
     exec(`git push origin master`, root);
-    exec(`git push tag ${tagName}`, root);
+    exec(`git push origin tag ${tagName}`, root);
 }
 
 function publish() {
@@ -96,13 +96,12 @@ function printUsage() {
 }
 
 function exec(command, cwd) {
+    console.log(`${command}`)
     const result = execCore(command, cwd);
 
     if (result.status) {
         process.exit(result.status);
     }
-
-    return result.stdout.toString("utf-8");
 }
 
 function execCore(command, cwd) {
@@ -137,5 +136,5 @@ function getPackageDirectory(name) {
         process.exit(1);
     }
 
-    return path.join(root, packageDirectory);
+    return path.join(root, "packages", packageDirectory);
 }
