@@ -27,8 +27,12 @@
     "node": ">= 14.0.0"
   },
   "scripts": {
-    "compile": "tsc -p simloader && node simloader/build.js && tsc -p ./",
-    "watch": "tsc -p simloader && node simloader/build.js && tsc -watch -p ./",
+    "prebuild": "npm run sim",
+    "build": "tsc --build",
+    "compile": "npm run build",
+    "clean": "tsc --build --clean && tsc --build --clean simloader && npm run clean-simloader",
+    "clean-simloader": "node simloader/build.js clean",
+    "watch": "npm run sim && tsc --build --watch",
     "sim": "tsc -p simloader && node simloader/build.js"
   },
   "main": "built/mkc.js",

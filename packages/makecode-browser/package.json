@@ -28,8 +28,13 @@
     "node": ">= 14.0.0"
   },
   "scripts": {
-    "compile": "tsc -p worker && node worker/build.js && tsc -p ./",
-    "watch": "tsc -p worker && node worker/build.js && tsc -watch -p ./"
+    "prebuild": "npm run worker",
+    "build": "tsc --build",
+    "compile": "npm run build",
+    "clean": "tsc --build --clean && tsc --build --clean worker && npm run clean-worker",
+    "clean-worker": "node worker/build.js clean",
+    "watch": "npm run worker && tsc --build --watch",
+    "worker": "tsc --build worker && node worker/build.js"
   },
   "main": "built/mkc.js",
   "devDependencies": {

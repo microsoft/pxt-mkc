@@ -1,12 +1,32 @@
 const fs = require("fs");
 const root = "worker/";
 
-let res = "export const workerJs = `\n";
+const outFile = "src/workerFiles.ts";
 
-const text = fs.readFileSync(root + "built/worker.js", "utf8");
-res += text.replace(/[\\`$]/g, x => "\\" + x);
-res += "`;\n";
+if (process.argv[2] === "clean") {
+    clean()
+}
+else {
+    build();
+}
 
-const outfn = "src/workerFiles.ts";
-console.log(`generate ${outfn}; ${res.length} bytes`);
-fs.writeFileSync(outfn, res);
+function build() {
+    let res = "export const workerJs = `\n";
+
+    const text = fs.readFileSync(root + "built/worker.js", "utf8");
+    res += text.replace(/[\\`$]/g, x => "\\" + x);
+    res += "`;\n";
+
+    console.log(`generate ${outFile}; ${res.length} bytes`);
+    fs.writeFileSync(outFile, res);
+}
+
+function clean() {
+    try {
+        fs.unlinkSync(outFile);
+    }
+    catch (e) {
+        // ignore
+    }
+}
+
