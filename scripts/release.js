@@ -61,7 +61,7 @@ function bump(packageDirectory) {
 function publish() {
     if (process.env.GITHUB_REF_TYPE !== "tag") {
         console.error("Workflow not invoked by a tagged commit. Aborting.");
-        process.exit(1);
+        process.exit(0);
     }
 
     const tag = process.env.GITHUB_REF_NAME;
@@ -70,7 +70,7 @@ function publish() {
 
     if (!match) {
         console.error("Not a release tag. Aborting");
-        process.exit(1);
+        process.exit(0);
     }
     const packageName = match[1];
     const packageDirectory = getPackageDirectory(packageName);
