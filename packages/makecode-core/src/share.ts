@@ -2,6 +2,8 @@ import * as path from "path"
 
 import { host } from "./host";
 import { ProjectOptions, resolveProject } from "./commands";
+import { WebConfig } from "./downloader";
+import { Project } from "./mkc";
 
 
 // This is copied from pxt. Should be kept up to date with that version
@@ -41,7 +43,13 @@ interface InstallHeader {
 const apiRoot = "https://www.makecode.com";
 
 export async function shareProjectAsync(opts: ProjectOptions) {
-    const req = await createShareLinkRequestAsync(opts);
+    const prj = await resolveProject(opts);
+    const req = await createShareLinkRequestAsync(prj);
+
+    let siteRoot = new URL(prj.editor.website).origin;
+    if (!siteRoot.endsWith("/")) {
+        siteRoot += "/";
+    }
 
     const res = await host().requestAsync({
         url: apiRoot + "/api/scripts",
@@ -50,14 +58,13 @@ export async function shareProjectAsync(opts: ProjectOptions) {
 
     if (res.statusCode === 200) {
         const resJSON = JSON.parse(res.text!)
-        return apiRoot + "/" + resJSON.shortid
+        return siteRoot + resJSON.shortid
     }
 
     return undefined
 }
 
-async function createShareLinkRequestAsync(opts: ProjectOptions) {
-    const prj = await resolveProject(opts)
+async function createShareLinkRequestAsync(prj: Project) {
     const theHost = host();
 
     const config = await prj.readPxtConfig();
