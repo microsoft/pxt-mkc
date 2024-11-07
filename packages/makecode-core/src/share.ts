@@ -46,7 +46,10 @@ export async function shareProjectAsync(opts: ProjectOptions) {
     const prj = await resolveProject(opts);
     const req = await createShareLinkRequestAsync(prj);
 
-    let siteRoot = prj.editor.website;
+    let siteRoot = new URL(prj.editor.website).origin;
+    if (!siteRoot.endsWith("/")) {
+        siteRoot += "/";
+    }
 
     const res = await host().requestAsync({
         url: apiRoot + "/api/scripts",
@@ -55,9 +58,6 @@ export async function shareProjectAsync(opts: ProjectOptions) {
 
     if (res.statusCode === 200) {
         const resJSON = JSON.parse(res.text!)
-        if (!siteRoot.endsWith("/")) {
-            siteRoot += "/";
-        }
         return siteRoot + resJSON.shortid
     }
 
