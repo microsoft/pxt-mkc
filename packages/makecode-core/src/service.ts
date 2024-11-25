@@ -2,6 +2,7 @@ import vm = require("vm")
 import mkc = require("./mkc")
 import downloader = require("./downloader")
 import { host, LanguageService } from "./host";
+import { BuildOptions } from "./commands";
 
 const cdnUrl = "https://pxt.azureedge.net"
 
@@ -254,6 +255,10 @@ export class Ctx {
 
     async buildSimJsInfoAsync(result: CompileResult): Promise<BuiltSimJsInfo> {
         return await this.languageService.buildSimJsInfoAsync(result);
+    }
+
+    getApiInfo(opts: BuildOptions) {
+        return this.languageService.performOperationAsync("apiInfo", opts)
     }
 
     private async setHwVariantAsync(prj: mkc.Package) {

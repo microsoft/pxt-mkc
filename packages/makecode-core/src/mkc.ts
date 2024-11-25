@@ -5,6 +5,7 @@ export import files = require("./files")
 export import service = require("./service")
 export import loader = require("./loader")
 import { collectCurrentVersionAsync, monoRepoConfigsAsync } from "./files"
+import { BuildOptions } from "./commands"
 
 export interface MkcJson {
     targetWebsite: string
@@ -325,6 +326,10 @@ export class Project {
         //console.log(res)
 
         return res
+    }
+
+    getApiInfo(opts: BuildOptions) {
+        return this.service.getApiInfo(opts);
     }
 
     async buildSimJsInfoAsync(result: service.CompileResult) {

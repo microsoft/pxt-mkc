@@ -373,6 +373,12 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
     }
 }
 
+export async function validateBlockStrings(opts: BuildOptions) {
+    const prj = await resolveProject(opts);
+    const apiInfo = prj.getApiInfo(opts);
+    return apiInfo;
+}
+
 interface InstallOptions extends ProjectOptions {
     monoRepo?: boolean
 }

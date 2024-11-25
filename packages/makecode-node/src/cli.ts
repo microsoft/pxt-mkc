@@ -21,7 +21,8 @@ import {
     searchCommand,
     stackCommand,
     buildCommandOnce,
-    shareCommand
+    shareCommand,
+    validateBlockStrings,
 } from "makecode-core/built/commands";
 
 import { descriptors } from "makecode-core/built/loader";
@@ -77,6 +78,29 @@ export async function bumpCommand(opts: BumpOptions) {
     applyGlobalOptions(opts)
     const prj = await resolveProject(opts)
     await bumpAsync(prj, opts?.versionFile, opts?.stage, opts?.major ? "major" : opts?.minor ? "minor" : opts?.patch ? "patch" : undefined)
+}
+
+async function validateBlockStringsCommand(opts: BuildOptions) {
+    // Apply global options
+    applyGlobalOptions(opts);
+
+    // // Build the project
+    // const compileRes = await buildCommandOnce(opts);
+
+    // Check if the build was successful
+    // if (compileRes.success) {
+    //     msg("Build successful, proceeding with block string validation...");
+
+    //     // validateBlockStrings(compileRes);
+
+    //     msg("Block string validation completed.");
+    // } else {
+    //     error("Build failed, skipping block string validation.");
+    // }
+
+    const apiInfo = await validateBlockStrings(opts);
+    console.log(apiInfo);
+    return apiInfo;
 }
 
 function clone<T>(v: T): T {
@@ -311,6 +335,31 @@ async function mainCli() {
     createCommand("stack", { hidden: true })
         .description("expand stack trace")
         .action(stackCommand)
+
+    createCommand("validateBlockStrings")
+        .description("build project and validate block strings")
+        .option("-w, --watch", "watch source files and rebuild on changes")
+        .option("-n, --native", "compile native (default)")
+        .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
+        .option(
+            "-h, --hw <id,...>",
+            "set hardware(s) for which to compile (implies -n)"
+        )
+        .option("-j, --java-script", "compile to JavaScript")
+        .option("-u, --update", "check for web-app updates")
+        .option(
+            "-c, --config-path <file>",
+            'set configuration file path (default: "mkc.json")'
+        )
+        .option(
+            "-r, --mono-repo",
+            "also build all subfolders with 'pxt.json' in them"
+        )
+        .option(
+            "--always-built",
+            "always generate files in built/ folder (and not built/hw-variant/)"
+        )
+        .action(validateBlockStringsCommand);
 
     await commander.parseAsync(process.argv)
 }

@@ -204,6 +204,10 @@ Downloads a shared MakeCode project to files and initializes the project.
 mkc download https://.....
 ```
 
+### mkc validateBlockStrings
+
+Validates block strings to ensure they align with the function definition they're decorating.
+
 ## Advanced Configuration
 
 The `init` commands creates a `mkc.json` file that you can also use for additional configurations.
