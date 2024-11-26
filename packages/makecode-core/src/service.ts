@@ -257,8 +257,8 @@ export class Ctx {
         return await this.languageService.buildSimJsInfoAsync(result);
     }
 
-    getApiInfo(opts: BuildOptions) {
-        return this.languageService.performOperationAsync("apiInfo", opts)
+    getApiInfo() {
+        return this.languageService.performOperationAsync("apiInfo", {})
     }
 
     private async setHwVariantAsync(prj: mkc.Package) {

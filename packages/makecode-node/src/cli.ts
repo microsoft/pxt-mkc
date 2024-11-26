@@ -80,25 +80,15 @@ export async function bumpCommand(opts: BumpOptions) {
     await bumpAsync(prj, opts?.versionFile, opts?.stage, opts?.major ? "major" : opts?.minor ? "minor" : opts?.patch ? "patch" : undefined)
 }
 
-async function validateBlockStringsCommand(opts: BuildOptions) {
+async function validateBlockStringsCommand(opts: BuildOptions, stringsFile: string) {
     // Apply global options
     applyGlobalOptions(opts);
-
-    // // Build the project
-    // const compileRes = await buildCommandOnce(opts);
-
-    // Check if the build was successful
-    // if (compileRes.success) {
-    //     msg("Build successful, proceeding with block string validation...");
-
-    //     // validateBlockStrings(compileRes);
-
-    //     msg("Block string validation completed.");
-    // } else {
-    //     error("Build failed, skipping block string validation.");
-    // }
-
     const apiInfo = await validateBlockStrings(opts);
+
+    // Load strings, then validate (maybe one at a time in a helper function that takes API Info + String and can be reused with a different way of extracting the strings).
+    // This function could load a translations file, another could load a ts file with block comment annotations.
+    // And maybe a third that just calls the function directly?
+
     console.log(apiInfo);
     return apiInfo;
 }

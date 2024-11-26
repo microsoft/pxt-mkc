@@ -375,8 +375,16 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
 
 export async function validateBlockStrings(opts: BuildOptions) {
     const prj = await resolveProject(opts);
-    const apiInfo = prj.getApiInfo(opts);
-    return apiInfo;
+
+    // Have to compile so the host stores api info, then we can get that info with a separate call.
+    const compileResult = await buildOnePrj(opts, prj);
+
+    if (compileResult.success) {
+        const apiInfo = prj.getApiInfo();
+        return apiInfo;
+    } else {
+        throw new Error("Compile unsuccessful: " + compileResult.toString());
+    }
 }
 
 interface InstallOptions extends ProjectOptions {
