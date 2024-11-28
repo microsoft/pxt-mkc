@@ -328,10 +328,6 @@ export class Project {
         return res
     }
 
-    getApiInfo() {
-        return this.service.getApiInfo();
-    }
-
     async buildSimJsInfoAsync(result: service.CompileResult) {
         return await this.service.buildSimJsInfoAsync(result)
     }

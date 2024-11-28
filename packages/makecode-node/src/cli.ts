@@ -6,6 +6,7 @@ import {
 } from "commander";
 
 import * as chalk from "chalk";
+import * as fs from 'fs';
 import watch from "node-watch"
 
 import {
@@ -22,7 +23,7 @@ import {
     stackCommand,
     buildCommandOnce,
     shareCommand,
-    validateBlockStrings,
+    validateTranslatedBlockString,
 } from "makecode-core/built/commands";
 
 import { descriptors } from "makecode-core/built/loader";
@@ -80,17 +81,57 @@ export async function bumpCommand(opts: BumpOptions) {
     await bumpAsync(prj, opts?.versionFile, opts?.stage, opts?.major ? "major" : opts?.minor ? "minor" : opts?.patch ? "patch" : undefined)
 }
 
-async function validateBlockStringsCommand(opts: BuildOptions, stringsFile: string) {
+interface ValidateTranslatedBlockStringsOptions extends BuildOptions {
+    translationFile: string
+    skipBuild?: boolean
+}
+
+async function validateTranslatedBlockStringsCommand(opts: ValidateTranslatedBlockStringsOptions) {
     // Apply global options
     applyGlobalOptions(opts);
-    const apiInfo = await validateBlockStrings(opts);
 
-    // Load strings, then validate (maybe one at a time in a helper function that takes API Info + String and can be reused with a different way of extracting the strings).
-    // This function could load a translations file, another could load a ts file with block comment annotations.
-    // And maybe a third that just calls the function directly?
+    const translationFile = opts.translationFile;
+    msg(`Inputs: --translationFile: ${translationFile}, --skipBuild: ${opts.skipBuild}`);
+    // const apiInfo = await validateBlockStrings(opts);
+    if (!translationFile || !fs.existsSync(translationFile)) {
+        error(`File ${translationFile} not found`);
+    }
 
-    console.log(apiInfo);
-    return apiInfo;
+    const translationMap = JSON.parse(fs.readFileSync(translationFile, 'utf8'));
+
+    if (!opts.skipBuild) {
+        const compileResult = await buildCommandOnce(opts);
+        if (compileResult.success) {
+            error(`Failed to compile the project: ${compileResult.diagnostics?.join("\n")}`);
+        }
+    } else {
+        msg("Skipping build step");
+    }
+
+    const results: { [translationKey: string]: {result: boolean, message?: string}} = {};
+    for (const [translationKey, blockString] of Object.entries(translationMap)) {
+        if (typeof translationKey !== 'string' || typeof blockString !== 'string') {
+            error(`Invalid block string entry found for ${translationKey}: ${blockString}`);
+        }
+
+        if (translationKey.startsWith("{id:subcategory}")) {
+            results[translationKey] = { result: true, message: "No validation for subcategories" } // TODO thsparks : any validation to do here?
+        } else if (translationKey.startsWith("{id:group}")) {
+            results[translationKey] = { result: true, message: "No validation for groups" } // TODO thsparks : any validation to do here?
+        } else if (translationKey.endsWith("|block")) {
+            const qName = translationKey.replace("|block", "");
+            const validation = await validateTranslatedBlockString(opts, qName, blockString as string);
+            results[translationKey] = validation;
+        } else if (translationKey.indexOf("|param|")) {
+            results[translationKey] = { result: true, message: "No validation for subcategories" } // TODO thsparks : any validation to do here?
+        } else {
+            results[translationKey] = { result: true, message: "No validation performed" } // TODO thsparks : any validation to do here?
+        }
+    }
+
+    console.log(JSON.stringify(results, null, 2)); // TODO thsparks : remove formatting when done testing.
+
+    return Promise.resolve();
 }
 
 function clone<T>(v: T): T {
@@ -326,8 +367,10 @@ async function mainCli() {
         .description("expand stack trace")
         .action(stackCommand)
 
-    createCommand("validateBlockStrings")
+    createCommand("validateTranslatedBlockStrings")
         .description("build project and validate block strings")
+        .requiredOption("-f, --translation-file <file>", "path to the translated strings file")
+        .option("-sb, --skip-build", "skip build step")
         .option("-w, --watch", "watch source files and rebuild on changes")
         .option("-n, --native", "compile native (default)")
         .option("-d, --deploy", "copy resulting binary to UF2 or HEX drive")
@@ -349,7 +392,7 @@ async function mainCli() {
             "--always-built",
             "always generate files in built/ folder (and not built/hw-variant/)"
         )
-        .action(validateBlockStringsCommand);
+        .action(validateTranslatedBlockStringsCommand);
 
     await commander.parseAsync(process.argv)
 }
