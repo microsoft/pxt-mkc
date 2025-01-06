@@ -3,7 +3,7 @@ import mkc = require("./mkc")
 import downloader = require("./downloader")
 import { host, LanguageService } from "./host";
 
-const cdnUrl = "https://pxt.azureedge.net"
+const cdnUrl = "https://cdn.makecode.com"
 
 export interface HexInfo {
     hex: string[]
@@ -152,7 +152,7 @@ export class Ctx {
 
         await this.languageService.registerDriverCallbacksAsync(callbacks);
         await this.languageService.setWebConfigAsync({
-            cdnUrl: "https://pxt.azureedge.net",
+            cdnUrl: "https://cdn.makecode.com",
         } as downloader.WebConfig);
         this.supportsGhPkgs = await this.languageService.supportsGhPackagesAsync();
     }
