@@ -695,7 +695,7 @@ function parseRepoId(repo: string) {
 }
 
 async function fetchExtension(slug: string) {
-    const url = `https://pxt.azureedge.net/api/gh/${slug}`
+    const url = `https://cdn.makecode.com/api/gh/${slug}`
     const req = await host().requestAsync({
         url
     })
