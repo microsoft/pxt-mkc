@@ -23,7 +23,7 @@ const root = path.resolve(__dirname, "..");
 const commandArg = args[0].toLowerCase();
 
 if (commandArg === "bump") {
-    bump(getPackageDirectory(args[1].toLowerCase()));
+    bump(getPackageDirectory(args[1].toLowerCase(), args[2].toLowerCase()));
 }
 else if (commandArg === "publish") {
     publish();
@@ -34,16 +34,23 @@ else {
     process.exit(1);
 }
 
-function bump(packageDirectory) {
+function bump(packageDirectory, versionType) {
     if (!isWorkingDirectoryClean()) {
         console.error("Working git directory not clean. Aborting");
+        process.exit(1);
+    }
+
+    const versionTypes = ["patch", "minor", "major"];
+    if (versionType && versionTypes.indexOf(versionType) === -1) {
+        console.error("Invalid version type");
+        printUsage();
         process.exit(1);
     }
 
     exec("git fetch origin master", root);
     exec("git checkout master", root);
     exec("git merge origin/master --ff-only", root);
-    exec("npm version patch --git-tag-version false", packageDirectory);
+    exec("npm version ", versionType, " --git-tag-version false", packageDirectory);
 
     const jsonPath = path.join(packageDirectory, "package.json");
     const json = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
@@ -92,7 +99,7 @@ function publish() {
 }
 
 function printUsage() {
-    console.log(`usage: node scripts/release.js bump core|node|browser`)
+    console.log(`usage: node scripts/release.js bump core|node|browser patch|minor|major`);
 }
 
 function exec(command, cwd) {
