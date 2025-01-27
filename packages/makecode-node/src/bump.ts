@@ -63,6 +63,7 @@ function readlineAsync() {
     readlineCount++
     return new Promise<string>((resolve, reject) => {
         process.stdin.once("data", (text: string) => {
+            process.stdin.pause();
             resolve(text)
         })
     })
