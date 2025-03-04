@@ -91,16 +91,40 @@ function resolveUrl(root: string, path: string) {
 async function parseWebConfigAsync(url: string): Promise<WebConfig | null> {
     // html
     const html: string = await httpGetTextAsync(url)
-    const m = /var pxtConfig = (\{[^}]+\})/.exec(html)
-    const cfg = m && (JSON.parse(m[1]) as WebConfig)
-    if (cfg) {
-        cfg.rootUrl = url
-        cfg.files = {}
+
+    const lines = html.split("\n");
+
+    let rawConfig = "";
+    let openBrackets = 0;
+    for (const line of lines) {
+        if (line.indexOf("var pxtConfig =") !== -1) {
+            openBrackets++;
+            rawConfig += line.slice(line.indexOf("{"));
+        }
+        else if (openBrackets) {
+            if (line.indexOf("{") !== -1) {
+                openBrackets++;
+            }
+            else if (line.indexOf("}") !== -1) {
+                openBrackets--;
+
+                if (openBrackets === 0) {
+                    rawConfig += line.slice(0, line.indexOf("}") + 1);
+                    break;
+                }
+            }
+            rawConfig += line;
+        }
+    }
+    const config = rawConfig && (JSON.parse(rawConfig) as WebConfig)
+    if (config) {
+        config.rootUrl = url
+        config.files = {}
 
         const m = /manifest="([^"]+)"/.exec(html)
-        if (m) cfg.manifestUrl = resolveUrl(url, m[1])
+        if (m) config.manifestUrl = resolveUrl(url, m[1])
     }
-    return cfg
+    return config
 }
 
 export interface DownloadInfo {
