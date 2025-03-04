@@ -20,8 +20,13 @@ function addSimMessageHandler(
     };
 }
 
+interface FetchResult {
+    text: string;
+    srcDoc?: string;
+}
 
-const pendingMessages: {[index: string]: (result: string) => void} = {};
+
+const pendingMessages: {[index: string]: (result: FetchResult) => void} = {};
 let nextMessageId = 0;
 
 function makeCodeRun(options) {
@@ -59,7 +64,7 @@ function makeCodeRun(options) {
             });
         }
         return fetch(options.js)
-            .then(resp => resp.status == 200 ? resp.text() : undefined);
+            .then(resp => resp.status == 200 ? { text : resp.text() } : undefined);
     }
 
     // helpers
@@ -67,7 +72,7 @@ function makeCodeRun(options) {
         setInterval(() => {
             fetchSourceCode()
                 .then(c => {
-                    if (c && c != code0)
+                    if (c?.text && c.text != code0)
                         window.location.reload();
                 })
         }, 1000)
@@ -75,8 +80,10 @@ function makeCodeRun(options) {
     function startCode() {
         fetchSourceCode()
             .then(c => {
-                if (!c) return;
-                code0 = code = c;
+                if (!c?.text) return;
+                const text = c.text;
+                const srcDoc = c.srcDoc;
+                code0 = code = text;
                 // find metadata
                 code.replace(/^\/\/\s+meta=([^\n]+)\n/m, function (m, metasrc) {
                     meta = JSON.parse(metasrc);
@@ -99,11 +106,16 @@ function makeCodeRun(options) {
                     ap.download = ap.download.replace(/VERSION/, meta.version);
 
                 // load simulator with correct version
-                document
-                    .getElementById("simframe")
-                    .setAttribute("src", meta.simUrl + "#" + frameid);
-                let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl);
-                simOrigin = m[0];
+                const iframe = document.getElementById("simframe") as HTMLIFrameElement;
+
+                if (srcDoc) {
+                    iframe.srcdoc = srcDoc;
+                }
+                else {
+                    iframe.setAttribute("src", meta.simUrl + "#" + frameid);
+                    let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl);
+                    simOrigin = m[0];
+                }
                 initFullScreen();
             })
     }
@@ -150,7 +162,18 @@ function makeCodeRun(options) {
         function (ev) {
             let d = ev.data;
             console.log(ev.origin, d)
-            if (ev.origin == simOrigin) {
+
+            let isSim = false;
+
+            if (simOrigin) {
+                isSim = ev.origin === simOrigin;
+            }
+            else {
+                const iframe = this.document.getElementById("simframe") as HTMLIFrameElement;
+                isSim = ev.source === iframe.contentWindow;
+            }
+
+            if (isSim) {
                 if (d.req_seq) {
                     postMessageToParentAsync(d);
                     return;
@@ -222,7 +245,10 @@ function makeCodeRun(options) {
                     window.location.reload();
                 }
                 else if (d.type == "fetch-js") {
-                    pendingMessages[d.id](d.text);
+                    pendingMessages[d.id]({
+                        text: d.text,
+                        srcDoc: d.srcDoc
+                    });
                     delete pendingMessages[d.id];
                 } else if (d.type === "stop-sim") {
                     stopSim();
@@ -255,7 +281,7 @@ function makeCodeRun(options) {
 
     function postMessage(msg) {
         const frame = document.getElementById("simframe") as HTMLIFrameElement
-        if (meta && frame) frame.contentWindow.postMessage(msg, meta.simUrl);
+        if (meta && frame) frame.contentWindow.postMessage(msg, simOrigin ? meta.simUrl : "*");
     }
 
     function initSimState() {
@@ -283,7 +309,7 @@ function makeCodeRun(options) {
     }
 
     function postMessageToParentAsync(message: any) {
-        return new Promise<string>(resolve => {
+        return new Promise<FetchResult>(resolve => {
             message.id = nextMessageId++;
             pendingMessages[message.id] = resolve;
             if ((window as any).acquireVsCodeApi) {

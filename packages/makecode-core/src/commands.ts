@@ -1,5 +1,6 @@
 import * as path from "path"
 import * as chalk from "chalk"
+import { DOMParser, XMLSerializer, Element } from "@xmldom/xmldom";
 
 import * as mkc from "./mkc"
 import * as files from "./files"
@@ -11,6 +12,7 @@ import { expandStackTrace } from "./stackresolver"
 import { monoRepoConfigsAsync } from "./files"
 import { host } from "./host"
 import { shareProjectAsync } from "./share"
+
 
 interface Options {
     colors?: boolean
@@ -914,5 +916,76 @@ export async function shareCommand(opts: ProjectOptions) {
     else {
         error("Unable to share project");
     }
+}
 
+export async function getSimHTML(opts: ProjectOptions) {
+    applyGlobalOptions(opts);
+
+    const project = await resolveProject(opts);
+    const cache = await project.getCacheAsync();
+
+    const key = project.editor.website + "-sim.html"
+
+    let simHTML = host().bufferToString(await cache.getAsync(key));
+
+    const dom = new DOMParser().parseFromString(simHTML, "text/html");
+
+    for (const element of dom.getElementsByTagName("script")) {
+        if (!element.hasAttribute("src")) continue;
+
+        const srcPath = element.getAttribute("src");
+        let filename: string;
+
+        if (srcPath.indexOf("/") !== -1) {
+            filename = srcPath.split("/").pop();
+        }
+        else {
+            filename = srcPath.split("-").pop();
+        }
+        const key = project.editor.website + "-" + filename;
+
+        const contents = await cache.getAsync(key);
+
+        if (!contents) continue;
+
+        element.removeAttribute("src");
+        element.textContent = `\n${host().bufferToString(contents)}\n`
+    }
+
+    const toRemove: Element[] = [];
+
+    for (const element of dom.getElementsByTagName("link")) {
+        if (!element.hasAttribute("href")) continue;
+
+        const srcPath = element.getAttribute("href");
+        console.log(srcPath);
+        let filename: string;
+
+        if (!srcPath.endsWith(".css")) continue;
+
+        if (srcPath.indexOf("/") !== -1) {
+            filename = srcPath.split("/").pop();
+        }
+        else {
+            filename = srcPath.split("-").pop();
+        }
+        const key = project.editor.website + "-" + filename;
+
+        console.log(key)
+
+        const contents = await cache.getAsync(key);
+
+        if (!contents) continue;
+
+        const newStyle = dom.createElement("style");
+        newStyle.textContent = `\n${host().bufferToString(contents)}\n`;
+        element.parentElement.insertBefore(newStyle, element);
+        toRemove.push(element);
+    }
+
+    for (const element of toRemove) {
+        element.parentElement.removeChild(element);
+    }
+
+    return new XMLSerializer().serializeToString(dom);
 }
