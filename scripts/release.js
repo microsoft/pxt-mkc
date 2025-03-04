@@ -23,7 +23,7 @@ const root = path.resolve(__dirname, "..");
 const commandArg = args[0].toLowerCase();
 
 if (commandArg === "bump") {
-    bump(getPackageDirectory(args[1].toLowerCase(), (args[2] || "patch").toLowerCase()));
+    bump(getPackageDirectory(args[1].toLowerCase()), (args[2] || "patch").toLowerCase());
 }
 else if (commandArg === "publish") {
     publish();
