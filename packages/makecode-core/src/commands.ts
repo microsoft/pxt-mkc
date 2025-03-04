@@ -958,7 +958,6 @@ export async function getSimHTML(opts: ProjectOptions) {
         if (!element.hasAttribute("href")) continue;
 
         const srcPath = element.getAttribute("href");
-        console.log(srcPath);
         let filename: string;
 
         if (!srcPath.endsWith(".css")) continue;
@@ -970,8 +969,6 @@ export async function getSimHTML(opts: ProjectOptions) {
             filename = srcPath.split("-").pop();
         }
         const key = project.editor.website + "-" + filename;
-
-        console.log(key)
 
         const contents = await cache.getAsync(key);
 
