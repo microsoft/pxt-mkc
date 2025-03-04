@@ -113,9 +113,9 @@ function makeCodeRun(options) {
                 }
                 else {
                     iframe.setAttribute("src", meta.simUrl + "#" + frameid);
+                    let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl);
+                    simOrigin = m[0];
                 }
-                let m = /^https?:\/\/[^\/]+/.exec(meta.simUrl);
-                simOrigin = m[0];
                 initFullScreen();
             })
     }
@@ -162,7 +162,18 @@ function makeCodeRun(options) {
         function (ev) {
             let d = ev.data;
             console.log(ev.origin, d)
-            if (ev.origin == simOrigin) {
+
+            let isSim = false;
+
+            if (simOrigin) {
+                isSim = ev.origin === simOrigin;
+            }
+            else {
+                const iframe = this.document.getElementById("simframe") as HTMLIFrameElement;
+                isSim = ev.source === iframe.contentWindow;
+            }
+
+            if (isSim) {
                 if (d.req_seq) {
                     postMessageToParentAsync(d);
                     return;
@@ -270,7 +281,7 @@ function makeCodeRun(options) {
 
     function postMessage(msg) {
         const frame = document.getElementById("simframe") as HTMLIFrameElement
-        if (meta && frame) frame.contentWindow.postMessage(msg, meta.simUrl);
+        if (meta && frame) frame.contentWindow.postMessage(msg, simOrigin ? meta.simUrl : "*");
     }
 
     function initSimState() {

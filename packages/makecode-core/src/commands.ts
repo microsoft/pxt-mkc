@@ -1,6 +1,6 @@
 import * as path from "path"
 import * as chalk from "chalk"
-import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
+import { DOMParser, XMLSerializer, Element } from "@xmldom/xmldom";
 
 import * as mkc from "./mkc"
 import * as files from "./files"
@@ -952,6 +952,8 @@ export async function getSimHTML(opts: ProjectOptions) {
         element.textContent = `\n${host().bufferToString(contents)}\n`
     }
 
+    const toRemove: Element[] = [];
+
     for (const element of dom.getElementsByTagName("link")) {
         if (!element.hasAttribute("href")) continue;
 
@@ -978,6 +980,10 @@ export async function getSimHTML(opts: ProjectOptions) {
         const newStyle = dom.createElement("style");
         newStyle.textContent = `\n${host().bufferToString(contents)}\n`;
         element.parentElement.insertBefore(newStyle, element);
+        toRemove.push(element);
+    }
+
+    for (const element of toRemove) {
         element.parentElement.removeChild(element);
     }
 
