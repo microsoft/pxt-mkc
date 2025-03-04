@@ -50,7 +50,7 @@ function bump(packageDirectory, versionType) {
     exec("git fetch origin master", root);
     exec("git checkout master", root);
     exec("git merge origin/master --ff-only", root);
-    exec("npm version ", versionType, " --git-tag-version false", packageDirectory);
+    exec("npm version " + versionType + " --git-tag-version false", packageDirectory);
 
     const jsonPath = path.join(packageDirectory, "package.json");
     const json = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
