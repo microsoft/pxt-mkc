@@ -2,6 +2,8 @@ import * as mkc from "./mkc"
 
 import { host } from "./host";
 
+import { DOMParser, Element, XMLSerializer } from "@xmldom/xmldom";
+
 export interface HttpRequestOptions {
     url: string
     method?: string // default to GET
@@ -133,6 +135,7 @@ export interface DownloadInfo {
     manifestEtag?: string
     cdnUrl?: string
     simKey?: string
+    assetEditorKey?: string;
     versionNumber?: number
     updateCheckedAt?: number
     webConfig?: WebConfig
@@ -227,27 +230,13 @@ export async function downloadAsync(
     info.targetConfig = targetConfig;
 
     if (cache.rootPath) {
-        let simTxt = await httpGetTextAsync(cfg.simUrl)
-        const simurls: string[] = []
-        const simkey: pxt.Map<string> = {}
-        simTxt = simTxt.replace(/https:\/\/[\w\/\.\-]+/g, f => {
-            if (f.startsWith(info.cdnUrl)) {
-                simurls.push(f)
-                const base = f.replace(/.*\//, "")
-                simkey[f] = webAppUrl + "-" + base
-                return cache.expandKey(simkey[f])
-            }
-            return f
-        })
-        simTxt = simTxt.replace(/ manifest=/, " x-manifest=")
-
         info.simKey = webAppUrl + "-sim.html"
 
-        await cache.setAsync(info.simKey, host().stringToBuffer(simTxt))
-        for (let url of simurls) {
-            const resp = await requestAsync({ url })
-            await cache.setAsync(simkey[url], resp.buffer)
-        }
+        await downloadPageAndDependenciesAsync(cfg.simUrl, info.simKey);
+
+        info.assetEditorKey = webAppUrl + "-asseteditor.html";
+        debugger;
+        await downloadPageAndDependenciesAsync(webAppUrl + "---asseteditor", info.assetEditorKey);
     }
 
     return loadFromCacheAsync()
@@ -312,5 +301,45 @@ export async function downloadAsync(
 
         info.manifest = resp.text
         return true
+    }
+
+    async function downloadPageAndDependenciesAsync(url: string, cacheKey: string) {
+        let pageText = await httpGetTextAsync(url);
+
+        const dom = new DOMParser().parseFromString(pageText, "text/html");
+
+        const additionalUrls: string[] = []
+        const urlKeyMap: pxt.Map<string> = {}
+
+        for (const script of dom.getElementsByTagName("script")) {
+            if (!script.hasAttribute("src")) continue;
+
+            const url = script.getAttribute("src");
+            if (!url.startsWith(info.cdnUrl) || !url.endsWith(".js")) continue;
+
+            additionalUrls.push(url);
+            urlKeyMap[url] = webAppUrl + "-" + url.replace(/.*\//, "");
+            script.setAttribute("src", cache.expandKey(urlKeyMap[url]));
+        }
+
+        for (const link of dom.getElementsByTagName("link")) {
+            if (!link.hasAttribute("href")) continue;
+
+            const url = link.getAttribute("href");
+            if (!url.startsWith(info.cdnUrl) || !url.endsWith(".css")) continue;
+
+            additionalUrls.push(url);
+            urlKeyMap[url] = webAppUrl + "-" + url.replace(/.*\//, "");
+            link.setAttribute("href", cache.expandKey(urlKeyMap[url]));
+        }
+
+        pageText = new XMLSerializer().serializeToString(dom);
+        pageText = pageText.replace(/ manifest=/, " x-manifest=")
+
+        await cache.setAsync(cacheKey, host().stringToBuffer(pageText))
+        for (let url of additionalUrls) {
+            const resp = await requestAsync({ url })
+            await cache.setAsync(urlKeyMap[url], resp.buffer)
+        }
     }
 }
