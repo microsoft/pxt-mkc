@@ -925,64 +925,94 @@ export async function getSimHTML(opts: ProjectOptions) {
     const cache = await project.getCacheAsync();
 
     const key = project.editor.website + "-sim.html"
+    return getExpandedPageFromCache(key, cache, project.editor.website);
+}
 
-    let simHTML = host().bufferToString(await cache.getAsync(key));
+export async function getAssetEditorHTML(opts: ProjectOptions) {
+    applyGlobalOptions(opts);
 
-    const dom = new DOMParser().parseFromString(simHTML, "text/html");
+    const project = await resolveProject(opts);
+    const cache = await project.getCacheAsync();
 
-    for (const element of dom.getElementsByTagName("script")) {
-        if (!element.hasAttribute("src")) continue;
+    const key = project.editor.website + "-asseteditor.html"
+    return getExpandedPageFromCache(key, cache, project.editor.website);
+}
 
-        const srcPath = element.getAttribute("src");
-        let filename: string;
+async function getExpandedPageFromCache(cacheKey: string, cache: mkc.Cache, website: string): Promise<string> {
+    const pageHTML = host().bufferToString(await cache.getAsync(cacheKey));
 
-        if (srcPath.indexOf("/") !== -1) {
-            filename = srcPath.split("/").pop();
-        }
-        else {
-            filename = srcPath.split("-").pop();
-        }
-        const key = project.editor.website + "-" + filename;
-
-        const contents = await cache.getAsync(key);
-
-        if (!contents) continue;
-
-        element.removeAttribute("src");
-        element.textContent = `\n${host().bufferToString(contents)}\n`
-    }
-
+    const dom = new DOMParser().parseFromString(pageHTML, "text/html");
+    const scripts: string[] = [];
     const toRemove: Element[] = [];
 
-    for (const element of dom.getElementsByTagName("link")) {
-        if (!element.hasAttribute("href")) continue;
+    const processElement = async (element: Element, srcAttribute: string, fileExtension: string) => {
+        if (!element.hasAttribute(srcAttribute)) return undefined;
 
-        const srcPath = element.getAttribute("href");
-        let filename: string;
+        const srcPath = element.getAttribute(srcAttribute);
 
-        if (!srcPath.endsWith(".css")) continue;
+        if (!srcPath.endsWith(fileExtension)) return undefined;
 
-        if (srcPath.indexOf("/") !== -1) {
-            filename = srcPath.split("/").pop();
+        let filename = srcPath;
+        if (srcPath.startsWith(website)) {
+            filename = srcPath.slice(website.length);
+        }
+
+        if (filename.indexOf("/") !== -1) {
+            filename = filename.split("/").pop();
         }
         else {
-            filename = srcPath.split("-").pop();
+            filename = filename.split("-").pop();
         }
-        const key = project.editor.website + "-" + filename;
+        const key = website + "-" + filename;
 
         const contents = await cache.getAsync(key);
 
-        if (!contents) continue;
+        if (!contents) return undefined;
+        let contentString = host().bufferToString(contents);
 
-        const newStyle = dom.createElement("style");
-        newStyle.textContent = `\n${host().bufferToString(contents)}\n`;
-        element.parentElement.insertBefore(newStyle, element);
+        return contentString.trim();
+    };
+
+    for (const element of dom.getElementsByTagName("script")) {
+        const contentString = await processElement(element, "src", ".js");
+
+        if (contentString) {
+            scripts.push(btoa(encodeURIComponent(contentString)));
+        }
+        else {
+            scripts.push(btoa(encodeURIComponent(element.textContent)));
+        }
+
         toRemove.push(element);
+    }
+
+    for (const element of dom.getElementsByTagName("link")) {
+        const contentString = await processElement(element, "href", ".css");
+
+        if (contentString) {
+            const newStyle = dom.createElement("style");
+            newStyle.textContent = `\n${contentString}\n`;
+            element.parentElement.insertBefore(newStyle, element);
+            toRemove.push(element);
+        }
     }
 
     for (const element of toRemove) {
         element.parentElement.removeChild(element);
     }
+
+    const metaScript = `
+        const allScripts = [\`${scripts.join("`,`")}\`];
+        for (const scriptEntry of allScripts) {
+            const el = document.createElement("script");
+            el.textContent = decodeURIComponent(atob(scriptEntry));
+            document.head.appendChild(el);
+        }
+    `;
+
+    const scriptElement = dom.createElement("script");
+    scriptElement.textContent = metaScript;
+    dom.getElementsByTagName("head").item(0).appendChild(scriptElement);
 
     return new XMLSerializer().serializeToString(dom);
 }
