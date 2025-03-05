@@ -925,7 +925,7 @@ export async function getSimHTML(opts: ProjectOptions) {
     const cache = await project.getCacheAsync();
 
     const key = project.editor.website + "-sim.html"
-    return (await getExpandedPageFromCache(key, cache, project.editor.website));
+    return getExpandedPageFromCache(key, cache, project.editor.website);
 }
 
 export async function getAssetEditorHTML(opts: ProjectOptions) {
