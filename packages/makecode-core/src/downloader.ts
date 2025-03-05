@@ -231,11 +231,9 @@ export async function downloadAsync(
 
     if (cache.rootPath) {
         info.simKey = webAppUrl + "-sim.html"
-
         await downloadPageAndDependenciesAsync(cfg.simUrl, info.simKey);
 
         info.assetEditorKey = webAppUrl + "-asseteditor.html";
-        debugger;
         await downloadPageAndDependenciesAsync(webAppUrl + "---asseteditor", info.assetEditorKey);
     }
 
