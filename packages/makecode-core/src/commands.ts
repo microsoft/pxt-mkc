@@ -919,27 +919,62 @@ export async function shareCommand(opts: ProjectOptions) {
 }
 
 export async function getSimHTML(opts: ProjectOptions) {
-    applyGlobalOptions(opts);
-
-    const project = await resolveProject(opts);
-    const cache = await project.getCacheAsync();
-
-    const key = project.editor.website + "-sim.html"
-    return getExpandedPageFromCache(key, cache, project.editor.website);
+    return getExpandedHTML(opts, "cachedSimulatorKey", "sim");
 }
 
 export async function getAssetEditorHTML(opts: ProjectOptions) {
+    return getExpandedHTML(opts, "cachedAssetEditorKey", "asseteditor");
+}
+
+async function getExpandedHTML(opts: ProjectOptions, downloadInfoKey: "cachedSimulatorKey" | "cachedAssetEditorKey", pageName: "sim" | "asseteditor") {
     applyGlobalOptions(opts);
 
     const project = await resolveProject(opts);
     const cache = await project.getCacheAsync();
+    const infoKey = project.editor.website + "-info"
 
-    const key = project.editor.website + "-asseteditor.html"
-    return getExpandedPageFromCache(key, cache, project.editor.website);
+    const rawDownloadInfo = await cache.getAsync(infoKey);
+    const parsed = (rawDownloadInfo ? JSON.parse(host().bufferToString(rawDownloadInfo)) : {}) as downloader.DownloadInfo;
+
+    if (parsed[downloadInfoKey]) {
+        const existing = await cache.getAsync(parsed[downloadInfoKey]);
+        if (existing) {
+            return host().bufferToString(existing);
+        }
+    }
+
+    const key = `${project.editor.website}-${pageName}.html`;
+    const expanded = await getExpandedPageFromCache(key, cache, project.editor.website, project.editor.cdnUrl);
+
+    const expandedKey = `${project.editor.website}-${pageName}Expanded.html`;
+    await cache.setAsync(expandedKey, host().stringToBuffer(expanded));
+
+    // save that this page has been generated. this key is cleared when the cache is updated
+    parsed[downloadInfoKey] = expandedKey;
+    await cache.setAsync(infoKey, host().stringToBuffer(JSON.stringify(parsed)));
+
+    return expanded;
 }
 
-async function getExpandedPageFromCache(cacheKey: string, cache: mkc.Cache, website: string): Promise<string> {
-    const pageHTML = host().bufferToString(await cache.getAsync(cacheKey));
+async function getExpandedPageFromCache(cacheKey: string, cache: mkc.Cache, website: string, cdnUrl: string): Promise<string> {
+    let pageHTML = host().bufferToString(await cache.getAsync(cacheKey));
+
+    const imageUrls: string[] = [];
+    pageHTML = pageHTML.replace(/https:\/\/[\w\/\.\-]+/g, f => {
+        if (f.startsWith(cdnUrl) && f.endsWith(".png")) {
+            imageUrls.push(f);
+        }
+        return f
+    });
+
+    for (const url of imageUrls) {
+        const resp = await downloader.requestAsync({ url });
+        if (resp.statusCode !== 200 || !resp.buffer) continue;
+
+        const encoded = await host().base64EncodeBufferAsync(resp.buffer);
+        const dataUri = `data:image/png;base64,${encoded}`;
+        pageHTML = pageHTML.replace(url, dataUri);
+    }
 
     const dom = new DOMParser().parseFromString(pageHTML, "text/html");
     const scripts: string[] = [];
@@ -977,10 +1012,10 @@ async function getExpandedPageFromCache(cacheKey: string, cache: mkc.Cache, webs
         const contentString = await processElement(element, "src", ".js");
 
         if (contentString) {
-            scripts.push(btoa(encodeURIComponent(contentString)));
+            scripts.push(encodeURIComponent(contentString));
         }
         else {
-            scripts.push(btoa(encodeURIComponent(element.textContent)));
+            scripts.push(encodeURIComponent(element.textContent));
         }
 
         toRemove.push(element);
@@ -1005,7 +1040,7 @@ async function getExpandedPageFromCache(cacheKey: string, cache: mkc.Cache, webs
         const allScripts = [\`${scripts.join("`,`")}\`];
         for (const scriptEntry of allScripts) {
             const el = document.createElement("script");
-            el.textContent = decodeURIComponent(atob(scriptEntry));
+            el.textContent = decodeURIComponent(scriptEntry);
             document.head.appendChild(el);
         }
     `;

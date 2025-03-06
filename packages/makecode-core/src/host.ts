@@ -22,6 +22,7 @@ export interface Host {
 
     bufferToString(buffer: Uint8Array): string;
     stringToBuffer (str: string, encoding?: "utf8" | "base64"): Uint8Array;
+    base64EncodeBufferAsync(buffer: Uint8Array): Promise<string>;
 
     guidGen?(): string;
 }

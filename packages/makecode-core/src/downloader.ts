@@ -141,6 +141,9 @@ export interface DownloadInfo {
     webConfig?: WebConfig
     targetVersion?: string
     targetConfig?: any //  see pxt/localtypings/pxtarget.d.ts interface TargetConfig
+
+    cachedAssetEditorKey?: string;
+    cachedSimulatorKey?: string;
 }
 
 function log(msg: string) {
@@ -236,6 +239,9 @@ export async function downloadAsync(
         info.assetEditorKey = webAppUrl + "-asseteditor.html";
         await downloadPageAndDependenciesAsync(webAppUrl + "---asseteditor", info.assetEditorKey);
     }
+
+    delete info.cachedAssetEditorKey;
+    delete info.cachedSimulatorKey;
 
     return loadFromCacheAsync()
 
