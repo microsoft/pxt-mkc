@@ -107,7 +107,7 @@ async function parseWebConfigAsync(url: string): Promise<WebConfig | null> {
             if (line.indexOf("{") !== -1) {
                 openBrackets++;
             }
-            else if (line.indexOf("}") !== -1) {
+            if (line.indexOf("}") !== -1) {
                 openBrackets--;
 
                 if (openBrackets === 0) {
