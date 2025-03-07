@@ -50,7 +50,7 @@
     "glob": "^7.2.0",
     "node-watch": "^0.7.2",
     "semver": "^7.3.7",
-    "makecode-core": "^1.7.0"
+    "makecode-core": "^1.7.1"
   },
   "release": {
     "branch": "master",

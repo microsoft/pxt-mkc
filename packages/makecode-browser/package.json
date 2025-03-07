@@ -41,7 +41,7 @@
     "typescript": "^4.4.3"
   },
   "dependencies": {
-    "makecode-core": "^1.7.0"
+    "makecode-core": "^1.7.1"
   },
   "release": {
     "branch": "master",
