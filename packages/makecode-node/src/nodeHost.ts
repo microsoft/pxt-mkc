@@ -31,6 +31,7 @@ export function createNodeHost(): Host {
         cwdAsync: async () => process.cwd(),
         bufferToString: buffer => new util.TextDecoder("utf8").decode(buffer),
         stringToBuffer: (str, encoding) => Buffer.from(str, encoding),
+        base64EncodeBufferAsync: async buffer => Buffer.isBuffer(buffer) ? buffer.toString("base64") : Buffer.from(buffer).toString("base64"),
         guidGen: () => crypto.randomUUID()
     }
 }
