@@ -272,6 +272,10 @@ To release a package, run the following script to create+push a tagged release:
 node ./scripts/release.js bump makecode-core
 ```
 
+After bumping core, to update the CLI package
+- update the core version in the package.json of makecode-node 
+- then `node ./scripts/release.js bump makecode-node`
+
 ### Contributing
 
 This project welcomes contributions and suggestions. Most contributions require you to agree to a
