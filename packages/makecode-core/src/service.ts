@@ -223,7 +223,7 @@ export class Ctx {
                     }
                     // as in pxt CLI, wait for 8 seconds, then check again
                     const delay = 8000
-                    mkc.log(`waiting ${(delay / 1000) | 0}s for C++ build...`)
+                    mkc.log(`waiting ${(delay / 1000) | 0}s for C++ build... [${i}]`)
                     await new Promise(resolve => setTimeout(resolve, delay))
                 }
                 if (!ok) {
