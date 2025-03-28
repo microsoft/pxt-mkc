@@ -190,7 +190,8 @@ export class Ctx {
                 })
                 const hexurl = cresp.json.hex
                 const jsonUrl = hexurl.replace(/\.hex/, ".json")
-                for (let i = 0; i < 100; ++i) {
+                let ok = false
+                for (let i = 0; i < 30; ++i) {
                     const jresp = await downloader
                         .requestAsync({ url: jsonUrl })
                         .then(
@@ -215,10 +216,19 @@ export class Ctx {
                             const hexresp = await downloader.requestAsync({
                                 url: hexurl,
                             })
+                            ok = true
                             existing = hexresp.buffer
                             break
                         }
                     }
+                    // as in pxt CLI, wait for 8 seconds, then check again
+                    const delay = 8000
+                    mkc.log(`waiting ${(delay / 1000) | 0}s for C++ build...`)
+                    await new Promise(resolve => setTimeout(resolve, delay))
+                }
+                if (!ok) {
+                    mkc.error(`C++ build timed out`)
+                    throw new Error("C++ build timed out")
                 }
             } else {
                 existing = resp.buffer
