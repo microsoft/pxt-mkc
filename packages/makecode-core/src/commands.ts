@@ -922,6 +922,14 @@ export async function getSimHTML(opts: ProjectOptions) {
     return getExpandedHTML(opts, "cachedSimulatorKey", "sim");
 }
 
+export async function getWebConfig(opts: ProjectOptions) {
+    applyGlobalOptions(opts);
+
+    const project = await resolveProject(opts);
+
+    return project.editor.webConfig;
+}
+
 export async function getAssetEditorHTML(opts: ProjectOptions) {
     return getExpandedHTML(opts, "cachedAssetEditorKey", "asseteditor");
 }
