@@ -68,7 +68,7 @@ async function bump(packageDirectory, versionType) {
 
     const tagName = `${packageName}-v${version}`;
 
-    exec(`git commit -am ${tagName}`, root);
+    exec(`git commit -am "[release] bump version to ${tagName}"`, root);
     exec(`git push origin ${branchName}`, root);
 
     const url = await createPullRequestAsync({
