@@ -54,9 +54,9 @@ async function bump(packageDirectory, versionType) {
 
     const token = await getGitHubTokenAsync();
 
-    // exec("git fetch origin master", root);
-    // exec("git checkout master", root);
-    // exec("git merge origin/master --ff-only", root);
+    exec("git fetch origin master", root);
+    exec("git checkout master", root);
+    exec("git merge origin/master --ff-only", root);
     const branchName = `release/${timestamp()}`;
     exec(`git checkout -b ${branchName}`, root);
     exec("npm version " + versionType + " --git-tag-version false", packageDirectory);
@@ -69,9 +69,7 @@ async function bump(packageDirectory, versionType) {
     const tagName = `${packageName}-v${version}`;
 
     exec(`git commit -am ${tagName}`, root);
-    // exec(`git tag ${tagName}`, root);
     exec(`git push origin ${branchName}`, root);
-    // exec(`git push origin tag ${tagName}`, root);
 
     const url = await createPullRequestAsync({
         title: tagName,
@@ -85,7 +83,7 @@ async function bump(packageDirectory, versionType) {
         repo: "pxt-mkc",
     });
 
-    // exec(`git checkout master`);
+    exec(`git checkout master`);
     console.log(`Pull request created: ${url}`);
 }
 
