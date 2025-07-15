@@ -50,8 +50,8 @@ jobs:
           TAGGED=false
 
           # Check if commit matches bump pattern and PR#
-          if [[ "$COMMIT_MSG" =~ ^\(makecode-core|makecode-browser|makecode\)-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            VERSION="$COMMIT_MSG"
+          if [[ "$COMMIT_MSG" =~ \[release\]\ bump\ version\ to\ (makecode-core|makecode-browser|makecode)-v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}-v${BASH_REMATCH[2]}"
             echo "==> Detected bump version: $VERSION"
 
             # Check if tag already exists
