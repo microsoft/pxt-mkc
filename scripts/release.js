@@ -242,7 +242,7 @@ function httpRequestCoreAsync(options) {
     else if (u.protocol == "http:") isHttps = false
     else return Promise.reject("bad protocol: " + u.protocol)
 
-    u.headers = Util.clone(options.headers) || {}
+    u.headers = options.headers || {}
     let data = options.data
     u.method = options.method || (data == null ? "GET" : "POST");
 
@@ -264,7 +264,7 @@ function httpRequestCoreAsync(options) {
             buf = Buffer.from(data, "utf8")
             if (options.allowGzipPost) gzipContent = true
         } else {
-            Util.oops("bad data")
+            throw new Error("bad data")
         }
     }
 
