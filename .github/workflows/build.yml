@@ -2,23 +2,40 @@ name: build
 
 on:
   push:
+    branches:
+      - '**' # Run workflow when any branch is updated
+    tags:
+      - '*'  # Run workflow when any new tag is pushed
+  pull_request:
+    branches:
+      - '**' # Run workflow for pull requests targeting any branch
+
+permissions:
+  contents: write
 
 jobs:
+
+  filter-vtags:
+    uses: ./.github/workflows/is-vtag.yml
+
+  tag-bump-commit:
+    uses: ./.github/workflows/tag-bump-commit.yml
+    needs: filter-vtags
+    if: fromJSON(needs.filter-vtags.outputs.is_vtag || 'false') == false
+
   build:
-
+    name: buildpush
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x]
+    needs: tag-bump-commit
+    if: always() && fromJSON(needs.tag-bump-commit.outputs.did_tag || 'false') == false
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 18.x
 
       - name: npm install
         run: npm ci --workspaces

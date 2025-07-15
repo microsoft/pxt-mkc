@@ -2,29 +2,28 @@ name: publish
 
 on:
   push:
-    branches:
-      - 'master'
-      - 'main'
     tags:
-      - '**'
+      - 'makecode-*' # Run workflow when any new semver-ish tag is pushed
 
 
 jobs:
-  build:
+  filter-vtags:
+    uses: ./.github/workflows/is-vtag.yml
 
+  buildvtag:
+    name: buildvtag
+    # Only run this job if the push is a version tag
+    needs: filter-vtags
+    if: fromJSON(needs.filter-vtags.outputs.is_vtag || 'false') == true
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 18.x
 
       - name: npm install
         run: npm ci --workspaces
