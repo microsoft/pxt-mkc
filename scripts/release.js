@@ -98,7 +98,7 @@ function publish() {
     }
 
     const commitMessage = process.env.COMMIT_MESSAGE?.trim();
-    const match = /^\[release\] bump version to (makecode-core|makecode-browser|makecode)-v[0-9]+\.[0-9]+\.[0-9]+$/.exec(commitMessage);
+    const match = /\[release\] bump version to (makecode-core|makecode-browser|makecode)-v[0-9]+\.[0-9]+\.[0-9]+/.exec(commitMessage);
 
     if (!match) {
         console.error("Not a release tag. Aborting");
