@@ -92,20 +92,21 @@ async function bump(packageDirectory, versionType) {
 }
 
 function publish() {
-    if (process.env.GITHUB_REF_TYPE !== "tag") {
-        console.error("Workflow not invoked by a tagged commit. Aborting.");
+    if (process.env.CI !== "true") {
+        console.error("This command is only meant to be run in GitHub Actions");
         process.exit(0);
     }
 
-    const tag = process.env.GITHUB_REF_NAME;
-
-    const match = /^([a-z\-]+)-v\d+.\d+.\d+$/.exec(tag);
+    const commitMessage = process.env.COMMIT_MESSAGE?.trim();
+    const match = /^\[release\] bump version to (makecode-core|makecode-browser|makecode)-v[0-9]+\.[0-9]+\.[0-9]+$/.exec(commitMessage);
 
     if (!match) {
         console.error("Not a release tag. Aborting");
         process.exit(0);
     }
     const packageName = match[1];
+
+    console.log(`Publishing package: ${packageName}`);
     const packageDirectory = getPackageDirectory(packageName);
 
     const npmToken = process.env.NPM_ACCESS_TOKEN;
