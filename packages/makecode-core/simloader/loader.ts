@@ -57,14 +57,14 @@ function makeCodeRun(options) {
     if (isLocalHost)
         autoReload();
 
-    function fetchSourceCode() {
+    function fetchSourceCode(): Promise<FetchResult> {
         if (options.usePostMessage) {
             return postMessageToParentAsync({
                 type: "fetch-js"
             });
         }
         return fetch(options.js)
-            .then(resp => resp.status == 200 ? { text : resp.text() } : undefined);
+            .then(async resp => resp.status == 200 ? { text: await resp.text() } : undefined);
     }
 
     // helpers
