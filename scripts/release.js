@@ -109,19 +109,6 @@ function publish() {
     console.log(`Publishing package: ${packageName}`);
     const packageDirectory = getPackageDirectory(packageName);
 
-    const npmToken = process.env.NPM_ACCESS_TOKEN;
-
-    if (!npmToken) {
-        console.error("NPM_ACCESS_TOKEN not set. Aborting.");
-        process.exit(1);
-    }
-
-    const npmrcPath = path.join(process.env.HOME, ".npmrc")
-    const npmrc = `//registry.npmjs.org/:_authToken=${npmToken}\n`;
-
-    console.log(`Writing ${npmrcPath}`);
-    fs.writeFileSync(npmrcPath, npmrc);
-
     exec("npm publish", packageDirectory);
 }
 
