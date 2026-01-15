@@ -21,7 +21,8 @@ import {
     searchCommand,
     stackCommand,
     buildCommandOnce,
-    shareCommand
+    shareCommand,
+    getAPIInfo
 } from "makecode-core/built/commands";
 
 import { descriptors } from "makecode-core/built/loader";
@@ -31,6 +32,9 @@ import { setLogging } from "makecode-core/built/mkc";
 import { createNodeHost } from "./nodeHost";
 import { bumpAsync } from "./bump";
 import { startSimServer } from "./simserver";
+
+import * as fs from "fs";
+import { generateDocsCommand } from "./gendocs";
 
 let debugMode = false
 
@@ -77,6 +81,14 @@ export async function bumpCommand(opts: BumpOptions) {
     applyGlobalOptions(opts)
     const prj = await resolveProject(opts)
     await bumpAsync(prj, opts?.versionFile, opts?.stage, opts?.major ? "major" : opts?.minor ? "minor" : opts?.patch ? "patch" : undefined)
+}
+
+export async function apiInfoCommand(opts: ProjectOptions) {
+    applyGlobalOptions(opts)
+    const info = await getAPIInfo(opts);
+
+    fs.writeFileSync("api-info.json", JSON.stringify(info, null, 2), { encoding: "utf8" });
+    msg(`API information written to api-info.json`);
 }
 
 function clone<T>(v: T): T {
@@ -311,6 +323,27 @@ async function mainCli() {
     createCommand("stack", { hidden: true })
         .description("expand stack trace")
         .action(stackCommand)
+
+    createCommand("api-info", { hidden: true })
+        .description("get API information for the project")
+        .action(apiInfoCommand)
+
+
+    createCommand("gendocs")
+        .description("generate markdown documentation for the project from the JSDoc comments")
+        .option(
+            "-o, --out-dir <dir>",
+            "output directory for the generated documentation"
+        )
+        .option(
+            "-r, --repo-name <name>",
+            "name of the repository for the generated documentation"
+        )
+        .option(
+            "--annotate",
+            "insert help annotations into the source files"
+        )
+        .action(generateDocsCommand)
 
     await commander.parseAsync(process.argv)
 }

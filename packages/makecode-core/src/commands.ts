@@ -1059,3 +1059,8 @@ async function getExpandedPageFromCache(cacheKey: string, cache: mkc.Cache, webs
 
     return new XMLSerializer().serializeToString(dom);
 }
+
+export async function getAPIInfo(opts: ProjectOptions): Promise<any> {
+    const prj = await resolveProject(opts)
+    return prj.service.getAPIInfoAsync(prj.mainPkg)
+}
