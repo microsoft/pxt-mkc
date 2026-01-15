@@ -2,6 +2,7 @@ import { applyGlobalOptions, getAPIInfo, ProjectOptions, resolveProject } from "
 
 import * as fs from "fs";
 import * as path from "path";
+import { info } from "./cli";
 
 export interface GenerateDocsOptions extends ProjectOptions {
     outDir?: string;
@@ -66,13 +67,13 @@ export async function generateDocsCommand(opts: GenerateDocsOptions) {
         const relativePath = path.relative(proj.directory, fullPath);
 
         if (fs.existsSync(fullPath)) {
-            console.log(`Skipping existing file: ${relativePath}`);
+            info(`Skipping existing file: ${relativePath}`);
             continue;
         }
 
         const snippet = await proj.service.getSnippetAsync(proj.mainPkg, sym.qName, true);
         if (!snippet) {
-            console.log(`No snippet found for ${sym.qName}, skipping.`);
+            info(`No snippet found for ${sym.qName}, skipping.`);
             continue;
         }
 
@@ -84,7 +85,7 @@ export async function generateDocsCommand(opts: GenerateDocsOptions) {
             opts.repoName
         );
         fs.writeFileSync(fullPath, file, { encoding: "utf8" });
-        console.log(`Wrote: ${relativePath}`);
+        info(`Wrote: ${relativePath}`);
         helpAnnotations[sym.attributes.block] = `//% help=github:${config.name}/${relativePath.replace(/\.md$/, "")}`;
     }
 
@@ -99,10 +100,10 @@ export async function generateDocsCommand(opts: GenerateDocsOptions) {
             JSON.stringify(config, null, 4),
             { encoding: "utf8" }
         );
-        console.log(`Updated pxt.json with ${generatedFiles.length} new files.`);
+        info(`Updated pxt.json with ${generatedFiles.length} new files.`);
     }
     else {
-        console.log(`No new documentation files were generated.`);
+        info(`No new documentation files were generated.`);
     }
 
     if (opts.annotate && Object.keys(helpAnnotations).length > 0) {
@@ -144,7 +145,7 @@ export async function generateDocsCommand(opts: GenerateDocsOptions) {
             }
             if (modified) {
                 fs.writeFileSync(filePath, content, { encoding: "utf8" });
-                console.log(`Annotated help comments in: ${path.relative(proj.directory, filePath)}`);
+                info(`Annotated help comments in: ${path.relative(proj.directory, filePath)}`);
             }
         }
     }

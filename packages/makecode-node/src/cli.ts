@@ -38,15 +38,15 @@ import { generateDocsCommand } from "./gendocs";
 
 let debugMode = false
 
-function info(msg: string) {
+export function info(msg: string) {
     console.log(chalk.blueBright(msg))
 }
 
-function msg(msg: string) {
+export function msg(msg: string) {
     console.log(chalk.green(msg))
 }
 
-function error(msg: string) {
+export function error(msg: string) {
     console.error(chalk.red(msg))
 }
 
