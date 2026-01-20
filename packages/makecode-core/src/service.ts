@@ -314,6 +314,26 @@ export class Ctx {
         return hwVariants
     }
 
+    async getAPIInfoAsync(project: mkc.Package): Promise<any> {
+        let opts = await this.getOptionsAsync(project, {})
+        await this.languageService.performOperationAsync("setOptions", {options: opts})
+        return this.languageService.performOperationAsync("apiInfo", {});
+    }
+
+    async getSnippetAsync(project: mkc.Package, qName: string, skipOptions = false): Promise<string> {
+        if (!skipOptions) {
+            let opts = await this.getOptionsAsync(project, {})
+            await this.languageService.performOperationAsync("setOptions", {options: opts});
+        }
+        return this.languageService.performOperationAsync("snippet", {
+            snippet: { qName },
+            runtime: {
+                bannedCategories: [],
+                screenSize: { width: 0, height: 0 }
+            }
+        });
+    }
+
     dispose() {
         this.languageService?.dispose?.();
     }
