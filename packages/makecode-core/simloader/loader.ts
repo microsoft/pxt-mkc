@@ -64,7 +64,7 @@ function makeCodeRun(options) {
             });
         }
         return fetch(options.js)
-            .then(async resp => resp.status == 200 ? { text: await resp.text() } : undefined);
+            .then(async resp => resp.status == 200 ? { text: (await resp.text()) } : undefined);
     }
 
     // helpers
@@ -161,8 +161,6 @@ function makeCodeRun(options) {
         "message",
         function (ev) {
             let d = ev.data;
-            console.log(ev.origin, d)
-
             let isSim = false;
 
             if (simOrigin) {
@@ -318,8 +316,8 @@ function makeCodeRun(options) {
                 }
                 _vsapi.postMessage(message);
             }
-            else {
-                window.postMessage(message);
+            else if (window.parent !== window) {
+                window.parent.postMessage(message);
             }
         });
     }
