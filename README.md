@@ -259,10 +259,15 @@ mkc is split into three packages:
     - `cd packages/makecode-node && npm run watch`
 -   run `node path/to/pxt-mkc/packages/makecode-node/makecode` in your project folder
 
-If you want to test out changes in pxt, first run the build as usual, and then replace
-`$HOME/.pxt/mkc-cache/https_58__47__47_<your-editor>-pxtworker.js`
-with `pxt/built/web/pxtworker.js`.
-Make sure to run `makecode` tool without the `-u` option.
+If you want to test out changes in pxt, first run the build as usual, and then
+run `makecode` with `--pxt-worker`:
+
+```
+makecode build --pxt-worker path/to/pxt/built/web/pxtworker.js
+```
+
+The override replaces only the compiler worker. The cached target files and
+target packages still come from the selected editor.
 
 ### Releases
 

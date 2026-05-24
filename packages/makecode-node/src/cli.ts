@@ -181,6 +181,7 @@ function createCommand(name: string, opts?: CommandOptions) {
         .option("--debug", "enable debug output from PXT")
         .option("-f, --compile-flags <flag,...>",
             "set PXT compiler options (?compile=... or PXT_COMPILE_SWITCHES=... in other tools)")
+        .option("--pxt-worker <file>", "use a local pxtworker.js instead of the cached target worker")
     return cmd
 }
 

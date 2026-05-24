@@ -59,6 +59,8 @@ export class Project {
     mainPkg: Package
     lastPxtJson: string
     private _hwVariant: string
+    private lastPxtWorkerJsOverride: string
+    pxtWorkerJsOverride: string
     writePxtModules = true
     linkPxtModules = false
     symlinkPxtModules = false
@@ -223,7 +225,11 @@ export class Project {
     }
 
     async loadEditorAsync(forceUpdate = false) {
-        if (this.editor && !forceUpdate) return false
+        if (
+            this.editor &&
+            !forceUpdate &&
+            this.pxtWorkerJsOverride === this.lastPxtWorkerJsOverride
+        ) return false
 
         await this.loadPkgAsync()
 
@@ -232,12 +238,17 @@ export class Project {
             this.mainPkg.mkcConfig.targetWebsite,
             !forceUpdate
         )
+        if (this.pxtWorkerJsOverride) {
+            newEditor.pxtWorkerJs = this.pxtWorkerJsOverride
+        }
 
         if (
             !this.editor ||
-            newEditor.versionNumber != this.editor.versionNumber
+            newEditor.versionNumber != this.editor.versionNumber ||
+            this.pxtWorkerJsOverride !== this.lastPxtWorkerJsOverride
         ) {
             this.editor = newEditor
+            this.lastPxtWorkerJsOverride = this.pxtWorkerJsOverride
             if (this.service) {
                 this.service.dispose();
             }
@@ -338,6 +349,7 @@ export class Project {
         if (this._hwVariant) prj.hwVariant = this._hwVariant
         prj.outputPrefix = this.outputPrefix
         prj.writePxtModules = this.writePxtModules
+        prj.pxtWorkerJsOverride = this.pxtWorkerJsOverride
         prj.editor = this.editor
         return prj
     }
