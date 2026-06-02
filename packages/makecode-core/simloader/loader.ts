@@ -161,7 +161,6 @@ function makeCodeRun(options) {
         "message",
         function (ev) {
             let d = ev.data;
-            console.log(ev.origin, d)
 
             let isSim = false;
 
@@ -319,7 +318,9 @@ function makeCodeRun(options) {
                 _vsapi.postMessage(message);
             }
             else {
-                window.postMessage(message);
+                if (window.parent !== window) {
+                    window.parent.postMessage(message);
+                }
             }
         });
     }
