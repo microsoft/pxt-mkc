@@ -19,6 +19,7 @@ interface Options {
     noColors?: boolean
     debug?: boolean
     compileFlags?: string
+    pxtWorker?: string
 }
 
 export interface ProjectOptions extends Options {
@@ -165,6 +166,14 @@ export async function resolveProject(opts: ProjectOptions, quiet = false) {
     if (opts.configPath) {
         log(`using config: ${opts.configPath}`)
         prj.mkcConfig = await readCfgAsync(opts.configPath, quiet)
+    }
+
+    if (opts.pxtWorker) {
+        const workerPath = path.resolve(opts.pxtWorker)
+        log(`using pxt worker: ${workerPath}`)
+        prj.pxtWorkerJsOverride = await host().readFileAsync(workerPath, "utf8")
+    } else {
+        prj.pxtWorkerJsOverride = undefined
     }
 
     await prj.loadEditorAsync(!!opts.update)
