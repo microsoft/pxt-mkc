@@ -1,6 +1,6 @@
 {
   "name": "makecode-core",
-  "version": "1.7.9",
+  "version": "1.7.10",
   "description": "MakeCode (PXT) - web-cached build tool",
   "keywords": [
     "TypeScript",
