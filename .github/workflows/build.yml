@@ -39,7 +39,7 @@ jobs:
           node-version: 20.x
 
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@11
 
       - name: npm install
         run: npm ci --workspaces
@@ -61,7 +61,7 @@ jobs:
           node-version: 20.x
 
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@11
 
       - name: npm install
         run: npm ci --workspaces
