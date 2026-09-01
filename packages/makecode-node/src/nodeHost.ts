@@ -20,6 +20,7 @@ export function createNodeHost(): Host {
         rmdirAsync: util.promisify(fs.rmdir),
         existsAsync: util.promisify(fs.exists),
         unlinkAsync: util.promisify(fs.unlink),
+        renameAsync: util.promisify(fs.rename),
         symlinkAsync: util.promisify(fs.symlink),
         listFilesAsync: async (directory, filename) =>
             glob.sync(directory + "/**/" + filename),

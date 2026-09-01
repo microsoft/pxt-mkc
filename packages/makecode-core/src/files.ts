@@ -77,7 +77,18 @@ export async function mkHomeCacheAsync(dir?: string): Promise<mkc.Cache> {
                 buf => buf,
                 err => null
             ),
-        setAsync: (key, val) => host().writeFileAsync(keyPath(key), val),
+        setAsync: async (key, val) => {
+            const filePath = keyPath(key);
+            const tmpPath = filePath + "." + Math.random().toString(36).slice(2) + ".tmp"
+
+            await host().writeFileAsync(tmpPath, val)
+
+            try {
+                await host().renameAsync(tmpPath, filePath);
+            } catch (e) {
+                try { await host().unlinkAsync(tmpPath); } catch { /* let it go */ }
+            }
+        }
     }
 }
 

@@ -11,6 +11,7 @@ export interface Host {
     rmdirAsync(path: string, options: any): Promise<void>;
     existsAsync(path: string): Promise<boolean>;
     unlinkAsync(path: string): Promise<void>;
+    renameAsync(oldPath: string, newPath: string): Promise<void>;
     symlinkAsync(target: string, path: string, type: "file"): Promise<void>;
     listFilesAsync(directory: string, filename: string): Promise<string[]>;
     requestAsync(options: HttpRequestOptions, validate?: (protocol: string, method: string) => void): Promise<HttpResponse>;
