@@ -76,6 +76,14 @@ export const descriptors: TargetDescriptor[] = [
         website: "https://makecode.adafruit.com/beta",
         corepkg: "circuit-playground",
     },
+    {
+        id: "calliope",
+        targetId: "calliopemini",
+        name: "Calliope mini 3",
+        description: "Calliope mini 3",
+        website: "https://makecode.calliope.cc/",
+        corepkg: "v3",
+    },
 ]
 
 export function guessMkcJson(prj: mkc.Package) {
