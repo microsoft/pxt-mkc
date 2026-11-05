@@ -361,14 +361,14 @@ export async function buildCommandOnce(opts: BuildOptions): Promise<mkc.service.
             return (
                 cfg.name.toLowerCase() == hw ||
                 hwid(cfg).toLowerCase() == hw ||
-                cfg.card.name.toLowerCase() == hw
+                cfg.card?.name?.toLowerCase() == hw
             )
         })
         if (!selected.length) {
             error(`No such HW id: ${hw0}`)
             msg(`Available hw:`)
             for (let cfg of hwVariants) {
-                msg(`${hwid(cfg)}, ${cfg.card.name} - ${cfg.card.description}`)
+                msg(`${hwid(cfg)}, ${cfg.card?.name ?? hwid(cfg)} - ${cfg.card?.description ?? ""}`)
             }
             host().exitWithStatus(1)
         }
