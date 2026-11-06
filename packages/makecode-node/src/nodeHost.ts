@@ -17,7 +17,15 @@ export function createNodeHost(): Host {
         readFileAsync: util.promisify(fs.readFile),
         writeFileAsync: util.promisify(fs.writeFile),
         mkdirAsync: util.promisify(fs.mkdir),
-        rmdirAsync: util.promisify(fs.rmdir),
+        rmdirAsync: async (path, options) => {
+            if (options?.recursive && fs.promises.rm) {
+                if ((await fs.promises.lstat(path)).isDirectory()) {
+                    return fs.promises.rm(path, options)
+                }
+                return fs.promises.rmdir(path)
+            }
+            return fs.promises.rmdir(path, options)
+        },
         existsAsync: util.promisify(fs.exists),
         unlinkAsync: util.promisify(fs.unlink),
         symlinkAsync: util.promisify(fs.symlink),
